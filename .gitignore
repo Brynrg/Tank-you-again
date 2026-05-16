@@ -1,0 +1,23 @@
+node_modules/
+dist/
+build/
+.vite/
+
+# Prisma local SQLite
+server/prisma/dev.db
+server/prisma/dev.db-journal
+server/prisma/migrations/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+npm-debug.log*
+.tsbuildinfo
+*.tsbuildinfo

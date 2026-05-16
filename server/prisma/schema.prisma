@@ -1,0 +1,54 @@
+// Tank You Again — persistence layer.
+// Local dev uses SQLite for zero-config. Swap provider + url for staging/prod.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// A user account, OR a guest ephemeral identity.
+// Guest users get a row too so that mid-match drops can be reconciled.
+model User {
+  id           String   @id @default(cuid())
+  username     String?  @unique
+  passwordHash String?
+  isGuest      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+
+  tanks Tank[]
+
+  @@index([isGuest])
+  @@index([lastSeenAt])
+}
+
+// A persistent tank profile owned by a User. Rank and stats accumulate
+// across matches and never reset on death within a match.
+model Tank {
+  id     String @id @default(cuid())
+  name   String
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Persistent ladder progress.
+  rank          String @default("RECRUIT") // matches shared MilitaryRank enum
+  kills         Int    @default(0)
+  deaths        Int    @default(0)
+  matchesPlayed Int    @default(0)
+  totalFuelUsed Int    @default(0)
+  totalDamage   Int    @default(0)
+
+  // Highest rank ever reached — used for the persistent military ladder leaderboard.
+  highestRank String @default("RECRUIT")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([rank])
+  @@index([kills])
+}
