@@ -1,12 +1,13 @@
 // Tank You Again — persistence layer.
-// Local dev uses SQLite for zero-config. Swap provider + url for staging/prod.
+// Production target: Neon free-tier Postgres. For local dev, point DATABASE_URL
+// at either a Neon dev branch or a local Postgres (e.g. via Docker).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -36,6 +37,7 @@ model Tank {
 
   // Persistent ladder progress.
   rank          String @default("RECRUIT") // matches shared MilitaryRank enum
+  xp            Int    @default(0)
   kills         Int    @default(0)
   deaths        Int    @default(0)
   matchesPlayed Int    @default(0)

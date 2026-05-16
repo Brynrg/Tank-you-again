@@ -1,0 +1,39 @@
+name: Deploy backend to Fly.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - "shared/**"
+      - "Dockerfile"
+      - "fly.toml"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+# Requires two pieces of one-time setup before this workflow can succeed:
+#   1. `fly launch` locally to create the app and push fly.toml.
+#   2. `fly auth token` → store the value as the FLY_API_TOKEN GitHub secret.
+# Until both are in place, this job will fail and the frontend deploy will
+# still run independently.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-backend-${{ github.workflow }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        run: flyctl deploy --remote-only --build-arg COMMIT_SHA=${{ github.sha }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
