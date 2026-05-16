@@ -1,32 +1,28 @@
-# Fly.io configuration for the Tank You Again game server.
+# fly.toml app configuration file generated for tank-you-again on 2026-05-16T18:19:54-05:00
 #
-# Bootstrap once with:   fly launch --no-deploy --copy-config
-# Then set the DB url:   fly secrets set DATABASE_URL="postgresql://..."
-# Then deploy:           fly deploy
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
-# Free tier: keep machines at shared-cpu-1x w/ 256MB and 1 region. WebSockets
-# work out of the box on Fly's edge — no extra config needed.
 
-app = "tank-you-again"
-primary_region = "iad"
+app = 'tank-you-again'
+primary_region = 'iad'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  PORT = "3001"
-  HOST = "0.0.0.0"
+  HOST = '0.0.0.0'
+  PORT = '3001'
 
 [http_service]
   internal_port = 3001
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
-  # WebSocket upgrades pass straight through.
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
-  cpu_kind = "shared"
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 256
