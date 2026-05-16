@@ -1,12 +1,8 @@
 {
-  "extends": "../tsconfig.base.json",
+  "extends": "../tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "./dist",
-    "paths": {
-      "@tank/shared": ["../shared/types.ts"],
-      "@tank/shared/*": ["../shared/*"]
-    },
     "noEmit": true
   },
   "include": ["src/**/*", "../shared/types.ts"]

@@ -1,11 +1,8 @@
+import "dotenv/config";
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import { PrismaClient } from "@prisma/client";
-import {
-  SERVER_TICK_RATE,
-  ServerMessageType,
-  type ServerWelcomeMessage,
-} from "../../shared/types.js";
+import { SERVER_TICK_RATE, ServerMessageType, type ServerWelcomeMessage } from "@shared/types";
 
 const prisma = new PrismaClient();
 const app = Fastify({ logger: true });
@@ -39,9 +36,10 @@ app.get("/ws", { websocket: true }, (socket /* WebSocket */, req) => {
 });
 
 const port = Number(process.env.PORT ?? 3001);
+const host = process.env.HOST ?? "0.0.0.0";
 try {
-  await app.listen({ port, host: "0.0.0.0" });
-  app.log.info(`tank server listening on :${port}`);
+  await app.listen({ port, host });
+  app.log.info(`tank server listening on ${host}:${port}`);
 } catch (err) {
   app.log.error(err);
   await prisma.$disconnect();

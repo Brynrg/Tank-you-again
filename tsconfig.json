@@ -6,7 +6,6 @@
     "lib": ["ES2022"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
@@ -14,6 +13,12 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
     "allowSyntheticDefaultImports": true,
-    "useDefineForClassFields": true
-  }
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/*"]
+    }
+  },
+  "include": ["shared/**/*", "server/**/*", "client/**/*"],
+  "exclude": ["**/dist/**", "**/node_modules/**"]
 }

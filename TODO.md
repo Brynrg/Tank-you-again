@@ -50,15 +50,15 @@ spec sections accurate so future phases stay anchored to the same target.
 
 ### Fuel-cost economy
 
-| Action            | Fuel cost                |
-| ----------------- | ------------------------ |
-| Idle              | 0                        |
-| Move (any dir)    | drain per tick           |
-| Fire bullet       | small fixed cost         |
-| Fire missile      | larger fixed cost        |
-| Place mine        | medium fixed cost        |
-| Activate shield   | drain while active       |
-| Teleport          | flat charge per use      |
+| Action          | Fuel cost           |
+| --------------- | ------------------- |
+| Idle            | 0                   |
+| Move (any dir)  | drain per tick      |
+| Fire bullet     | small fixed cost    |
+| Fire missile    | larger fixed cost   |
+| Place mine      | medium fixed cost   |
+| Activate shield | drain while active  |
+| Teleport        | flat charge per use |
 
 - Fuel is replenished by `FUEL_CRATE` pickups only — no passive regen.
 - A tank at zero fuel cannot move, fire, place mines, or teleport. It can
@@ -99,16 +99,27 @@ Ranks (in order):
 
 - [x] Monorepo layout (`shared/`, `server/`, `client/`).
 - [x] Root `package.json` with npm workspaces + `dev` script (concurrently).
-- [x] `tsconfig.base.json` shared by all three workspaces.
+- [x] Root `tsconfig.json` is the single source of truth for compiler options
+      and defines the `@shared/*` path alias. Sub-workspaces extend it.
 - [x] `shared/types.ts` with enums (`TeamColor`, `MilitaryRank`, `ItemType`)
       and interfaces (`TankState`, `ProjectileState`, `MineState`,
       `PickupState`, `GameStateSnapshot`), plus protocol messages and tunables.
 - [x] `server/` — Fastify + `@fastify/websocket` + `ws` + Prisma. Prisma
-      schema for `User` and `Tank` with rank/stats fields.
+      schema for `User` and `Tank` with rank/stats fields. DATABASE_URL is
+      read from env so the SQLite path can be swapped without a code change.
 - [x] `npx prisma db push` runs cleanly against local SQLite.
 - [x] `client/` — Vite + TS + Canvas. `index.html` mounts a `#game` canvas;
-      `src/main.ts` is the engine entry point.
-- [x] Everything compiles (`npm run typecheck` clean).
+      `src/main.ts` is the engine entry point. `vite.config.ts` mirrors the
+      tsconfig `@shared/*` alias.
+- [x] `dotenv` wired into `server/src/index.ts`; PORT/HOST safely default in
+      code if `.env` is absent. `server/.env` is auto-copied from
+      `.env.example` by a postinstall script.
+- [x] `.env.example` at root and `server/` documents `PORT`, `HOST`,
+      `DATABASE_URL`.
+- [x] `.prettierrc` + `.prettierignore` at root. `npm run format` writes,
+      `npm run format:check` verifies. Prettier 3 across all workspaces.
+- [x] Everything compiles (`npm run typecheck` clean) and is formatted
+      (`npm run format:check` clean).
 
 ### Phase 2 — Networking spine
 

@@ -11,11 +11,14 @@
   "scripts": {
     "dev": "concurrently -n server,client -c blue,yellow \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "build": "npm run build --workspace=server && npm run build --workspace=client",
-    "typecheck": "tsc -b shared server client --noEmit",
-    "db:push": "npm run db:push --workspace=server"
+    "typecheck": "tsc --noEmit -p shared && tsc --noEmit -p server && tsc --noEmit -p client",
+    "db:push": "npm run db:push --workspace=server",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,html,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,html,css}\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
+    "prettier": "^3.4.2",
     "typescript": "^5.6.3"
   }
 }

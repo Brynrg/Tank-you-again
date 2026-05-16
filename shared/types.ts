@@ -150,13 +150,9 @@ export interface ServerSnapshotMessage {
   snapshot: GameStateSnapshot;
 }
 
-export type ClientMessage =
-  | ClientAuthMessage
-  | ClientInputMessage;
+export type ClientMessage = ClientAuthMessage | ClientInputMessage;
 
-export type ServerMessage =
-  | ServerWelcomeMessage
-  | ServerSnapshotMessage;
+export type ServerMessage = ServerWelcomeMessage | ServerSnapshotMessage;
 
 // ---------- Tunables (single source of truth for server and client UI) ----------
 

@@ -2,7 +2,7 @@
 // a WS connection to the authoritative server. Real game loop replaces draw()
 // once the snapshot pipeline lands.
 
-import { SERVER_TICK_RATE, ServerMessageType, type ServerMessage } from "@tank/shared";
+import { SERVER_TICK_RATE, ServerMessageType, type ServerMessage } from "@shared/types";
 
 const canvas = document.getElementById("game") as HTMLCanvasElement | null;
 if (!canvas) throw new Error("#game canvas not found");
@@ -33,8 +33,7 @@ function draw(): void {
 }
 
 function connect(): void {
-  const wsUrl =
-    (import.meta.env.VITE_WS_URL as string | undefined) ?? "ws://localhost:3001/ws";
+  const wsUrl = (import.meta.env.VITE_WS_URL as string | undefined) ?? "ws://localhost:3001/ws";
   const ws = new WebSocket(wsUrl);
 
   ws.addEventListener("open", () => {

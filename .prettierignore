@@ -1,0 +1,13 @@
+node_modules/
+**/dist/
+**/build/
+.vite/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+server/prisma/dev.db
+server/prisma/dev.db-journal
+server/prisma/migrations/
+*.tsbuildinfo
+.env
+.env.local

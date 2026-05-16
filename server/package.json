@@ -9,12 +9,13 @@
     "start": "node dist/index.js",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "postinstall": "node -e \"const fs=require('fs');if(!fs.existsSync('.env')&&fs.existsSync('.env.example'))fs.copyFileSync('.env.example','.env')\""
   },
   "dependencies": {
     "@fastify/websocket": "^11.0.1",
     "@prisma/client": "^6.0.1",
-    "@tank/shared": "*",
+    "dotenv": "^16.4.7",
     "fastify": "^5.1.0",
     "ws": "^8.18.0"
   },
