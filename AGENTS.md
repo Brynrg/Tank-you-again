@@ -76,40 +76,42 @@ Total time: ~1–2 min. The job graph + path filters are in the YAML; trust them
 
 ## The guarantees — what the pipeline catches for you
 
-| Class of mistake | Caught by |
-| --- | --- |
-| TypeScript error anywhere | `npm run typecheck` (CI) + Vite client build + esbuild server build |
-| Sim regression (movement, fuel drain, fire cooldown, determinism) | `npm test` (CI) |
-| Format drift | `npm run format:check` (CI) |
-| Schema change without DB migration | Backend deploy refuses with a clear error |
-| Server boot failure | Fly's health-check rolling deploy keeps the previous image running |
-| Bundle that references `localhost` or absolute-root `/assets` | Portal's `ingest-game-build.mjs` broken-path scanner (when ingest runs) |
-| Frontend deploy step fails | Live game stays on the previous build; nothing half-ships |
+| Class of mistake                                                  | Caught by                                                               |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| TypeScript error anywhere                                         | `npm run typecheck` (CI) + Vite client build + esbuild server build     |
+| Sim regression (movement, fuel drain, fire cooldown, determinism) | `npm test` (CI)                                                         |
+| Format drift                                                      | `npm run format:check` (CI)                                             |
+| Schema change without DB migration                                | Backend deploy refuses with a clear error                               |
+| Server boot failure                                               | Fly's health-check rolling deploy keeps the previous image running      |
+| Bundle that references `localhost` or absolute-root `/assets`     | Portal's `ingest-game-build.mjs` broken-path scanner (when ingest runs) |
+| Frontend deploy step fails                                        | Live game stays on the previous build; nothing half-ships               |
 
 ## Hot paths — where to make what kind of change
 
-| Change you want to make | Files to edit |
-| --- | --- |
-| Game balance (speed, damage, fuel costs, XP rewards) | `shared/types.ts` tunables block — single source of truth, both ends pick it up |
-| New weapon or item | `shared/types.ts` (enum + tunables) → `server/src/sim/combat.ts` → `server/src/loop.ts` (dispatch) → `client/src/render.ts` (visual) |
-| Movement / physics tweak | `server/src/sim/movement.ts` only — client never simulates |
-| Mine / radar behavior | `server/src/sim/mines.ts`, `server/src/sim/vision.ts` |
-| Rank ladder | `server/src/sim/rank.ts` and `RANK_XP_THRESHOLDS` in `shared/types.ts` |
-| HUD / camera / sprite | `client/src/render.ts`, `client/src/loop.ts` |
-| Input bindings | `client/src/input.ts` |
-| New protocol message | **Add the interface to `shared/types.ts` first**, then server dispatch in `server/src/index.ts` and `server/src/loop.ts`, then client send in `client/src/loop.ts` / `client/src/net.ts` |
-| Auth flow (register users, sessions) | `server/src/auth.ts` and `server/prisma/schema.prisma` |
-| Database schema | `server/prisma/schema.prisma` — **see footgun #1 below** |
+| Change you want to make                              | Files to edit                                                                                                                                                                            |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Game balance (speed, damage, fuel costs, XP rewards) | `shared/types.ts` tunables block — single source of truth, both ends pick it up                                                                                                          |
+| New weapon or item                                   | `shared/types.ts` (enum + tunables) → `server/src/sim/combat.ts` → `server/src/loop.ts` (dispatch) → `client/src/render.ts` (visual)                                                     |
+| Movement / physics tweak                             | `server/src/sim/movement.ts` only — client never simulates                                                                                                                               |
+| Mine / radar behavior                                | `server/src/sim/mines.ts`, `server/src/sim/vision.ts`                                                                                                                                    |
+| Rank ladder                                          | `server/src/sim/rank.ts` and `RANK_XP_THRESHOLDS` in `shared/types.ts`                                                                                                                   |
+| HUD / camera / sprite                                | `client/src/render.ts`, `client/src/loop.ts`                                                                                                                                             |
+| Input bindings                                       | `client/src/input.ts`                                                                                                                                                                    |
+| New protocol message                                 | **Add the interface to `shared/types.ts` first**, then server dispatch in `server/src/index.ts` and `server/src/loop.ts`, then client send in `client/src/loop.ts` / `client/src/net.ts` |
+| Auth flow (register users, sessions)                 | `server/src/auth.ts` and `server/prisma/schema.prisma`                                                                                                                                   |
+| Database schema                                      | `server/prisma/schema.prisma` — **see footgun #1 below**                                                                                                                                 |
 
 ## Footguns — these will break the game
 
 1. **Prisma schema changes need a manual migration.** If you edit
    `server/prisma/schema.prisma`, the workflow will **refuse to deploy** the
    backend until you run:
+
    ```bash
    DATABASE_URL='<your Neon connection string>' \
      npx prisma db push --schema=server/prisma/schema.prisma
    ```
+
    Then re-run the workflow from the Actions tab. Skipping this would deploy
    a server that crashes on the first query.
 
@@ -117,13 +119,13 @@ Total time: ~1–2 min. The job graph + path filters are in the YAML; trust them
    and `server/` deploy through different pipelines and finish at slightly
    different times (~30 sec gap). For a hobby game, this is fine — a quick
    reload after a deploy reconciles any mismatch. If you add fields that
-   *require* both ends to agree (e.g. new SNAPSHOT structure), test
+   _require_ both ends to agree (e.g. new SNAPSHOT structure), test
    backward-compat: the OLD client should still work against the NEW server
    for the duration of the deploy gap.
 
 3. **The client must NEVER simulate authoritatively.** All state mutation
-   happens server-side in `RoomLoop.tick()`. The client sends *intent*
-   (INPUT, FIRE, PLACE_MINE) and consumes *truth* (SNAPSHOT). Adding
+   happens server-side in `RoomLoop.tick()`. The client sends _intent_
+   (INPUT, FIRE, PLACE_MINE) and consumes _truth_ (SNAPSHOT). Adding
    client-side prediction without server reconciliation = cheating window.
 
 4. **Don't bundle node-only modules into client code.** `node:crypto`,
