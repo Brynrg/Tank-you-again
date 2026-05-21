@@ -20,6 +20,7 @@ import type { Camera } from "./render.js";
  *   - Space → bullet
  *   - Right click (or `K`) → missile
  *   - `M` → place mine
+ *   - `R` → active radar scan
  *   - `Shift` → toggle shield
  *   - `X` / Escape → stop current move command
  *
@@ -57,6 +58,8 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
     if (k === "m") mineQueue.push({ type: ClientMessageType.PLACE_MINE });
     else if (k === "k")
       fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.MISSILE });
+    else if (k === "r")
+      useItemQueue.push({ type: ClientMessageType.USE_ITEM, item: ItemType.RADAR });
     else if (k === " ") {
       e.preventDefault();
       fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.BULLET });

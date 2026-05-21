@@ -26,6 +26,7 @@ export enum MilitaryRank {
 export enum ItemType {
   FUEL_CRATE = "FUEL_CRATE",
   SHIELD = "SHIELD",
+  RADAR = "RADAR",
   MISSILE = "MISSILE",
   MINE_PACK = "MINE_PACK",
   TELEPORT_CHARGE = "TELEPORT_CHARGE",
@@ -108,6 +109,7 @@ export interface GameEvent {
     | "death"
     | "respawn"
     | "pickup"
+    | "radar_scan"
     | "mine_detonate"
     | "rank_up"
     | "chat"
@@ -310,6 +312,7 @@ export const FUEL_FIRE_MISSILE = 25;
 export const FUEL_MINE = 40;
 export const FUEL_SHIELD_PER_SEC = 30;
 export const FUEL_TELEPORT = 80;
+export const FUEL_RADAR_SCAN = 35;
 
 export const BULLET_SPEED = 600; // world-units / sec
 export const BULLET_DAMAGE = 60;
@@ -326,9 +329,10 @@ export const MISSILE_COOLDOWN_TICKS = 18; // 0.9 sec between shots
 // Mines / radar
 export const MINE_RADIUS = 24;
 export const MINE_DAMAGE = 250;
-export const RADAR_DETECT_TICKS = 60; // 3 sec at 20 Hz
-export const RADAR_RADIUS = 320; // viewer-tank-to-mine vision radius
+export const RADAR_DETECT_TICKS = 80; // 4 sec at 20 Hz
+export const RADAR_RADIUS = 520; // active scan radius for pickups and enemy mines
 export const VISION_RADIUS = 700; // viewer-tank-to-tank/projectile vision radius
+export const PICKUP_PROXIMITY_RADIUS = 180; // pickups are hidden unless close or radar-revealed
 export const MINE_COOLDOWN_TICKS = 20;
 
 // Teleport

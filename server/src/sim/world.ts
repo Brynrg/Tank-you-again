@@ -125,6 +125,7 @@ export function maybeSpawnPickup(
     ItemType.FUEL_CRATE, // bias toward fuel
     ItemType.MISSILE,
     ItemType.MINE_PACK,
+    ItemType.RADAR,
     ItemType.SHIELD,
     ItemType.TELEPORT_CHARGE,
   ];

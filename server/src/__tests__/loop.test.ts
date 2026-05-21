@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  FUEL_RADAR_SCAN,
+  ItemType,
   MAX_FUEL,
   MilitaryRank,
   ProjectileKind,
@@ -9,13 +11,15 @@ import {
   type ClientFireMessage,
   type ClientMoveToMessage,
   type ClientStopMessage,
+  type GameStateSnapshot,
+  type ServerSnapshotMessage,
 } from "@shared/types";
 
 import { RoomLoop } from "../loop.js";
 import type { Connection } from "../connection.js";
 import { TeamColor } from "@shared/types";
 
-function makeFakeConnection(): Connection {
+function makeFakeConnection(id = "c1", playerId = "p1"): Connection {
   const sent: string[] = [];
   const socket = {
     readyState: 1,
@@ -24,9 +28,9 @@ function makeFakeConnection(): Connection {
     close: () => {},
   };
   const conn: Connection = {
-    id: "c1",
+    id,
     socket: socket as unknown as Connection["socket"],
-    playerId: "p1",
+    playerId,
     tankId: "",
     name: "",
     team: TeamColor.BLUE,
@@ -38,6 +42,16 @@ function makeFakeConnection(): Connection {
   };
   (conn as unknown as { sentMessages: string[] }).sentMessages = sent;
   return conn;
+}
+
+function sentMessages(conn: Connection): string[] {
+  return (conn as unknown as { sentMessages: string[] }).sentMessages;
+}
+
+function lastSnapshot(conn: Connection): GameStateSnapshot {
+  const parsed = sentMessages(conn).map((raw) => JSON.parse(raw) as ServerSnapshotMessage);
+  const snapshots = parsed.filter((msg) => msg.type === "SNAPSHOT");
+  return snapshots.at(-1)!.snapshot;
 }
 
 describe("RoomLoop", () => {
@@ -183,6 +197,64 @@ describe("RoomLoop", () => {
     const proj = [...room.getProjectilesForTesting().values()][0]!;
     expect(proj.ownerId).toBe("t1");
     expect(proj.kind).toBe(ProjectileKind.BULLET);
+  });
+
+  it("hides distant pickups until an active radar scan reveals them", () => {
+    const room = new RoomLoop();
+    const conn = makeFakeConnection();
+    const tank = room.addConnection({
+      conn,
+      tankId: "t1",
+      name: "Recruit",
+      rank: MilitaryRank.RECRUIT,
+    });
+    tank.x = 500;
+    tank.y = 500;
+    room.getPickupsForTesting().set("pk1", {
+      id: "pk1",
+      type: ItemType.FUEL_CRATE,
+      x: 800,
+      y: 500,
+    });
+
+    room.forceTick();
+    expect(lastSnapshot(conn).pickups).toHaveLength(0);
+
+    const fuelBefore = tank.fuel;
+    room.handleUseItem("c1", { type: ClientMessageType.USE_ITEM, item: ItemType.RADAR });
+    room.forceTick();
+
+    expect(tank.fuel).toBe(fuelBefore - FUEL_RADAR_SCAN);
+    expect(lastSnapshot(conn).pickups.map((pickup) => pickup.id)).toContain("pk1");
+  });
+
+  it("keeps enemy mines hidden until active radar reveals them per viewer", () => {
+    const room = new RoomLoop();
+    const conn = makeFakeConnection();
+    const tank = room.addConnection({
+      conn,
+      tankId: "t1",
+      name: "Recruit",
+      rank: MilitaryRank.RECRUIT,
+    });
+    tank.x = 500;
+    tank.y = 500;
+    room.getMinesForTesting().set("m1", {
+      id: "m1",
+      ownerId: "enemy",
+      ownerTeam: TeamColor.RED,
+      x: 750,
+      y: 500,
+      spawnTick: 0,
+    });
+
+    room.forceTick();
+    expect(lastSnapshot(conn).visibleMines).toHaveLength(0);
+
+    room.handleUseItem("c1", { type: ClientMessageType.USE_ITEM, item: ItemType.RADAR });
+    room.forceTick();
+
+    expect(lastSnapshot(conn).visibleMines.map((mine) => mine.id)).toContain("m1");
   });
 
   it("removes a tank cleanly on removeConnection", () => {

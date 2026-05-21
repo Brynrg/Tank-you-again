@@ -1,5 +1,6 @@
 import {
   FUEL_CRATE_RESTORE,
+  FUEL_RADAR_SCAN,
   FUEL_SHIELD_PER_SEC,
   FUEL_TELEPORT,
   ItemType,
@@ -42,7 +43,7 @@ import { applyDamage } from "./sim/damage.js";
 import { creditFuel, debitFuel } from "./sim/economy.js";
 import { applyMineDamage, placeMine, stepMineDetonations } from "./sim/mines.js";
 import { stepMoveCommand, stepMovement } from "./sim/movement.js";
-import { computeVisionSet, stepRadarSweeps } from "./sim/vision.js";
+import { computeVisionSet, scanRadar } from "./sim/vision.js";
 import {
   makeTank,
   maybeSpawnPickup,
@@ -75,8 +76,8 @@ export class RoomLoop {
   private readonly projectiles = new Map<string, ProjectileState>();
   private readonly mines = new Map<string, MineState>();
   private readonly pickups = new Map<string, PickupState>();
-  /** mineId -> last tick a radar sweep touched it. */
-  private readonly radarSweeps = new Map<string, number>();
+  /** tankId -> entityId -> last active radar scan tick. */
+  private readonly radarReveals = new Map<string, Map<string, number>>();
   /** Pending events for the current tick. Drained into snapshots and EVENT msgs. */
   private pendingEvents: GameEvent[] = [];
 
@@ -127,6 +128,7 @@ export class RoomLoop {
     this.connections.set(args.conn.id, args.conn);
     this.inputs.set(args.conn.id, { ...EMPTY_INPUT });
     this.commands.delete(args.conn.id);
+    this.radarReveals.delete(args.tankId);
     this.teamCensus.set(team, (this.teamCensus.get(team) ?? 0) + 1);
 
     const tank = makeTank({
@@ -158,6 +160,7 @@ export class RoomLoop {
     }
     if (conn.tankId) {
       this.tanks.delete(conn.tankId);
+      this.radarReveals.delete(conn.tankId);
       // Remove any projectiles/mines they own.
       for (const [id, p] of this.projectiles) {
         if (p.ownerId === conn.tankId) this.projectiles.delete(id);
@@ -165,7 +168,7 @@ export class RoomLoop {
       for (const [id, m] of this.mines) {
         if (m.ownerId === conn.tankId) {
           this.mines.delete(id);
-          this.radarSweeps.delete(id);
+          this.forgetRadarEntity(id);
         }
       }
     }
@@ -242,6 +245,24 @@ export class RoomLoop {
     if (msg.item === ItemType.SHIELD) {
       // Toggle shield; per-tick fuel drain is applied in tick().
       tank.hasShield = !tank.hasShield;
+    } else if (msg.item === ItemType.RADAR) {
+      if (!debitFuel(tank, FUEL_RADAR_SCAN, "RADAR")) return;
+      const reveals = this.getRadarReveals(tank.id);
+      const result = scanRadar(
+        tank,
+        {
+          mines: this.mines.values(),
+          pickups: this.pickups.values(),
+        },
+        reveals,
+        this.tickIndex,
+      );
+      this.pendingEvents.push({
+        tick: this.tickIndex,
+        kind: "radar_scan",
+        subjectId: tank.id,
+        payload: `${result.pickupsRevealed}:${result.minesRevealed}`,
+      });
     }
   }
 
@@ -330,7 +351,7 @@ export class RoomLoop {
     const dets = stepMineDetonations(this.mines.values(), this.tanks.values());
     for (const det of dets) {
       this.mines.delete(det.mine.id);
-      this.radarSweeps.delete(det.mine.id);
+      this.forgetRadarEntity(det.mine.id);
       this.pendingEvents.push({
         tick: t,
         kind: "mine_detonate",
@@ -340,14 +361,11 @@ export class RoomLoop {
       for (const v of killed) this.killTank(v, det.mine.ownerId);
     }
 
-    // 4. Radar sweeps (run AFTER movement so this tick's positions are current).
-    stepRadarSweeps(this.mines.values(), this.tanks.values(), this.radarSweeps, t);
-
-    // 5. Pickups: spawn + collection.
+    // 4. Pickups: spawn + collection.
     maybeSpawnPickup(this.pickups, t, this.pickupSpawnRef);
     this.collectPickups();
 
-    // 6. Emit snapshots.
+    // 5. Emit snapshots.
     const events = this.pendingEvents;
     this.pendingEvents = [];
     for (const conn of this.connections.values()) {
@@ -370,7 +388,7 @@ export class RoomLoop {
         projectiles: this.projectiles.values(),
         mines: this.mines.values(),
         pickups: this.pickups.values(),
-        radarSweeps: this.radarSweeps,
+        radarReveals: this.radarReveals.get(viewer.id) ?? new Map<string, number>(),
       },
       this.tickIndex,
     );
@@ -413,6 +431,7 @@ export class RoomLoop {
         if (dx * dx + dy * dy <= r2) {
           this.applyPickup(t, pk);
           this.pickups.delete(id);
+          this.forgetRadarEntity(id);
           this.pendingEvents.push({
             tick: this.tickIndex,
             kind: "pickup",
@@ -444,6 +463,9 @@ export class RoomLoop {
         // it here as a fuel top-up (cheap) since shield itself is toggled by
         // USE_ITEM and drains over time.
         creditFuel(t, FUEL_CRATE_RESTORE / 2);
+        break;
+      case ItemType.RADAR:
+        creditFuel(t, FUEL_CRATE_RESTORE / 4);
         break;
     }
   }
@@ -488,9 +510,27 @@ export class RoomLoop {
   getMinesForTesting(): Map<string, MineState> {
     return this.mines;
   }
+  getPickupsForTesting(): Map<string, PickupState> {
+    return this.pickups;
+  }
   /** Drive a single tick without timer. Used by tests. */
   forceTick(): void {
     this.tick();
+  }
+
+  private getRadarReveals(tankId: string): Map<string, number> {
+    let reveals = this.radarReveals.get(tankId);
+    if (!reveals) {
+      reveals = new Map<string, number>();
+      this.radarReveals.set(tankId, reveals);
+    }
+    return reveals;
+  }
+
+  private forgetRadarEntity(entityId: string): void {
+    for (const reveals of this.radarReveals.values()) {
+      reveals.delete(entityId);
+    }
   }
 }
 

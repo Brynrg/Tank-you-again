@@ -7,6 +7,7 @@ export type FuelDebitReason =
   | "MINE"
   | "SHIELD"
   | "TELEPORT"
+  | "RADAR"
   | "DAMAGE";
 
 /**

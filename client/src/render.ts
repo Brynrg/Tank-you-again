@@ -29,6 +29,7 @@ const PICKUP_GLYPHS: Record<ItemType, string> = {
   [ItemType.MISSILE]: "M",
   [ItemType.MINE_PACK]: "■",
   [ItemType.SHIELD]: "S",
+  [ItemType.RADAR]: "R",
   [ItemType.TELEPORT_CHARGE]: "T",
 };
 
@@ -339,6 +340,13 @@ export function renderHud(
       bx,
       by + barH + 14,
     );
+    if (state.snap) {
+      ctx.fillText(
+        `RADAR sees fuel/equipment:${state.snap.pickups.length} mines:${state.snap.visibleMines.length}`,
+        bx,
+        by + barH + 28,
+      );
+    }
     // Bottom-right: kill count from snap (sum of dead enemies seen — not authoritative)
     if (state.snap) {
       const visible = state.snap.tanks.length;
@@ -355,6 +363,10 @@ export function renderHud(
   ctx.font = "11px system-ui, sans-serif";
   ctx.fillStyle = "#facc1599";
   ctx.textAlign = "right";
-  ctx.fillText("LMB move · Space fire · RMB/K missile · M mine · Shift shield · X stop", W - 8, 16);
+  ctx.fillText(
+    "LMB move · Space fire · RMB/K missile · M mine · R radar · Shift shield · X stop",
+    W - 8,
+    16,
+  );
   ctx.restore();
 }

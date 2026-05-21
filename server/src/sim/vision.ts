@@ -1,8 +1,10 @@
 import {
+  PICKUP_PROXIMITY_RADIUS,
   RADAR_DETECT_TICKS,
   RADAR_RADIUS,
   VISION_RADIUS,
   type MineState,
+  type PickupState,
   type ProjectileState,
   type TankState,
 } from "@shared/types";
@@ -14,12 +16,17 @@ export interface VisionSet {
   visiblePickupIds: Set<string>;
 }
 
+export interface RadarScanResult {
+  minesRevealed: number;
+  pickupsRevealed: number;
+}
+
 /**
  * Compute what `viewer` can see of the world right now.
  *
  * - Tanks/projectiles: within VISION_RADIUS of the viewer.
- * - Mines: see `isMineVisible` — own, ally, or radar-detected.
- * - Pickups: within VISION_RADIUS (same rule as tanks).
+ * - Mines: own, ally, or explicitly radar-revealed for this viewer.
+ * - Pickups: close proximity or explicitly radar-revealed for this viewer.
  *
  * Allies are always visible regardless of distance (team-wide intel).
  */
@@ -29,12 +36,13 @@ export function computeVisionSet(
     tanks: Iterable<TankState>;
     projectiles: Iterable<ProjectileState>;
     mines: Iterable<MineState>;
-    pickups: Iterable<{ id: string; x: number; y: number }>;
-    radarSweeps: Map<string, number>; // mineId -> lastDetectedTick
+    pickups: Iterable<PickupState>;
+    radarReveals: Map<string, number>;
   },
   currentTick: number,
 ): VisionSet {
   const v2 = VISION_RADIUS * VISION_RADIUS;
+  const pickupProximity2 = PICKUP_PROXIMITY_RADIUS * PICKUP_PROXIMITY_RADIUS;
 
   const visibleTankIds = new Set<string>();
   for (const t of world.tanks) {
@@ -62,13 +70,17 @@ export function computeVisionSet(
   for (const pk of world.pickups) {
     const dx = pk.x - viewer.x;
     const dy = pk.y - viewer.y;
-    if (dx * dx + dy * dy <= v2) visiblePickupIds.add(pk.id);
+    if (
+      dx * dx + dy * dy <= pickupProximity2 ||
+      isRadarRevealed(pk.id, world.radarReveals, currentTick)
+    ) {
+      visiblePickupIds.add(pk.id);
+    }
   }
 
-  // Mines: per the masking rule, can ONLY include own, ally, or radar-detected.
   const visibleMineIds = new Set<string>();
   for (const m of world.mines) {
-    if (isMineVisible(m, viewer, world.radarSweeps, currentTick)) {
+    if (isMineVisible(m, viewer, world.radarReveals, currentTick)) {
       visibleMineIds.add(m.id);
     }
   }
@@ -76,59 +88,61 @@ export function computeVisionSet(
   return { visibleTankIds, visibleMineIds, visibleProjectileIds, visiblePickupIds };
 }
 
-/**
- * A mine is visible to `viewer` iff:
- *   1. viewer.id === mine.ownerId        (own mine)
- *   2. viewer.team === mine.ownerTeam    (ally mine)
- *   3. mine was detected by viewer's radar in the last RADAR_DETECT_TICKS ticks
- *
- * Otherwise the mine MUST be absent from the snapshot entirely — clients
- * must not be able to infer hidden mines from snapshot payload size.
- *
- * Note: radar reveal is per-mine, not per-viewer (any tank's sweep reveals
- * the mine to the whole world). This is a deliberate simplification — proper
- * per-viewer reveal would mean a Map<mineId, Map<viewerId, tick>>.
- */
 export function isMineVisible(
   mine: MineState,
   viewer: TankState,
-  radarSweeps: Map<string, number>,
+  radarReveals: Map<string, number>,
   currentTick: number,
 ): boolean {
   if (mine.ownerId === viewer.id) return true;
   if (mine.ownerTeam === viewer.team) return true;
-  const lastDetectedTick = radarSweeps.get(mine.id);
-  if (lastDetectedTick !== undefined && currentTick - lastDetectedTick < RADAR_DETECT_TICKS) {
-    return true;
-  }
-  return false;
+  return isRadarRevealed(mine.id, radarReveals, currentTick);
+}
+
+export function isRadarRevealed(
+  entityId: string,
+  radarReveals: Map<string, number>,
+  currentTick: number,
+): boolean {
+  const lastDetectedTick = radarReveals.get(entityId);
+  return lastDetectedTick !== undefined && currentTick - lastDetectedTick < RADAR_DETECT_TICKS;
 }
 
 /**
- * On each tick, any enemy mine within RADAR_RADIUS of any non-dead tank
- * registers a sweep — stamping `radarSweeps[mineId] = currentTick`. The mine
- * stays revealed for RADAR_DETECT_TICKS after the last sweep.
- *
- * Caller passes the working `radarSweeps` map — this mutates it.
+ * Active radar scan. Mutates the caller-provided per-viewer reveal map.
+ * Reveals nearby enemy mines and all nearby pickups for RADAR_DETECT_TICKS.
  */
-export function stepRadarSweeps(
-  mines: Iterable<MineState>,
-  tanks: Iterable<TankState>,
-  radarSweeps: Map<string, number>,
+export function scanRadar(
+  viewer: TankState,
+  world: {
+    mines: Iterable<MineState>;
+    pickups: Iterable<PickupState>;
+  },
+  radarReveals: Map<string, number>,
   currentTick: number,
-): void {
+): RadarScanResult {
   const r2 = RADAR_RADIUS * RADAR_RADIUS;
-  const tanksArr = [...tanks];
-  for (const m of mines) {
-    for (const t of tanksArr) {
-      if (t.isDead) continue;
-      if (t.team === m.ownerTeam) continue; // allies don't reveal own-team mines
-      const dx = t.x - m.x;
-      const dy = t.y - m.y;
-      if (dx * dx + dy * dy <= r2) {
-        radarSweeps.set(m.id, currentTick);
-        break;
-      }
+  let minesRevealed = 0;
+  let pickupsRevealed = 0;
+
+  for (const mine of world.mines) {
+    if (mine.ownerTeam === viewer.team) continue;
+    const dx = mine.x - viewer.x;
+    const dy = mine.y - viewer.y;
+    if (dx * dx + dy * dy <= r2) {
+      radarReveals.set(mine.id, currentTick);
+      minesRevealed += 1;
     }
   }
+
+  for (const pickup of world.pickups) {
+    const dx = pickup.x - viewer.x;
+    const dy = pickup.y - viewer.y;
+    if (dx * dx + dy * dy <= r2) {
+      radarReveals.set(pickup.id, currentTick);
+      pickupsRevealed += 1;
+    }
+  }
+
+  return { minesRevealed, pickupsRevealed };
 }
