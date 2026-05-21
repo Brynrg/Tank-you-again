@@ -179,16 +179,20 @@ jobs:
         run: |
           DEST="site/apps/web/public/games/${GAME_SLUG}"
           mkdir -p "$DEST"
-          # Preserve the portal manifest.json (which the portal owns) — only
-          # replace built artifacts.
-          PORTAL_MANIFEST=""
+          # Preserve the portal-owned manifest.json byte-for-byte using a
+          # tempfile copy. Doing this through a shell variable + echo mangles
+          # JSON content (backslashes, embedded quotes, trailing whitespace),
+          # so we use file ops only.
+          PRESERVED=""
           if [ -f "$DEST/manifest.json" ]; then
-            PORTAL_MANIFEST=$(cat "$DEST/manifest.json")
+            PRESERVED="$(mktemp)"
+            cp "$DEST/manifest.json" "$PRESERVED"
           fi
           rm -rf "$DEST"/*
           cp -R client/dist/. "$DEST"/
-          if [ -n "$PORTAL_MANIFEST" ]; then
-            echo "$PORTAL_MANIFEST" > "$DEST/manifest.json"
+          if [ -n "$PRESERVED" ]; then
+            cp "$PRESERVED" "$DEST/manifest.json"
+            rm -f "$PRESERVED"
           fi
 
       - name: Commit & push if changed
