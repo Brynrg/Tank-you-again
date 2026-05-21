@@ -7,6 +7,8 @@ import {
   ClientMessageType,
   type ClientInputMessage,
   type ClientFireMessage,
+  type ClientMoveToMessage,
+  type ClientStopMessage,
 } from "@shared/types";
 
 import { RoomLoop } from "../loop.js";
@@ -102,6 +104,61 @@ describe("RoomLoop", () => {
     });
     for (let i = 0; i < 60; i++) room.forceTick(); // 3 seconds at 20Hz
     expect(tank.fuel).toBeLessThan(MAX_FUEL);
+  });
+
+  it("moves toward an authoritative MOVE_TO command", () => {
+    const room = new RoomLoop();
+    const conn = makeFakeConnection();
+    const tank = room.addConnection({
+      conn,
+      tankId: "t1",
+      name: "Recruit",
+      rank: MilitaryRank.RECRUIT,
+    });
+    tank.x = 200;
+    tank.y = 200;
+
+    const move: ClientMoveToMessage = {
+      type: ClientMessageType.MOVE_TO,
+      clientTick: 1,
+      x: 320,
+      y: 200,
+    };
+    room.ingestMoveTo("c1", move);
+    for (let i = 0; i < 10; i++) room.forceTick();
+
+    expect(tank.x).toBeGreaterThan(200);
+    expect(tank.y).toBe(200);
+    expect(tank.fuel).toBeLessThan(MAX_FUEL);
+  });
+
+  it("stops an active MOVE_TO command when STOP is ingested", () => {
+    const room = new RoomLoop();
+    const conn = makeFakeConnection();
+    const tank = room.addConnection({
+      conn,
+      tankId: "t1",
+      name: "Recruit",
+      rank: MilitaryRank.RECRUIT,
+    });
+    tank.x = 200;
+    tank.y = 200;
+
+    room.ingestMoveTo("c1", {
+      type: ClientMessageType.MOVE_TO,
+      clientTick: 1,
+      x: 420,
+      y: 200,
+    });
+    for (let i = 0; i < 5; i++) room.forceTick();
+
+    const xAfterMoving = tank.x;
+    const stop: ClientStopMessage = { type: ClientMessageType.STOP, clientTick: 2 };
+    room.ingestStop("c1", stop);
+    for (let i = 0; i < 10; i++) room.forceTick();
+
+    expect(tank.x).toBe(xAfterMoving);
+    expect(tank.y).toBe(200);
   });
 
   it("fires a bullet on FIRE and emits it from the right owner", () => {

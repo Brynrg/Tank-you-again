@@ -2,7 +2,9 @@ import {
   ClientMessageType,
   type ClientFireMessage,
   type ClientInputMessage,
+  type ClientMoveToMessage,
   type ClientPlaceMineMessage,
+  type ClientStopMessage,
   ItemType,
   ProjectileKind,
   type ClientUseItemMessage,
@@ -12,12 +14,14 @@ import type { Camera } from "./render.js";
 
 /**
  * Lightweight input layer:
- *   - WASD + arrows for hull direction
+ *   - Left click issues a server-owned move command
+ *   - WASD + arrows remain as a legacy/direct-control fallback
  *   - Mouse position → aim angle (turret + projectile direction)
- *   - Left click → bullet
+ *   - Space → bullet
  *   - Right click (or `K`) → missile
  *   - `M` → place mine
  *   - `Shift` → toggle shield
+ *   - `X` / Escape → stop current move command
  *
  * `attach(canvas, camera)` wires the listeners. `currentInput(clientTick)`
  * snapshots the input state into an INPUT message ready to send. `consumeFireQueue()` etc.
@@ -26,9 +30,12 @@ import type { Camera } from "./render.js";
 export interface InputLayer {
   detach(): void;
   currentInput(clientTick: number): ClientInputMessage;
+  consumeCommandQueue(clientTick: number): Array<ClientMoveToMessage | ClientStopMessage>;
+  clearCommandTarget(): void;
   consumeFireQueue(): ClientFireMessage[];
   consumeMineQueue(): ClientPlaceMineMessage[];
   consumeUseItemQueue(): ClientUseItemMessage[];
+  getCommandTarget(): { x: number; y: number } | null;
 }
 
 export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
@@ -36,16 +43,27 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
   let mouseX = 0;
   let mouseY = 0;
   const fireQueue: ClientFireMessage[] = [];
+  const commandQueue: Array<
+    Omit<ClientMoveToMessage, "clientTick"> | Omit<ClientStopMessage, "clientTick">
+  > = [];
   const mineQueue: ClientPlaceMineMessage[] = [];
   const useItemQueue: ClientUseItemMessage[] = [];
+  let commandTarget: { x: number; y: number } | null = null;
 
   function onKeyDown(e: KeyboardEvent): void {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     keys.add(k);
+    if (e.repeat) return;
     if (k === "m") mineQueue.push({ type: ClientMessageType.PLACE_MINE });
     else if (k === "k")
       fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.MISSILE });
-    else if (k === "Shift")
+    else if (k === " ") {
+      e.preventDefault();
+      fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.BULLET });
+    } else if (k === "x" || k === "Escape") {
+      commandTarget = null;
+      commandQueue.push({ type: ClientMessageType.STOP });
+    } else if (k === "Shift")
       useItemQueue.push({ type: ClientMessageType.USE_ITEM, item: ItemType.SHIELD });
   }
   function onKeyUp(e: KeyboardEvent): void {
@@ -59,7 +77,9 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
   }
   function onMouseDown(e: MouseEvent): void {
     if (e.button === 0) {
-      fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.BULLET });
+      const target = screenToWorld(e);
+      commandTarget = target;
+      commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
     } else if (e.button === 2) {
       e.preventDefault();
       fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.MISSILE });
@@ -92,6 +112,16 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
     return Math.atan2(dy, dx);
   }
 
+  function screenToWorld(e: MouseEvent): { x: number; y: number } {
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    return {
+      x: camera.x + (sx - canvas.width / 2) / camera.zoom,
+      y: camera.y + (sy - canvas.height / 2) / camera.zoom,
+    };
+  }
+
   return {
     detach() {
       window.removeEventListener("keydown", onKeyDown);
@@ -112,6 +142,14 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
         aim: currentAim(),
       };
     },
+    consumeCommandQueue(clientTick: number) {
+      const out = commandQueue.map((cmd) => ({ ...cmd, clientTick }));
+      commandQueue.length = 0;
+      return out;
+    },
+    clearCommandTarget() {
+      commandTarget = null;
+    },
     consumeFireQueue() {
       const out = fireQueue.slice();
       fireQueue.length = 0;
@@ -126,6 +164,9 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
       const out = useItemQueue.slice();
       useItemQueue.length = 0;
       return out;
+    },
+    getCommandTarget() {
+      return commandTarget;
     },
   };
 }

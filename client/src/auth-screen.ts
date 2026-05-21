@@ -46,7 +46,7 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
     input.maxLength = 16;
     input.minLength = 3;
     input.required = true;
-    input.pattern = "[A-Za-z0-9_-]{3,16}";
+    input.pattern = "[A-Za-z0-9_\\-]{3,16}";
     input.autocomplete = "off";
     input.value = suggestName();
     input.style.cssText = [

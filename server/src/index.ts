@@ -18,8 +18,10 @@ import {
   type ClientFireMessage,
   type ClientInputMessage,
   type ClientMessage,
+  type ClientMoveToMessage,
   type ClientPingMessage,
   type ClientPlaceMineMessage,
+  type ClientStopMessage,
   type ClientTeleportMessage,
   type ClientUseItemMessage,
   type ServerWelcomeMessage,
@@ -126,6 +128,12 @@ await app.register(async (scope) => {
           return;
         case ClientMessageType.INPUT:
           if (conn.tankId) room.ingestInput(conn.id, msg as ClientInputMessage);
+          return;
+        case ClientMessageType.MOVE_TO:
+          if (conn.tankId) room.ingestMoveTo(conn.id, msg as ClientMoveToMessage);
+          return;
+        case ClientMessageType.STOP:
+          if (conn.tankId) room.ingestStop(conn.id, msg as ClientStopMessage);
           return;
         case ClientMessageType.FIRE:
           if (conn.tankId) room.handleFire(conn.id, msg as ClientFireMessage);

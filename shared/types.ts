@@ -142,6 +142,8 @@ export interface GameStateSnapshot {
 export enum ClientMessageType {
   AUTH = "AUTH",
   INPUT = "INPUT",
+  MOVE_TO = "MOVE_TO",
+  STOP = "STOP",
   USE_ITEM = "USE_ITEM",
   FIRE = "FIRE",
   PLACE_MINE = "PLACE_MINE",
@@ -185,6 +187,21 @@ export interface ClientFireMessage {
   weapon: ProjectileKind;
   /** Aim angle in radians, world-space. Server snaps to the latest input.aim if absent. */
   aim?: number;
+}
+
+export interface ClientMoveToMessage {
+  type: ClientMessageType.MOVE_TO;
+  /** Tick the client believes is current. Server uses this only for stale-command checks. */
+  clientTick: number;
+  /** Target world coordinates. Server clamps to map bounds. */
+  x: number;
+  y: number;
+}
+
+export interface ClientStopMessage {
+  type: ClientMessageType.STOP;
+  /** Tick the client believes is current. Server uses this only for stale-command checks. */
+  clientTick: number;
 }
 
 export interface ClientPlaceMineMessage {
@@ -248,6 +265,8 @@ export interface ServerPongMessage {
 export type ClientMessage =
   | ClientAuthMessage
   | ClientInputMessage
+  | ClientMoveToMessage
+  | ClientStopMessage
   | ClientFireMessage
   | ClientPlaceMineMessage
   | ClientUseItemMessage
@@ -272,6 +291,7 @@ export const MAP_HEIGHT = 2048;
 // Tank
 export const TANK_RADIUS = 18;
 export const TANK_SPEED = 120; // world-units / sec
+export const COMMAND_ARRIVAL_RADIUS = 8;
 export const MAX_FUEL = 1000;
 export const FUEL_MOVE_PER_SEC = 8; // drain while moving
 export const SPAWN_PROTECTION_MS = 4000;

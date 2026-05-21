@@ -12,6 +12,18 @@ export interface PlayerInputState {
   clientTick: number;
 }
 
+export type PlayerCommandState =
+  | {
+      kind: "MOVE_TO";
+      x: number;
+      y: number;
+      clientTick: number;
+    }
+  | {
+      kind: "STOP";
+      clientTick: number;
+    };
+
 export const EMPTY_INPUT: PlayerInputState = {
   up: false,
   down: false,

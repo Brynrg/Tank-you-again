@@ -63,6 +63,7 @@ export function renderFrame(
   snap: GameStateSnapshot,
   cam: Camera,
   yourTankId: string,
+  commandTarget: { x: number; y: number } | null = null,
 ): void {
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
@@ -110,10 +111,38 @@ export function renderFrame(
     drawProjectile(ctx, cam, W, H, proj);
   }
 
+  if (commandTarget) {
+    drawCommandTarget(ctx, cam, W, H, commandTarget);
+  }
+
   // Tanks
   for (const t of snap.tanks) {
     drawTank(ctx, cam, W, H, t, t.id === yourTankId);
   }
+}
+
+function drawCommandTarget(
+  ctx: CanvasRenderingContext2D,
+  cam: Camera,
+  W: number,
+  H: number,
+  target: { x: number; y: number },
+): void {
+  const p = project(cam, W, H, target.x, target.y);
+  const s = 12 * cam.zoom;
+  ctx.save();
+  ctx.strokeStyle = "#22c55e";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(p.x - s, p.y);
+  ctx.lineTo(p.x + s, p.y);
+  ctx.moveTo(p.x, p.y - s);
+  ctx.lineTo(p.x, p.y + s);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, s * 0.7, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: number): void {
@@ -326,10 +355,6 @@ export function renderHud(
   ctx.font = "11px system-ui, sans-serif";
   ctx.fillStyle = "#facc1599";
   ctx.textAlign = "right";
-  ctx.fillText(
-    "WASD move · mouse aim · LMB bullet · RMB/K missile · M mine · Shift shield",
-    W - 8,
-    16,
-  );
+  ctx.fillText("LMB move · Space fire · RMB/K missile · M mine · Shift shield · X stop", W - 8, 16);
   ctx.restore();
 }

@@ -20,7 +20,9 @@ import {
   XP_PER_KILL,
   type ClientFireMessage,
   type ClientInputMessage,
+  type ClientMoveToMessage,
   type ClientPlaceMineMessage,
+  type ClientStopMessage,
   type ClientTeleportMessage,
   type ClientUseItemMessage,
   type GameEvent,
@@ -34,12 +36,12 @@ import {
 
 import type { Connection } from "./connection.js";
 import { send } from "./connection.js";
-import { EMPTY_INPUT, type PlayerInputState } from "./loop-types.js";
+import { EMPTY_INPUT, type PlayerCommandState, type PlayerInputState } from "./loop-types.js";
 import { findHit, stepProjectile, tryFire } from "./sim/combat.js";
 import { applyDamage } from "./sim/damage.js";
 import { creditFuel, debitFuel } from "./sim/economy.js";
 import { applyMineDamage, placeMine, stepMineDetonations } from "./sim/mines.js";
-import { stepMovement } from "./sim/movement.js";
+import { stepMoveCommand, stepMovement } from "./sim/movement.js";
 import { computeVisionSet, stepRadarSweeps } from "./sim/vision.js";
 import {
   makeTank,
@@ -68,6 +70,7 @@ export class RoomLoop {
 
   private readonly connections = new Map<string, Connection>();
   private readonly inputs = new Map<string, PlayerInputState>();
+  private readonly commands = new Map<string, PlayerCommandState>();
   private readonly tanks = new Map<string, TankState>();
   private readonly projectiles = new Map<string, ProjectileState>();
   private readonly mines = new Map<string, MineState>();
@@ -123,6 +126,7 @@ export class RoomLoop {
 
     this.connections.set(args.conn.id, args.conn);
     this.inputs.set(args.conn.id, { ...EMPTY_INPUT });
+    this.commands.delete(args.conn.id);
     this.teamCensus.set(team, (this.teamCensus.get(team) ?? 0) + 1);
 
     const tank = makeTank({
@@ -148,6 +152,7 @@ export class RoomLoop {
     if (!conn) return;
     this.connections.delete(connId);
     this.inputs.delete(connId);
+    this.commands.delete(connId);
     if (conn.team) {
       this.teamCensus.set(conn.team, Math.max(0, (this.teamCensus.get(conn.team) ?? 1) - 1));
     }
@@ -180,6 +185,27 @@ export class RoomLoop {
       aim: typeof msg.aim === "number" && Number.isFinite(msg.aim) ? msg.aim : 0,
       clientTick: msg.clientTick,
     });
+  }
+
+  ingestMoveTo(connId: string, msg: ClientMoveToMessage): void {
+    const conn = this.connections.get(connId);
+    if (!conn) return;
+    if (msg.clientTick < conn.lastInputTick) return;
+    conn.lastInputTick = msg.clientTick;
+    this.commands.set(connId, {
+      kind: "MOVE_TO",
+      x: clamp(msg.x, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS),
+      y: clamp(msg.y, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS),
+      clientTick: msg.clientTick,
+    });
+  }
+
+  ingestStop(connId: string, msg: ClientStopMessage): void {
+    const conn = this.connections.get(connId);
+    if (!conn) return;
+    if (msg.clientTick < conn.lastInputTick) return;
+    conn.lastInputTick = msg.clientTick;
+    this.commands.set(connId, { kind: "STOP", clientTick: msg.clientTick });
   }
 
   handleFire(connId: string, msg: ClientFireMessage): void {
@@ -259,7 +285,16 @@ export class RoomLoop {
         }
       }
 
-      stepMovement(tank, input, dt);
+      const command = this.commands.get(connId);
+      if (command?.kind === "MOVE_TO") {
+        const arrived = stepMoveCommand(tank, command, input.aim, dt);
+        if (arrived) this.commands.delete(connId);
+      } else if (command?.kind === "STOP") {
+        this.commands.delete(connId);
+        tank.turretAngle = input.aim;
+      } else {
+        stepMovement(tank, input, dt);
+      }
 
       // Ran out of fuel while alive (no killer)? Self-elim.
       if (tank.fuel <= 0) {

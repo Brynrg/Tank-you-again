@@ -1,4 +1,5 @@
 import {
+  COMMAND_ARRIVAL_RADIUS,
   FUEL_MOVE_PER_SEC,
   MAP_HEIGHT,
   MAP_WIDTH,
@@ -50,6 +51,48 @@ export function stepMovement(tank: TankState, input: PlayerInputState, dt: numbe
 
   // Turret tracks the latest aim regardless of movement.
   tank.turretAngle = input.aim;
+}
+
+/**
+ * Move toward an authoritative destination command. This keeps the classic
+ * click-to-move feel while still broadcasting smooth 20 Hz snapshots.
+ *
+ * Returns true when the command has arrived and should be cleared.
+ */
+export function stepMoveCommand(
+  tank: TankState,
+  target: { x: number; y: number },
+  aim: number,
+  dt: number,
+): boolean {
+  if (tank.isDead) return true;
+
+  const tx = clamp(target.x, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS);
+  const ty = clamp(target.y, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS);
+  const dx = tx - tank.x;
+  const dy = ty - tank.y;
+  const dist = Math.hypot(dx, dy);
+
+  tank.turretAngle = aim;
+
+  if (dist <= COMMAND_ARRIVAL_RADIUS) return true;
+  if (!debitFuel(tank, FUEL_MOVE_PER_SEC * dt, "MOVE")) return true;
+
+  const maxStep = TANK_SPEED * dt;
+  const step = Math.min(maxStep, dist);
+  const nx = dx / dist;
+  const ny = dy / dist;
+
+  tank.angle = snapToEightWay(Math.atan2(ny, nx));
+  tank.x = clamp(tank.x + nx * step, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS);
+  tank.y = clamp(tank.y + ny * step, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS);
+
+  return dist - step <= COMMAND_ARRIVAL_RADIUS;
+}
+
+function snapToEightWay(angle: number): number {
+  const step = Math.PI / 4;
+  return Math.round(angle / step) * step;
 }
 
 function clamp(v: number, lo: number, hi: number): number {

@@ -1,4 +1,5 @@
 import {
+  COMMAND_ARRIVAL_RADIUS,
   ServerMessageType,
   type GameStateSnapshot,
   type ServerMessage,
@@ -49,6 +50,12 @@ export function run(opts: RunOptions): RunHandle {
       } else if (msg.type === ServerMessageType.SNAPSHOT) {
         lastSnapshot = msg.snapshot;
         yourTank = lastSnapshot.tanks.find((t) => t.id === yourTankId) ?? null;
+        const target = input.getCommandTarget();
+        if (target && yourTank) {
+          const dx = target.x - yourTank.x;
+          const dy = target.y - yourTank.y;
+          if (Math.hypot(dx, dy) <= COMMAND_ARRIVAL_RADIUS * 2) input.clearCommandTarget();
+        }
       } else if (msg.type === ServerMessageType.EVENT) {
         // Inline event handling could trigger sound/particles. Stubbed for now.
       }
@@ -67,6 +74,7 @@ export function run(opts: RunOptions): RunHandle {
 
     // Send input + queued one-shots
     net.send(input.currentInput(clientTick));
+    for (const command of input.consumeCommandQueue(clientTick)) net.send(command);
     for (const fire of input.consumeFireQueue()) net.send(fire);
     for (const mine of input.consumeMineQueue()) net.send(mine);
     for (const use of input.consumeUseItemQueue()) net.send(use);
@@ -76,7 +84,7 @@ export function run(opts: RunOptions): RunHandle {
 
     // Render
     if (lastSnapshot) {
-      renderFrame(ctx, lastSnapshot, camera, yourTankId);
+      renderFrame(ctx, lastSnapshot, camera, yourTankId, input.getCommandTarget());
     } else {
       ctx.fillStyle = "#0b0b14";
       ctx.fillRect(0, 0, opts.canvas.width, opts.canvas.height);
@@ -96,6 +104,39 @@ export function run(opts: RunOptions): RunHandle {
     rafHandle = requestAnimationFrame(frame);
   }
   rafHandle = requestAnimationFrame(frame);
+
+  const debugWindow = window as unknown as {
+    render_game_to_text?: () => string;
+    advanceTime?: (ms: number) => void;
+  };
+  debugWindow.render_game_to_text = () =>
+    JSON.stringify({
+      coordinateSystem: "world origin top-left, x right, y down",
+      status,
+      yourTankId,
+      commandTarget: input.getCommandTarget(),
+      tank: yourTank
+        ? {
+            x: Math.round(yourTank.x),
+            y: Math.round(yourTank.y),
+            fuel: Math.round(yourTank.fuel),
+            rank: yourTank.rank,
+            isDead: yourTank.isDead,
+          }
+        : null,
+      snapshot: lastSnapshot
+        ? {
+            tick: lastSnapshot.tick,
+            tanks: lastSnapshot.tanks.length,
+            projectiles: lastSnapshot.projectiles.length,
+            pickups: lastSnapshot.pickups.length,
+            visibleMines: lastSnapshot.visibleMines.length,
+          }
+        : null,
+    });
+  debugWindow.advanceTime = () => {
+    if (lastSnapshot) renderFrame(ctx, lastSnapshot, camera, yourTankId, input.getCommandTarget());
+  };
 
   return {
     stop() {
