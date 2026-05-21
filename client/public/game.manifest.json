@@ -1,0 +1,15 @@
+{
+  "slug": "tank-you-again",
+  "title": "Tank You Again",
+  "description": "Server-authoritative 2D top-down multiplayer tank arena — 8-way movement, fuel-as-health, landmines with ally-aware detonation, masked radar, and a 10-tier military rank ladder.",
+  "repo": "Brynrg/Tank-you-again",
+  "category": "multiplayer-action",
+  "framework": "vite",
+  "supportsMobile": false,
+  "version": "0.1.0",
+  "emoji": "🛡️",
+  "multiplayer": "realtime-server",
+  "multiplayerProvider": "Fly.io WebSocket (free tier — shared-cpu-1x, auto-stop on idle)",
+  "multiplayerEndpoint": "wss://tank-you-again.fly.dev/ws",
+  "assetsDocumented": true
+}

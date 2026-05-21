@@ -10,7 +10,9 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,client -c blue,yellow \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
-    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "build": "npm run build --workspace=server && npm run build:portal --workspace=client && node scripts/stage-dist.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p shared && tsc --noEmit -p server && tsc --noEmit -p client && tsc --noEmit -p scripts",
     "db:push": "npm run db:push --workspace=server",
     "db:test": "tsx scripts/test-db-connection.ts",
@@ -22,6 +24,7 @@
     "dotenv": "^16.4.7",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
   }
 }

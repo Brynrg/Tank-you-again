@@ -7,6 +7,7 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "build": "vite build",
+    "build:portal": "vite build --base=/games/tank-you-again/",
     "preview": "vite preview"
   },
   "devDependencies": {

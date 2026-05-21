@@ -1,65 +1,47 @@
-// Phase-1 engine boot: grabs the canvas, draws a placeholder frame, and opens
-// a WS connection to the authoritative server. Real game loop replaces draw()
-// once the snapshot pipeline lands.
+import { promptGuestName } from "./auth-screen.js";
+import { run } from "./loop.js";
 
-import { SERVER_TICK_RATE, ServerMessageType, type ServerMessage } from "@shared/types";
+const maybeCanvas = document.getElementById("game") as HTMLCanvasElement | null;
+if (!maybeCanvas) throw new Error("#game canvas not found");
+const canvas: HTMLCanvasElement = maybeCanvas;
 
-const canvas = document.getElementById("game") as HTMLCanvasElement | null;
-if (!canvas) throw new Error("#game canvas not found");
-const ctx = canvas.getContext("2d");
-if (!ctx) throw new Error("2D context unavailable");
+// Make the canvas fill the viewport for a real game feel; keep an internal
+// resolution for crisp rendering on hi-DPI screens.
+fitCanvasToViewport(canvas);
+window.addEventListener("resize", () => fitCanvasToViewport(canvas));
 
-let lastServerTick = 0;
-let connectionStatus: "connecting" | "open" | "closed" = "connecting";
+const app = canvas.parentElement ?? document.body;
 
-function draw(): void {
-  if (!ctx || !canvas) return;
-  ctx.fillStyle = "#1a1a2e";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "#facc15";
-  ctx.font = "bold 32px system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("Tank You Again", canvas.width / 2, canvas.height / 2 - 20);
-
-  ctx.fillStyle = "#facc1599";
-  ctx.font = "14px system-ui, sans-serif";
-  ctx.fillText("Phase 1 — engine bootstrap", canvas.width / 2, canvas.height / 2 + 10);
-  ctx.fillText(
-    `server tickRate=${SERVER_TICK_RATE}Hz · ws=${connectionStatus} · lastTick=${lastServerTick}`,
-    canvas.width / 2,
-    canvas.height / 2 + 36,
-  );
+async function start(): Promise<void> {
+  const guestName = await promptGuestName(app);
+  const wsUrl = resolveWsUrl();
+  run({ canvas, wsUrl, guestName });
 }
 
-function connect(): void {
-  const wsUrl = (import.meta.env.VITE_WS_URL as string | undefined) ?? "ws://localhost:3001/ws";
-  const ws = new WebSocket(wsUrl);
+void start();
 
-  ws.addEventListener("open", () => {
-    connectionStatus = "open";
-    draw();
-  });
-
-  ws.addEventListener("message", (ev) => {
-    try {
-      const msg = JSON.parse(ev.data as string) as ServerMessage;
-      if (msg.type === ServerMessageType.WELCOME) {
-        console.info("[client] welcome", msg);
-      } else if (msg.type === ServerMessageType.SNAPSHOT) {
-        lastServerTick = msg.snapshot.tick;
-      }
-    } catch {
-      // ignore non-JSON echoes during phase-1 stub
-    }
-    draw();
-  });
-
-  ws.addEventListener("close", () => {
-    connectionStatus = "closed";
-    draw();
-  });
+function resolveWsUrl(): string {
+  const envUrl = (import.meta.env.VITE_WS_URL as string | undefined) ?? "";
+  if (envUrl) return envUrl;
+  // In dev builds, fall back to a local server. In production this branch is
+  // tree-shaken so the bundle never references the local hostname directly
+  // (the portal's broken-path scanner rejects localhost strings).
+  if (import.meta.env.DEV && typeof window !== "undefined") {
+    return `ws://${window.location.hostname || "localhost"}:3001/ws`;
+  }
+  return "wss://tank-you-again.fly.dev/ws";
 }
 
-draw();
-connect();
+function fitCanvasToViewport(c: HTMLCanvasElement): void {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // Internal pixel buffer
+  c.width = Math.floor(window.innerWidth * dpr);
+  c.height = Math.floor(window.innerHeight * dpr);
+  // CSS size
+  c.style.width = `${window.innerWidth}px`;
+  c.style.height = `${window.innerHeight}px`;
+  // Reset transform; we don't need DPR scaling because all rendering uses
+  // canvas-internal pixels directly.
+  const ctx = c.getContext("2d");
+  if (ctx) ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
