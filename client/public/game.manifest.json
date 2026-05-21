@@ -7,7 +7,7 @@
   "framework": "vite",
   "supportsMobile": false,
   "version": "0.1.0",
-  "emoji": "🛡️",
+  "emoji": "🕹️",
   "multiplayer": "realtime-server",
   "multiplayerProvider": "Fly.io WebSocket (free tier — shared-cpu-1x, auto-stop on idle)",
   "multiplayerEndpoint": "wss://tank-you-again.fly.dev/ws",

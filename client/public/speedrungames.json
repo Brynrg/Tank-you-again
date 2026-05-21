@@ -9,7 +9,7 @@
   "framework": "vite",
   "supportsMobile": false,
   "version": "0.1.0",
-  "emoji": "🛡️",
+  "emoji": "🕹️",
   "tags": ["tank", "multiplayer", "top-down", "websocket", "tankpit"],
   "backend": {
     "type": "websocket",
