@@ -5,9 +5,9 @@
 
 ## Current asset inventory
 
-| Asset | Path | Source | License |
-| --- | --- | --- | --- |
-| (none) | — | — | — |
+| Asset  | Path | Source | License |
+| ------ | ---- | ------ | ------- |
+| (none) | —    | —      | —       |
 
 All in-game visuals are rendered procedurally via the 2D Canvas API (rects,
 arcs, lines, system-font text). There are no sprites, audio files, or font

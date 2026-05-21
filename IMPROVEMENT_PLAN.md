@@ -14,6 +14,7 @@
 **Why:** No room loop exists. Until this lands, Phases 2–6 of TODO.md are blocked. Right now `server/src/index.ts` echoes inbound frames and never emits a `SNAPSHOT`.
 
 **Files to add:**
+
 - `server/src/loop.ts` — the `RoomLoop` class (defined below).
 - `server/src/connection.ts` — per-WS connection wrapper that holds `playerId`, `tankId`, latest `INPUT`, send queue.
 - (Modify) `server/src/index.ts` — instantiate a single `RoomLoop`, mount each new WS into it.
@@ -79,17 +80,27 @@ export class RoomLoop {
   }
 
   /** Register a freshly-authenticated connection. Spawns a tank for it. */
-  addConnection(conn: Connection): void { /* TODO P0-1.b */ }
+  addConnection(conn: Connection): void {
+    /* TODO P0-1.b */
+  }
 
-  removeConnection(connId: string): void { /* TODO P0-1.b */ }
+  removeConnection(connId: string): void {
+    /* TODO P0-1.b */
+  }
 
-  ingestInput(connId: string, input: ClientInputMessage): void { /* TODO P0-1.c */ }
+  ingestInput(connId: string, input: ClientInputMessage): void {
+    /* TODO P0-1.c */
+  }
 
   /** One fixed simulation step. */
-  private tick(): void { /* TODO P0-1.d */ }
+  private tick(): void {
+    /* TODO P0-1.d */
+  }
 
   /** Build the world-truth snapshot, then mask per recipient (P1-4). */
-  private buildSnapshotFor(connId: string): GameStateSnapshot { /* TODO P0-1.e */ }
+  private buildSnapshotFor(connId: string): GameStateSnapshot {
+    /* TODO P0-1.e */
+  }
 }
 ```
 
@@ -100,10 +111,10 @@ import type { WebSocket } from "ws";
 import type { ServerMessage } from "@shared/types";
 
 export interface Connection {
-  id: string;          // crypto.randomUUID()
+  id: string; // crypto.randomUUID()
   socket: WebSocket;
-  playerId: string;    // User.id once AUTH succeeds
-  tankId: string;      // Tank.id assigned at addConnection
+  playerId: string; // User.id once AUTH succeeds
+  tankId: string; // Tank.id assigned at addConnection
   name: string;
   team: "RED" | "BLUE" | "ORANGE" | "PURPLE";
 }
@@ -141,7 +152,11 @@ await app.register(async (scope) => {
 
     socket.on("message", (raw: Buffer) => {
       let msg: unknown;
-      try { msg = JSON.parse(raw.toString()); } catch { return; }
+      try {
+        msg = JSON.parse(raw.toString());
+      } catch {
+        return;
+      }
       if (!msg || typeof msg !== "object") return;
       const m = msg as { type?: string };
       if (m.type === ClientMessageType.AUTH) {
@@ -175,15 +190,24 @@ await app.register(async (scope) => {
   "snapshot": {
     "tick": 1234,
     "timestamp": 1715000000000,
-    "tanks": [/* TankState[], all tanks (own + visible enemies) */],
-    "projectiles": [/* ProjectileState[], filtered to vision set */],
-    "pickups": [/* PickupState[], in map vision */],
-    "visibleMines": [/* MineState[], own + ally + radar-detected only */]
-  }
+    "tanks": [
+      /* TankState[], all tanks (own + visible enemies) */
+    ],
+    "projectiles": [
+      /* ProjectileState[], filtered to vision set */
+    ],
+    "pickups": [
+      /* PickupState[], in map vision */
+    ],
+    "visibleMines": [
+      /* MineState[], own + ally + radar-detected only */
+    ],
+  },
 }
 ```
 
 **Acceptance:**
+
 - `npm run typecheck` clean.
 - Locally, `npm run dev` + a `wscat -c ws://localhost:3001/ws` + sending `{"type":"AUTH","guestName":"abc"}` produces a `WELCOME` then a steady ~20 `SNAPSHOT` frames/sec.
 - Server log shows `tickIndex` advancing.
@@ -220,6 +244,7 @@ await app.register(async (scope) => {
 ```
 
 **Why this content:**
+
 - `slug: "tank-you-again"` matches both the GitHub Actions `GAME_SLUG` env and the deploy path.
 - `status: "wip"` is honest — the game is not playable yet. Flip to `"live"` when Phase 4 ships.
 - `framework: "vite-canvas"` mirrors the convention used by other manifests (vs `"vanilla"`, `"other"`).
@@ -227,6 +252,7 @@ await app.register(async (scope) => {
 - `repo` uses the actual GitHub org `brynr-builds/Tank-you-again` (note: distinct from `Brynrg/...`, which is the umbrella).
 
 **Acceptance:**
+
 - File exists at `client/public/speedrungames.json`.
 - After `npx vite build --base=/games/tank-you-again/`, `client/dist/speedrungames.json` is present (Vite copies `public/` verbatim).
 - `node -e "JSON.parse(require('fs').readFileSync('client/public/speedrungames.json','utf8'))"` exits 0.
@@ -281,11 +307,13 @@ jobs:
 ```
 
 **Notes:**
+
 - The task brief specified `pnpm typecheck && pnpm build`. The repo uses `npm`, so the equivalent gate is the `npm run typecheck` + `npm run build` already exposed at the root. (See `package.json` L13–14.)
 - `prisma generate` must run before typecheck — otherwise `@prisma/client` types aren't materialized and `server/src/index.ts` L4 fails.
 - Add `format:check` because Prettier is configured and the repo will rot fast without it.
 
 **Acceptance:**
+
 - Open a PR with the new file; CI runs and passes on clean `main`.
 - Force a TS error in `server/src/index.ts` → CI fails the typecheck step.
 
@@ -298,10 +326,12 @@ jobs:
 ### P1-1. WS AUTH + WELCOME handshake (TODO Phase 2)
 
 **Files:**
+
 - `server/src/auth.ts` (new): `handleAuth(msg, prisma): Promise<{ user: User; tank: Tank } | { error: string }>`.
 - Modify `server/src/index.ts` to call `handleAuth` on `AUTH` before `room.addConnection`.
 
 **Behavior:**
+
 - If `msg.token` present → lookup `User` by session token (Phase 2 can stub session = userId for now).
 - If `msg.guestName` present → run `validateUsername`, create `User { isGuest: true }` + `Tank { name: guestName, rank: "RECRUIT" }`.
 - On failure, send `{ type: "ERROR", reason }` and close socket.
@@ -313,6 +343,7 @@ jobs:
 ### P1-2. 8-way movement with fuel drain (TODO Phase 3)
 
 **Files:**
+
 - `server/src/sim/movement.ts` (new): `stepMovement(tank: TankState, input: PlayerInputState, dt: number): void`.
 - Wire into `RoomLoop.tick()` (P0-1.d).
 
@@ -330,12 +361,14 @@ export function stepMovement(tank: TankState, input: PlayerInputState, dt: numbe
 ```
 
 **Tunables to add to `shared/types.ts`:**
+
 ```ts
-export const TANK_SPEED = 120;         // world-units / sec
-export const FUEL_MOVE_PER_SEC = 8;    // drain while moving
+export const TANK_SPEED = 120; // world-units / sec
+export const FUEL_MOVE_PER_SEC = 8; // drain while moving
 ```
 
 **Client side:**
+
 - Add `client/src/input.ts` exporting `getCurrentInput(): ClientInputMessage` — reads keydown/keyup for WASD + arrows, plus `mousemove` for aim.
 - Add `client/src/net.ts` exporting `sendInput(ws, input)`. Send INPUT at requestAnimationFrame rate; server clamps.
 
@@ -346,10 +379,12 @@ export const FUEL_MOVE_PER_SEC = 8;    // drain while moving
 ### P1-3. Fuel-as-health economy (TODO Phase 4)
 
 **Files:**
+
 - `server/src/sim/damage.ts` (new): `applyDamage(target: TankState, amount: number, killerId: string | null): "alive" | "killed"`.
 - `server/src/sim/economy.ts` (new): `debitFuel(tank, amount, reason): boolean` (returns false if insufficient).
 
 **Function signatures:**
+
 ```ts
 export function applyDamage(
   target: TankState,
@@ -365,6 +400,7 @@ export function debitFuel(
 ```
 
 **Tunables to add to `shared/types.ts`:**
+
 ```ts
 export const FUEL_FIRE_BULLET = 5;
 export const FUEL_FIRE_MISSILE = 25;
@@ -380,6 +416,7 @@ export const FUEL_TELEPORT = 80;
 ### P1-4. Landmines with ally-aware detonation + masked radar (TODO Phase 4)
 
 **Files:**
+
 - `server/src/sim/mines.ts` (new): `placeMine`, `stepMineDetonations`.
 - `server/src/sim/vision.ts` (new): `computeVisionSet(tank, world)` returning `{ visibleTankIds, visibleMineIds, visibleProjectileIds }`.
 
@@ -405,10 +442,11 @@ export function isMineVisible(
 ```
 
 **Tunables:**
+
 ```ts
 export const MINE_RADIUS = 24;
 export const MINE_DAMAGE = 250;
-export const RADAR_DETECT_TICKS = 60;  // 3 sec at 20 Hz
+export const RADAR_DETECT_TICKS = 60; // 3 sec at 20 Hz
 ```
 
 **Wire-in:** `RoomLoop.buildSnapshotFor(connId)` (the P0-1.e stub) calls `computeVisionSet` and filters `mines` → `visibleMines` before emitting.
@@ -418,10 +456,12 @@ export const RADAR_DETECT_TICKS = 60;  // 3 sec at 20 Hz
 ### P1-5. Persistent military rank ladder (TODO Phase 5)
 
 **Files:**
+
 - `server/src/sim/rank.ts` (new): `applyXpDelta(tank: Tank, delta: number): Tank`.
 - Modify Prisma schema: change `Tank.rank` from `String` to a true enum once Prisma 6 is happy with it, OR add a runtime guard in `applyXpDelta` that throws if `tank.rank` is not in `MilitaryRank`.
 
 **XP thresholds (single source of truth in `shared/types.ts`):**
+
 ```ts
 export const RANK_XP_THRESHOLDS: Record<MilitaryRank, number> = {
   RECRUIT: 0,
@@ -446,22 +486,27 @@ export const RANK_XP_THRESHOLDS: Record<MilitaryRank, number> = {
 ## P2 — Hardening & polish
 
 ### P2-1. Reconnect & backoff
+
 - `client/src/net.ts`: exponential backoff (500ms → 8s), preserve `clientTick` across reconnects.
 - Server: 30s idle timeout per connection, ping/pong heartbeat at 5 Hz.
 
 ### P2-2. Vitest config + protocol test
+
 - Add `vitest` to root devDeps.
 - `server/src/__tests__/loop.test.ts` — drives `RoomLoop.tick()` 200 times, asserts deterministic snapshot output for fixed input sequence.
 - Add `npm run test` script at root, wire into `ci.yml`.
 
 ### P2-3. Adopt `speedrungames-sdk`
+
 - Add `"speedrungames-sdk": "github:Brynrg/speedrungames-sdk#v0.1.0"` to `client/package.json`.
 - Replace `client/src/main.ts` debug HUD with the SDK's timer/leaderboard widget.
 
 ### P2-4. Spawn protection enforced server-side
+
 - `TankState.isSpawnProtected` already exists; flip to true for `SPAWN_PROTECTION_MS=4000` after spawn; ignore inbound damage during the window.
 
 ### P2-5. Camera + map rendering
+
 - `client/src/render.ts`: world→screen transform centered on local tank; draw map bounds, grid, tanks (hull + turret), projectiles, mines (only visible ones from snapshot), pickups.
 
 ---
@@ -469,20 +514,26 @@ export const RANK_XP_THRESHOLDS: Record<MilitaryRank, number> = {
 ## P3 — Future / nice-to-have
 
 ### P3-1. Sound + sprites + particles (TODO Phase 6)
+
 - `client/public/assets/` for sprites; `client/src/audio.ts` for SFX.
 
 ### P3-2. Promote `MilitaryRank` to Prisma enum
+
 - Currently `Tank.rank` is a `String`. Convert to a Prisma `enum` once the codebase is past Phase 5; requires a migration.
 
 ### P3-3. Match end → XP delta + home-page card
+
 - Wire `applyXpDelta` into match-end event.
 - Add the home-page card in `Brynrg/speedrungames` so `/games/tank-you-again` shows up in the site grid (TODO Phase 6).
 
 ### P3-4. Demotion policy decision
+
 - TODO.md L118–119 flags "TBD: keep or drop demotion?". Pick one (recommend: drop demotion, keep `xp` floor at current-rank-threshold) and document.
 
 ### P3-5. Mine TTL
-- TODO.md says mines have *no* TTL. Reconsider once playtest data exists — abandoned-mine pollution will probably need a cleanup pass.
+
+- TODO.md says mines have _no_ TTL. Reconsider once playtest data exists — abandoned-mine pollution will probably need a cleanup pass.
 
 ### P3-6. Anti-cheat hooks
+
 - Server already ignores client positions; add an `INPUT` rate-limit (max ~60 Hz/conn) and a `CHAT` rate-limit (max 1/sec).

@@ -275,9 +275,7 @@ export const TANK_SPEED = 120; // world-units / sec
 export const MAX_FUEL = 1000;
 export const FUEL_MOVE_PER_SEC = 8; // drain while moving
 export const SPAWN_PROTECTION_MS = 4000;
-export const SPAWN_PROTECTION_TICKS = Math.round(
-  (SPAWN_PROTECTION_MS / 1000) * SERVER_TICK_RATE,
-);
+export const SPAWN_PROTECTION_TICKS = Math.round((SPAWN_PROTECTION_MS / 1000) * SERVER_TICK_RATE);
 export const RESPAWN_DELAY_TICKS = 3 * SERVER_TICK_RATE; // 3 seconds
 export const SPAWN_FUEL = MAX_FUEL;
 

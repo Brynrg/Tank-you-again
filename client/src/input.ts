@@ -43,8 +43,10 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     keys.add(k);
     if (k === "m") mineQueue.push({ type: ClientMessageType.PLACE_MINE });
-    else if (k === "k") fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.MISSILE });
-    else if (k === "Shift") useItemQueue.push({ type: ClientMessageType.USE_ITEM, item: ItemType.SHIELD });
+    else if (k === "k")
+      fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.MISSILE });
+    else if (k === "Shift")
+      useItemQueue.push({ type: ClientMessageType.USE_ITEM, item: ItemType.SHIELD });
   }
   function onKeyUp(e: KeyboardEvent): void {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;

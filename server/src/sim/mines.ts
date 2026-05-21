@@ -1,12 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import {
-  FUEL_MINE,
-  MINE_DAMAGE,
-  MINE_RADIUS,
-  type MineState,
-  type TankState,
-} from "@shared/types";
+import { FUEL_MINE, MINE_DAMAGE, MINE_RADIUS, type MineState, type TankState } from "@shared/types";
 
 import { applyDamage } from "./damage.js";
 import { debitFuel } from "./economy.js";

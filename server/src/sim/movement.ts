@@ -19,11 +19,7 @@ import { debitFuel } from "./economy.js";
  *
  * No-op if the tank is dead.
  */
-export function stepMovement(
-  tank: TankState,
-  input: PlayerInputState,
-  dt: number,
-): void {
+export function stepMovement(tank: TankState, input: PlayerInputState, dt: number): void {
   if (tank.isDead) return;
 
   let dx = 0;

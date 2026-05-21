@@ -45,7 +45,13 @@ export function followTank(cam: Camera, tank: TankState | null, dt: number): voi
 }
 
 /** Project a world point through the camera to screen coords. */
-function project(cam: Camera, canvasW: number, canvasH: number, wx: number, wy: number): { x: number; y: number } {
+function project(
+  cam: Camera,
+  canvasW: number,
+  canvasH: number,
+  wx: number,
+  wy: number,
+): { x: number; y: number } {
   const x = (wx - cam.x) * cam.zoom + canvasW / 2;
   const y = (wy - cam.y) * cam.zoom + canvasH / 2;
   return { x, y };
@@ -110,12 +116,7 @@ export function renderFrame(
   }
 }
 
-function drawGrid(
-  ctx: CanvasRenderingContext2D,
-  cam: Camera,
-  W: number,
-  H: number,
-): void {
+function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: number): void {
   const step = 64;
   const startX = Math.floor((cam.x - W / (2 * cam.zoom)) / step) * step;
   const startY = Math.floor((cam.y - H / (2 * cam.zoom)) / step) * step;
@@ -144,12 +145,7 @@ function drawGrid(
   ctx.restore();
 }
 
-function drawMapBounds(
-  ctx: CanvasRenderingContext2D,
-  cam: Camera,
-  W: number,
-  H: number,
-): void {
+function drawMapBounds(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: number): void {
   const tl = project(cam, W, H, 0, 0);
   const br = project(cam, W, H, MAP_WIDTH, MAP_HEIGHT);
   ctx.save();
@@ -287,11 +283,7 @@ export function renderHud(
   ctx.fillStyle = "#facc15dd";
 
   // Top-left: status / tick / rtt
-  ctx.fillText(
-    `srv tick=${state.serverTick}  rtt=${state.rttMs}ms  ws=${state.status}`,
-    8,
-    16,
-  );
+  ctx.fillText(`srv tick=${state.serverTick}  rtt=${state.rttMs}ms  ws=${state.status}`, 8, 16);
 
   if (state.yourTank) {
     const t = state.yourTank;

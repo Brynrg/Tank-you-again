@@ -4,9 +4,7 @@ import { MilitaryRank } from "@shared/types";
 
 import { validateUsername } from "./lib/validation.js";
 
-export type AuthResult =
-  | { ok: true; user: User; tank: Tank }
-  | { ok: false; reason: string };
+export type AuthResult = { ok: true; user: User; tank: Tank } | { ok: false; reason: string };
 
 /**
  * Resolve an inbound AUTH message into a `{ user, tank }` pair.

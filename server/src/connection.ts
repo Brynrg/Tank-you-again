@@ -29,7 +29,11 @@ export interface Connection {
 
 /** JSON-encode and send a server message if the socket is open. */
 export function send(conn: Connection, msg: ServerMessage): void {
-  const sock = conn.socket as unknown as { readyState: number; OPEN: number; send: (s: string) => void };
+  const sock = conn.socket as unknown as {
+    readyState: number;
+    OPEN: number;
+    send: (s: string) => void;
+  };
   if (sock.readyState === sock.OPEN) {
     sock.send(JSON.stringify(msg));
   }

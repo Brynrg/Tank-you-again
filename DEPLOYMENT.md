@@ -79,9 +79,9 @@ The repo ships with two existing workflows:
 
 You need **two repo secrets** on `Brynrg/Tank-you-again`:
 
-| Secret | Value | How to get it |
-| --- | --- | --- |
-| `FLY_API_TOKEN` | A Fly.io API token | `fly auth token` |
+| Secret                | Value                                                                      | How to get it                                                   |
+| --------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `FLY_API_TOKEN`       | A Fly.io API token                                                         | `fly auth token`                                                |
 | `SPEEDRUNGAMES_TOKEN` | A GitHub Personal Access Token with `repo` scope on `Brynrg/speedrungames` | GitHub → Settings → Developer settings → Personal access tokens |
 
 Set them:
@@ -177,14 +177,14 @@ preview is playable.
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-| --- | --- | --- |
-| Game loads but `ws=closed` in HUD | Fly machine off / cold-starting | Wait 5–10 s, the client auto-reconnects |
-| `srv tick=0` forever | WebSocket connecting to wrong host | Check `VITE_WS_URL` in the build environment; default is `wss://tank-you-again.fly.dev/ws` |
-| `ERROR: auth/persist failed` in console | Neon connection blocked or `DATABASE_URL` missing on Fly | `fly secrets list`, re-set DATABASE_URL |
-| Portal ingest fails with "Build output contains references that will break under /games/<slug>/" | Bundle contains `localhost` / `/assets/...` | Check `client/src/main.ts#resolveWsUrl` — DEV-only branches must be tree-shaken |
-| Vitest fails locally with module-resolution errors | `@prisma/client` not generated | `npx prisma generate --schema=server/prisma/schema.prisma` |
-| TypeScript error on `@prisma/client` types | Same | Same |
+| Symptom                                                                                          | Likely cause                                             | Fix                                                                                        |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Game loads but `ws=closed` in HUD                                                                | Fly machine off / cold-starting                          | Wait 5–10 s, the client auto-reconnects                                                    |
+| `srv tick=0` forever                                                                             | WebSocket connecting to wrong host                       | Check `VITE_WS_URL` in the build environment; default is `wss://tank-you-again.fly.dev/ws` |
+| `ERROR: auth/persist failed` in console                                                          | Neon connection blocked or `DATABASE_URL` missing on Fly | `fly secrets list`, re-set DATABASE_URL                                                    |
+| Portal ingest fails with "Build output contains references that will break under /games/<slug>/" | Bundle contains `localhost` / `/assets/...`              | Check `client/src/main.ts#resolveWsUrl` — DEV-only branches must be tree-shaken            |
+| Vitest fails locally with module-resolution errors                                               | `@prisma/client` not generated                           | `npx prisma generate --schema=server/prisma/schema.prisma`                                 |
+| TypeScript error on `@prisma/client` types                                                       | Same                                                     | Same                                                                                       |
 
 ## Roll-back
 

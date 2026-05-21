@@ -1,8 +1,4 @@
-import {
-  MilitaryRank,
-  RANK_ORDER,
-  RANK_XP_THRESHOLDS,
-} from "@shared/types";
+import { MilitaryRank, RANK_ORDER, RANK_XP_THRESHOLDS } from "@shared/types";
 
 export interface RankableTank {
   rank: string;

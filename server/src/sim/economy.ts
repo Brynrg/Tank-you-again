@@ -18,11 +18,7 @@ export type FuelDebitReason =
  * below), and the damage step is what triggers death — so DAMAGE always
  * returns true. Other reasons block on insufficient fuel.
  */
-export function debitFuel(
-  tank: TankState,
-  amount: number,
-  reason: FuelDebitReason,
-): boolean {
+export function debitFuel(tank: TankState, amount: number, reason: FuelDebitReason): boolean {
   if (tank.isDead) return false;
   if (amount <= 0) return true;
 

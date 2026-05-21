@@ -19,12 +19,7 @@ import {
   type TankState,
 } from "@shared/types";
 
-const TEAMS: TeamColor[] = [
-  TeamColor.BLUE,
-  TeamColor.RED,
-  TeamColor.ORANGE,
-  TeamColor.PURPLE,
-];
+const TEAMS: TeamColor[] = [TeamColor.BLUE, TeamColor.RED, TeamColor.ORANGE, TeamColor.PURPLE];
 
 /** Round-robin team picker, balanced by current census. */
 export function pickTeam(census: Map<TeamColor, number>): TeamColor {
