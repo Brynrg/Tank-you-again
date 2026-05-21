@@ -43,6 +43,8 @@ export interface AmmoCounts {
   missiles: number;
   mines: number;
   teleports: number;
+  shields: number;
+  radar: number;
 }
 
 export interface TankState {
@@ -305,6 +307,8 @@ export const SPAWN_FUEL = MAX_FUEL;
 export const INITIAL_MISSILES = 5;
 export const INITIAL_MINES = 5;
 export const INITIAL_TELEPORTS = 1;
+export const INITIAL_SHIELDS = 2;
+export const INITIAL_RADAR = 3;
 
 // Weapons
 export const FUEL_FIRE_BULLET = 5;
@@ -346,6 +350,8 @@ export const FUEL_CRATE_RESTORE = 350;
 export const MISSILE_PICKUP_AMOUNT = 3;
 export const MINE_PICKUP_AMOUNT = 2;
 export const TELEPORT_PICKUP_AMOUNT = 1;
+export const SHIELD_PICKUP_AMOUNT = 1;
+export const RADAR_PICKUP_AMOUNT = 2;
 
 // Rank ladder (XP gates)
 export const RANK_XP_THRESHOLDS: Record<MilitaryRank, number> = {

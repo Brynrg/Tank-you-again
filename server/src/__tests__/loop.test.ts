@@ -221,10 +221,12 @@ describe("RoomLoop", () => {
     expect(lastSnapshot(conn).pickups).toHaveLength(0);
 
     const fuelBefore = tank.fuel;
+    const radarBefore = tank.ammo.radar;
     room.handleUseItem("c1", { type: ClientMessageType.USE_ITEM, item: ItemType.RADAR });
     room.forceTick();
 
     expect(tank.fuel).toBe(fuelBefore - FUEL_RADAR_SCAN);
+    expect(tank.ammo.radar).toBe(radarBefore - 1);
     expect(lastSnapshot(conn).pickups.map((pickup) => pickup.id)).toContain("pk1");
   });
 
@@ -255,6 +257,62 @@ describe("RoomLoop", () => {
     room.forceTick();
 
     expect(lastSnapshot(conn).visibleMines.map((mine) => mine.id)).toContain("m1");
+  });
+
+  it("blocks radar scans when no radar equipment remains", () => {
+    const room = new RoomLoop();
+    const conn = makeFakeConnection();
+    const tank = room.addConnection({
+      conn,
+      tankId: "t1",
+      name: "Recruit",
+      rank: MilitaryRank.RECRUIT,
+    });
+    tank.ammo.radar = 0;
+    const fuelBefore = tank.fuel;
+
+    room.handleUseItem("c1", { type: ClientMessageType.USE_ITEM, item: ItemType.RADAR });
+
+    expect(tank.fuel).toBe(fuelBefore);
+    expect(tank.ammo.radar).toBe(0);
+  });
+
+  it("consumes one shield equipment when activating shield", () => {
+    const room = new RoomLoop();
+    const conn = makeFakeConnection();
+    const tank = room.addConnection({
+      conn,
+      tankId: "t1",
+      name: "Recruit",
+      rank: MilitaryRank.RECRUIT,
+    });
+    const shieldsBefore = tank.ammo.shields;
+
+    room.handleUseItem("c1", { type: ClientMessageType.USE_ITEM, item: ItemType.SHIELD });
+
+    expect(tank.hasShield).toBe(true);
+    expect(tank.ammo.shields).toBe(shieldsBefore - 1);
+
+    room.handleUseItem("c1", { type: ClientMessageType.USE_ITEM, item: ItemType.SHIELD });
+    expect(tank.hasShield).toBe(false);
+    expect(tank.ammo.shields).toBe(shieldsBefore - 1);
+  });
+
+  it("blocks shield activation when no shield equipment remains", () => {
+    const room = new RoomLoop();
+    const conn = makeFakeConnection();
+    const tank = room.addConnection({
+      conn,
+      tankId: "t1",
+      name: "Recruit",
+      rank: MilitaryRank.RECRUIT,
+    });
+    tank.ammo.shields = 0;
+
+    room.handleUseItem("c1", { type: ClientMessageType.USE_ITEM, item: ItemType.SHIELD });
+
+    expect(tank.hasShield).toBe(false);
+    expect(tank.ammo.shields).toBe(0);
   });
 
   it("removes a tank cleanly on removeConnection", () => {

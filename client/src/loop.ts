@@ -121,6 +121,7 @@ export function run(opts: RunOptions): RunHandle {
             y: Math.round(yourTank.y),
             fuel: Math.round(yourTank.fuel),
             rank: yourTank.rank,
+            ammo: yourTank.ammo,
             isDead: yourTank.isDead,
           }
         : null,

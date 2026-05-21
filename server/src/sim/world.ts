@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import {
   INITIAL_MINES,
   INITIAL_MISSILES,
+  INITIAL_RADAR,
+  INITIAL_SHIELDS,
   INITIAL_TELEPORTS,
   ItemType,
   MAP_HEIGHT,
@@ -68,6 +70,8 @@ export function makeTank(args: {
       missiles: INITIAL_MISSILES,
       mines: INITIAL_MINES,
       teleports: INITIAL_TELEPORTS,
+      shields: INITIAL_SHIELDS,
+      radar: INITIAL_RADAR,
     },
     isSpawnProtected: true,
     spawnProtectedUntilTick: args.currentTick + SPAWN_PROTECTION_TICKS,
@@ -92,6 +96,8 @@ export function respawnTank(t: TankState, currentTick: number): void {
     missiles: Math.max(2, Math.floor(INITIAL_MISSILES / 2)),
     mines: Math.max(2, Math.floor(INITIAL_MINES / 2)),
     teleports: 0,
+    shields: 1,
+    radar: 1,
   };
   t.isSpawnProtected = true;
   t.spawnProtectedUntilTick = currentTick + SPAWN_PROTECTION_TICKS;

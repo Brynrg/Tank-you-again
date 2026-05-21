@@ -336,7 +336,7 @@ export function renderHud(
     // Bottom-left: ammo
     ctx.fillStyle = "#facc15";
     ctx.fillText(
-      `MIS ${t.ammo.missiles}   MINE ${t.ammo.mines}   TP ${t.ammo.teleports}   RANK ${t.rank}`,
+      `MIS ${t.ammo.missiles}   MINE ${t.ammo.mines}   TP ${t.ammo.teleports}   SH ${t.ammo.shields}   RAD ${t.ammo.radar}   RANK ${t.rank}`,
       bx,
       by + barH + 14,
     );

@@ -12,3 +12,4 @@ Original prompt: check my speedrungames repo on github, lets improve my tank you
 - Continued Phase 2 with active radar: `R` spends fuel, radar reveals nearby hidden pickups and enemy mines per viewer, distant pickups are hidden unless close or scanned, and passive global mine sweeps were removed.
 - Added tests for hidden distant pickups, enemy mine masking, active radar reveal, and radar fuel cost.
 - Browser verification: the required web-game client still reaches gameplay cleanly; a targeted Playwright keypress check confirmed `R` reduced fuel from 1000 to 965 with no console/page errors.
+- Continued equipment fidelity: tanks now track shield and radar equipment counts; shield activation consumes one shield unit, radar scan consumes one radar unit plus fuel, and shield/radar pickups replenish counts.

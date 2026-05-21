@@ -10,9 +10,11 @@ import {
   MISSILE_PICKUP_AMOUNT,
   MilitaryRank,
   PICKUP_RADIUS,
+  RADAR_PICKUP_AMOUNT,
   ProjectileKind,
   RESPAWN_DELAY_TICKS,
   ServerMessageType,
+  SHIELD_PICKUP_AMOUNT,
   TANK_RADIUS,
   TELEPORT_MAX_RANGE,
   TELEPORT_PICKUP_AMOUNT,
@@ -243,10 +245,19 @@ export class RoomLoop {
     const tank = this.tanks.get(conn.tankId);
     if (!tank || tank.isDead) return;
     if (msg.item === ItemType.SHIELD) {
-      // Toggle shield; per-tick fuel drain is applied in tick().
-      tank.hasShield = !tank.hasShield;
+      if (tank.hasShield) {
+        tank.hasShield = false;
+        return;
+      }
+      if (tank.ammo.shields <= 0) return;
+      tank.ammo.shields -= 1;
+      // Shield activation consumes one shield unit; per-tick fuel drain is
+      // still applied in tick(), preserving fuel-as-health pressure.
+      tank.hasShield = true;
     } else if (msg.item === ItemType.RADAR) {
+      if (tank.ammo.radar <= 0) return;
       if (!debitFuel(tank, FUEL_RADAR_SCAN, "RADAR")) return;
+      tank.ammo.radar -= 1;
       const reveals = this.getRadarReveals(tank.id);
       const result = scanRadar(
         tank,
@@ -459,13 +470,10 @@ export class RoomLoop {
         t.ammo.teleports += TELEPORT_PICKUP_AMOUNT;
         break;
       case ItemType.SHIELD:
-        // Shield pickup gives the tank a one-shot extra-fuel buffer; we model
-        // it here as a fuel top-up (cheap) since shield itself is toggled by
-        // USE_ITEM and drains over time.
-        creditFuel(t, FUEL_CRATE_RESTORE / 2);
+        t.ammo.shields += SHIELD_PICKUP_AMOUNT;
         break;
       case ItemType.RADAR:
-        creditFuel(t, FUEL_CRATE_RESTORE / 4);
+        t.ammo.radar += RADAR_PICKUP_AMOUNT;
         break;
     }
   }
