@@ -16,3 +16,4 @@ Original prompt: check my speedrungames repo on github, lets improve my tank you
 - Fixed stale shooting aim by attaching the current cursor angle directly to bullet and missile fire messages; mousedown now updates scaled canvas mouse coordinates before command/fire handling.
 - Added clearer objective copy to the callsign overlay and HUD so the player understands the loop: fuel is health, scan supplies/mines, deactivate rival tanks.
 - Completed a deeper original Battlefield inspection using MobyGames, TankPit, and Wayback captures of the 2004-2007 playbattlefield.com shell, welcome page, hotkeys, Top 25, and tournament pages. Captured the actionable findings in `research/battlefield/INSPECTION.md`; no original/TankPit assets were added to the codebase.
+- Added `AI_AGENT_UPGRADE_PLAYBOOK.md` as the tactical execution guide for future agents: phase order, likely files, acceptance checks, validation commands, and the legal asset boundary.
