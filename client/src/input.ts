@@ -62,7 +62,11 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
       useItemQueue.push({ type: ClientMessageType.USE_ITEM, item: ItemType.RADAR });
     else if (k === " ") {
       e.preventDefault();
-      fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.BULLET });
+      fireQueue.push({
+        type: ClientMessageType.FIRE,
+        weapon: ProjectileKind.BULLET,
+        aim: currentAim(),
+      });
     } else if (k === "x" || k === "Escape") {
       commandTarget = null;
       commandQueue.push({ type: ClientMessageType.STOP });
@@ -74,18 +78,21 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
     keys.delete(k);
   }
   function onMouseMove(e: MouseEvent): void {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
+    updateMouse(e);
   }
   function onMouseDown(e: MouseEvent): void {
+    updateMouse(e);
     if (e.button === 0) {
       const target = screenToWorld(e);
       commandTarget = target;
       commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
     } else if (e.button === 2) {
       e.preventDefault();
-      fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.MISSILE });
+      fireQueue.push({
+        type: ClientMessageType.FIRE,
+        weapon: ProjectileKind.MISSILE,
+        aim: currentAim(),
+      });
     }
   }
   function onContextMenu(e: Event): void {
@@ -116,13 +123,18 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
   }
 
   function screenToWorld(e: MouseEvent): { x: number; y: number } {
-    const rect = canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
     return {
-      x: camera.x + (sx - canvas.width / 2) / camera.zoom,
-      y: camera.y + (sy - canvas.height / 2) / camera.zoom,
+      x: camera.x + (mouseX - canvas.width / 2) / camera.zoom,
+      y: camera.y + (mouseY - canvas.height / 2) / camera.zoom,
     };
+  }
+
+  function updateMouse(e: MouseEvent): void {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    mouseX = (e.clientX - rect.left) * scaleX;
+    mouseY = (e.clientY - rect.top) * scaleY;
   }
 
   return {

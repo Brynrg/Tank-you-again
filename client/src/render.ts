@@ -314,6 +314,13 @@ export function renderHud(
 
   // Top-left: status / tick / rtt
   ctx.fillText(`srv tick=${state.serverTick}  rtt=${state.rttMs}ms  ws=${state.status}`, 8, 16);
+  ctx.fillStyle = "#facc15bb";
+  ctx.fillText(
+    "Objective: deactivate rivals. Fuel is health; radar finds supplies and mines.",
+    8,
+    34,
+  );
+  ctx.fillStyle = "#facc15dd";
 
   if (state.yourTank) {
     const t = state.yourTank;
@@ -321,7 +328,7 @@ export function renderHud(
     const barW = 220;
     const barH = 14;
     const bx = 8;
-    const by = H - 56;
+    const by = H - 62;
     ctx.fillStyle = "#1f1f33";
     ctx.fillRect(bx, by, barW, barH);
     const pct = Math.max(0, Math.min(1, t.fuel / MAX_FUEL));

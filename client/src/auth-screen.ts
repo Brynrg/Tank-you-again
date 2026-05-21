@@ -33,7 +33,7 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
     title.style.cssText = "margin:0 0 4px;font-size:20px;font-weight:700";
 
     const sub = document.createElement("p");
-    sub.textContent = "Pick a callsign and jump in.";
+    sub.textContent = "Fuel is health. Scan supplies, mine routes, deactivate rival tanks.";
     sub.style.cssText = "margin:0 0 16px;font-size:13px;color:#facc1599";
 
     const label = document.createElement("label");

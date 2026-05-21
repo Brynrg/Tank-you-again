@@ -130,6 +130,11 @@ export function run(opts: RunOptions): RunHandle {
             tick: lastSnapshot.tick,
             tanks: lastSnapshot.tanks.length,
             projectiles: lastSnapshot.projectiles.length,
+            projectileVectors: lastSnapshot.projectiles.slice(-3).map((p) => ({
+              kind: p.kind,
+              vx: Math.round(p.vx),
+              vy: Math.round(p.vy),
+            })),
             pickups: lastSnapshot.pickups.length,
             visibleMines: lastSnapshot.visibleMines.length,
           }

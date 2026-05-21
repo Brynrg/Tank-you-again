@@ -13,3 +13,6 @@ Original prompt: check my speedrungames repo on github, lets improve my tank you
 - Added tests for hidden distant pickups, enemy mine masking, active radar reveal, and radar fuel cost.
 - Browser verification: the required web-game client still reaches gameplay cleanly; a targeted Playwright keypress check confirmed `R` reduced fuel from 1000 to 965 with no console/page errors.
 - Continued equipment fidelity: tanks now track shield and radar equipment counts; shield activation consumes one shield unit, radar scan consumes one radar unit plus fuel, and shield/radar pickups replenish counts.
+- Fixed stale shooting aim by attaching the current cursor angle directly to bullet and missile fire messages; mousedown now updates scaled canvas mouse coordinates before command/fire handling.
+- Added clearer objective copy to the callsign overlay and HUD so the player understands the loop: fuel is health, scan supplies/mines, deactivate rival tanks.
+- Completed a deeper original Battlefield inspection using MobyGames, TankPit, and Wayback captures of the 2004-2007 playbattlefield.com shell, welcome page, hotkeys, Top 25, and tournament pages. Captured the actionable findings in `research/battlefield/INSPECTION.md`; no original/TankPit assets were added to the codebase.
