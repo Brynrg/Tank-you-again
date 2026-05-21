@@ -125,7 +125,7 @@ Total time: ~1–2 min. The job graph + path filters are in the YAML; trust them
 
 3. **The client must NEVER simulate authoritatively.** All state mutation
    happens server-side in `RoomLoop.tick()`. The client sends _intent_
-   (INPUT, FIRE, PLACE_MINE) and consumes _truth_ (SNAPSHOT). Adding
+   (INPUT, FIRE, PLACE*MINE) and consumes \_truth* (SNAPSHOT). Adding
    client-side prediction without server reconciliation = cheating window.
 
 4. **Don't bundle node-only modules into client code.** `node:crypto`,
