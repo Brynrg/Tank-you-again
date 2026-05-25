@@ -70,6 +70,12 @@ export interface TankState {
   isDead: boolean;
   /** Tick at which a dead tank will respawn. */
   respawnAtTick: number;
+  /** Armor integrity: front, side, rear (0-100). Armor degrades independently based on projectile impact angle. */
+  armor: {
+    front: number;
+    side: number;
+    rear: number;
+  };
 }
 
 export interface ProjectileState {

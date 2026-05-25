@@ -3,7 +3,12 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "./dist",
-    "noEmit": true
+    "noEmit": true,
+    "rootDir": "./src",
+    "typeRoots": ["./node_modules/@types", "../shared/types"]
   },
-  "include": ["src/**/*", "../shared/types.ts"]
+  "include": ["src/**/*"],
+  "references": [
+    {"path": "../shared"}
+  ]
 }

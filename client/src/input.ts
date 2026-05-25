@@ -84,15 +84,134 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
     updateMouse(e);
     if (e.button === 0) {
       const target = screenToWorld(e);
-      commandTarget = target;
-      commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
-    } else if (e.button === 2) {
+      if (e.detail === 2) { // Double-click
+        fireQueue.push({
+          type: ClientMessageType.FIRE,
+          weapon: ProjectileKind.BULLET,
+          aim: currentAim(),
+        });
+      } else { // Single-click
+        commandTarget = target;
+        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
+      }
+    } else if (e.button === 2) { // Right-click
       e.preventDefault();
       fireQueue.push({
         type: ClientMessageType.FIRE,
         weapon: ProjectileKind.MISSILE,
         aim: currentAim(),
       });
+    }
+  }
+
+  let isHolding = false;
+  let holdStartTime = 0;
+  let holdTarget: { x: number; y: number } | null = null;
+
+  function onMouseUp(e: MouseEvent): void {
+    if (e.button === 0 && isHolding) {
+      const target = screenToWorld(e);
+      if (Date.now() - holdStartTime < 300) { // Short click
+        commandTarget = target;
+        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
+      } else { // Long press (hold)
+        if (holdTarget) {
+          useItemQueue.push({
+            type: ClientMessageType.USE_ITEM,
+            item: holdTarget.type === ItemType.FUEL_CRATE ? ItemType.FUEL_CRATE : 
+                 holdTarget.type === ItemType.MISSILE ? ItemType.MISSILE : 
+                 holdTarget.type === ItemType.MINE_PACK ? ItemType.MINE_PACK : 
+                 holdTarget.type === ItemType.SHIELD ? ItemType.SHIELD : 
+                 holdTarget.type === ItemType.RADAR ? ItemType.RADAR : 
+                 ItemType.TELEPORT_CHARGE
+          });
+        }
+      }
+      isHolding = false;
+      holdTarget = null;
+    }
+  }
+
+  function onMouseMove(e: MouseEvent): void {
+    updateMouse(e);
+    
+    // Check if we're over a pickup
+    if (isHolding && lastSnapshot) {
+      const worldPos = screenToWorld(e);
+      const pickup = lastSnapshot.pickups.find(p => {
+        const dx = worldPos.x - p.x;
+        const dy = worldPos.y - p.y;
+        return Math.hypot(dx, dy) < PICKUP_RADIUS + TANK_RADIUS;
+      });
+      if (pickup) {
+        holdTarget = pickup;
+      }
+    }
+  }
+
+  function onMouseDown(e: MouseEvent): void {
+    updateMouse(e);
+    
+    if (e.button === 0) {
+      const target = screenToWorld(e);
+      if (e.detail === 2) { // Double-click
+        fireQueue.push({
+          type: ClientMessageType.FIRE,
+          weapon: ProjectileKind.BULLET,
+          aim: currentAim(),
+        });
+      } else { // Single-click
+        commandTarget = target;
+        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
+      }
+    } else if (e.button === 2) { // Right-click
+      e.preventDefault();
+      fireQueue.push({
+        type: ClientMessageType.FIRE,
+        weapon: ProjectileKind.MISSILE,
+        aim: currentAim(),
+      });
+    }
+  }
+
+  function onMouseUp(e: MouseEvent): void {
+    if (e.button === 0 && isHolding) {
+      const target = screenToWorld(e);
+      if (Date.now() - holdStartTime < 300) { // Short click
+        commandTarget = target;
+        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
+      } else { // Long press (hold)
+        if (holdTarget) {
+          useItemQueue.push({
+            type: ClientMessageType.USE_ITEM,
+            item: holdTarget.type === ItemType.FUEL_CRATE ? ItemType.FUEL_CRATE : 
+                 holdTarget.type === ItemType.MISSILE ? ItemType.MISSILE : 
+                 holdTarget.type === ItemType.MINE_PACK ? ItemType.MINE_PACK : 
+                 holdTarget.type === ItemType.SHIELD ? ItemType.SHIELD : 
+                 holdTarget.type === ItemType.RADAR ? ItemType.RADAR : 
+                 ItemType.TELEPORT_CHARGE
+          });
+        }
+      }
+      isHolding = false;
+      holdTarget = null;
+    }
+  }
+
+  function onMouseMove(e: MouseEvent): void {
+    updateMouse(e);
+    
+    // Check if we're over a pickup
+    if (isHolding && lastSnapshot) {
+      const worldPos = screenToWorld(e);
+      const pickup = lastSnapshot.pickups.find(p => {
+        const dx = worldPos.x - p.x;
+        const dy = worldPos.y - p.y;
+        return Math.hypot(dx, dy) < PICKUP_RADIUS + TANK_RADIUS;
+      });
+      if (pickup) {
+        holdTarget = pickup;
+      }
     }
   }
   function onContextMenu(e: Event): void {

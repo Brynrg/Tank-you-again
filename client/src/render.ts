@@ -196,9 +196,9 @@ function drawTank(
   const p = project(cam, W, H, t.x, t.y);
   const r = TANK_RADIUS * cam.zoom;
   const teamColor = TEAM_COLORS[t.team] ?? "#666";
-
+ 
   ctx.save();
-
+ 
   // Spawn-protection ring
   if (t.isSpawnProtected) {
     ctx.strokeStyle = "#facc15";
@@ -209,7 +209,7 @@ function drawTank(
     ctx.stroke();
     ctx.setLineDash([]);
   }
-
+ 
   // Shield ring
   if (t.hasShield) {
     ctx.strokeStyle = "#22d3ee";
@@ -218,7 +218,7 @@ function drawTank(
     ctx.arc(p.x, p.y, r + 3, 0, Math.PI * 2);
     ctx.stroke();
   }
-
+ 
   // Hull
   ctx.translate(p.x, p.y);
   ctx.rotate(t.angle);
@@ -230,7 +230,7 @@ function drawTank(
   ctx.fill();
   ctx.stroke();
   ctx.rotate(-t.angle);
-
+ 
   // Turret
   ctx.rotate(t.turretAngle);
   ctx.fillStyle = "#111";
@@ -239,7 +239,7 @@ function drawTank(
   ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-
+ 
   // Local-tank highlight
   if (isLocal) {
     ctx.save();
@@ -250,7 +250,7 @@ function drawTank(
     ctx.stroke();
     ctx.restore();
   }
-
+ 
   // Name + fuel bar
   ctx.save();
   ctx.font = `${Math.max(11, 12 * cam.zoom)}px system-ui, sans-serif`;
@@ -267,6 +267,34 @@ function drawTank(
   const pct = Math.max(0, Math.min(1, t.fuel / MAX_FUEL));
   ctx.fillStyle = pct > 0.5 ? "#22c55e" : pct > 0.2 ? "#facc15" : "#ef4444";
   ctx.fillRect(bx, by, barW * pct, barH);
+  ctx.restore();
+ 
+  // Armor visualization
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(t.angle);
+  
+  // Front armor visualization
+  const frontArmorPct = t.armor.front / 100;
+  const frontColor = frontArmorPct > 0.7 ? "#22c55e" : frontArmorPct > 0.4 ? "#facc15" : "#ef4444";
+  ctx.fillStyle = frontColor;
+  ctx.fillRect(-r, -r * 0.7, r * 2, r * 1.4 * frontArmorPct);
+  
+  // Side armor visualization (left and right)
+  const sideArmorPct = t.armor.side / 100;
+  const sideColor = sideArmorPct > 0.7 ? "#22c55e" : sideArmorPct > 0.4 ? "#facc15" : "#ef4444";
+  ctx.fillStyle = sideColor;
+  // Left side
+  ctx.fillRect(-r, -r * 0.7, r * 0.5, r * 1.4 * sideArmorPct);
+  // Right side
+  ctx.fillRect(r * 1.5, -r * 0.7, r * 0.5, r * 1.4 * sideArmorPct);
+  
+  // Rear armor visualization
+  const rearArmorPct = t.armor.rear / 100;
+  const rearColor = rearArmorPct > 0.7 ? "#22c55e" : rearArmorPct > 0.4 ? "#facc15" : "#ef4444";
+  ctx.fillStyle = rearColor;
+  ctx.fillRect(-r, r * 0.7 - r * 1.4 * rearArmorPct, r * 2, r * 1.4 * rearArmorPct);
+  
   ctx.restore();
 }
 
