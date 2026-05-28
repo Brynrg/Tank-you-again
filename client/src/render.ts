@@ -72,11 +72,11 @@ const PICKUP_GLYPHS: Record<ItemType, string> = {
 
 // Terrain colors
 const TERRAIN_COLORS: Record<TerrainType, string> = {
-  [TerrainType.EMPTY]: "#0b0b14",
+  [TerrainType.EMPTY]: "#0b0b14", // Same as background
   [TerrainType.WALL]: "#6b7280",
-  [TerrainType.WATER]: "#3b82f633",
-  [TerrainType.FOREST]: "#22c55e33",
-  [TerrainType.ROCK]: "#9ca3af33",
+  [TerrainType.WATER]: "#3b82f688", // More visible
+  [TerrainType.FOREST]: "#22c55e88", // More visible
+  [TerrainType.ROCK]: "#9ca3af88", // More visible
 };
 
 // Hit effect colors
@@ -117,7 +117,7 @@ export function initTerrain(): void {
   terrain.length = 0; // Clear existing terrain
   
   // Create sample terrain pattern
-  const terrainSize = 128;
+  const terrainSize = 64; // Reduced from 128
   for (let x = 0; x < MAP_WIDTH; x += terrainSize) {
     for (let y = 0; y < MAP_HEIGHT; y += terrainSize) {
       // Random terrain type with pattern
@@ -131,7 +131,7 @@ export function initTerrain(): void {
   }
   
   // Add some walls
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 30; i++) { // Increased from 15
     const type = Math.random() > 0.5 ? TerrainType.WALL : TerrainType.ROCK;
     terrain.push({
       type,
@@ -388,7 +388,7 @@ function drawMapBounds(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H:
 function drawTerrain(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: number): void {
   for (const t of terrain) {
     const p = project(cam, W, H, t.x, t.y);
-    const size = 80 * cam.zoom; // Terrain tile size
+    const size = 96 * cam.zoom; // Increased terrain tile size
     
     ctx.save();
     ctx.fillStyle = TERRAIN_COLORS[t.type];
