@@ -5,7 +5,7 @@
   "repo": "Brynrg/Tank-you-again",
   "playUrl": "/games/tank-you-again/",
   "category": "multiplayer-action",
-  "status": "preview",
+  "status": "live",
   "framework": "vite",
   "supportsMobile": false,
   "version": "0.1.0",
