@@ -284,3 +284,5 @@ for (const sig of ["SIGINT", "SIGTERM"] as const) {
     })();
   });
 }
+
+export { RoomLoop } from './loop.js';

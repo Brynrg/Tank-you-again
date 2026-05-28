@@ -1,9 +1,9 @@
-import { RoomLoop } from './server/src/loop.js';
+import { RoomLoop } from './server/dist/index.js';
 
 // Test AI functionality
 console.log('Testing AI Enemies...');
 
-const room = new RoomLoop();
+const room = new ServerModule.RoomLoop();
 
 // Add an AI enemy
 console.log('Adding AI enemy...');

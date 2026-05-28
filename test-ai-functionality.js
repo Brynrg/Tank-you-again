@@ -1,44 +1,51 @@
-#!/usr/bin/env node
+import { RoomLoop } from './server/dist/index.js';
 
-// Simple test to verify AI functionality
-const { spawn } = require('child_process');
+// Test AI functionality
+console.log('Testing AI Enemies...');
 
-console.log('🤖 Testing AI Enemies Implementation...\n');
+const room = new RoomLoop();
 
-// Test 1: Check if AI imports work
-console.log('✅ 1. Testing imports...');
-try {
-  const RoomLoop = require('./server/dist/index.js');
-  console.log('✓ RoomLoop imported successfully');
-} catch (e) {
-  console.log('⚠️  RoomLoop import issue:', e.message);
+// Add an AI enemy
+console.log('Adding AI enemy...');
+const ai = room.addAIEnemy('medium');
+console.log('AI enemy created:', ai.getTank().name);
+console.log('AI difficulty:', ai.getDifficulty());
+
+// Get the tank to see the actual properties
+const tank = ai.getTank();
+console.log('Tank properties:', {
+  id: tank.id,
+  name: tank.name,
+  team: tank.team,
+  rank: tank.rank,
+  x: tank.x,
+  y: tank.y,
+  fuel: tank.fuel,
+  ammo: tank.ammo
+});
+
+// Test that it's in the tanks map
+console.log('Tanks in room:', room.getTanksForTesting().size);
+
+// Get all tanks to see their teams
+console.log('\nAll tanks:');
+for (const [tankId, tank] of room.getTanksForTesting()) {
+  console.log(`${tankId}: ${tank.name} (${tank.team}) team: ${tank.team}`);
 }
 
-// Test 2: Check if tests pass
-console.log('\n✅ 2. Running tests...');
-const testProcess = spawn('npm', ['test'], { cwd: './' });
-testProcess.stdout.on('data', (data) => {
-  if (data.toString().includesTests) {
-    console.log('Tests running...');
-  }
-});
+// Run a few ticks to see if AI enemies spawn automatically
+console.log('\nRunning 300 ticks...');
+for (let i = 0; i < 300; i++) {
+  room.forceTick();
+}
 
-testProcess.on('close', (code) => {
-  if (code === 0) {
-    console.log('✓ All tests passed');
-  } else {
-    console.log('⚠️  Tests failed');
-  }
-});
+console.log('\nFinal tank count:', room.getTanksForTesting().size);
+console.log('AI enemies count in AI map:', room.getAIEnemies ? room.getAIEnemies().size : 'Not available');
 
-console.log('\n📊 Final Status:');
-console.log('   - AI Enemies: 🟢 85/95 items completed');
-console.log('   - Server: 🟢 Running');
-console.log('   - Client: 🟢 Built successfully');
-console.log('   - Tests: 🟢 16/16 passing');
-console.log('   - Documentation: 🟢 AI features added');
-console.log('\n🎯 Next Steps:');
-console.log('   1. Test AI spawning in live game');
-console.log('   2. Verify single-player mode works');
-console.log('   3. Balance AI performance across difficulty levels');
-console.log('\n🚀 Implementation Complete!');
+// List all tanks after running
+console.log('\nAll tanks after 300 ticks:');
+for (const [tankId, tank] of room.getTanksForTesting()) {
+  console.log(`${tankId}: ${tank.name} (${tank.team}) team: ${tank.team}`);
+}
+
+console.log('\nTest completed!');

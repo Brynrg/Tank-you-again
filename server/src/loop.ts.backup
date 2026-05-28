@@ -101,8 +101,6 @@ export class RoomLoop {
     | null = null;
 
   start(): void {
-    // Start with an initial AI enemy
-    this.addAIEnemy();
     if (this.timer) return;
     this.timer = setInterval(() => {
       try {
