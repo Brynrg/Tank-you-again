@@ -214,6 +214,11 @@ export function renderFrame(
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
 
+  // Initialize terrain system on first frame
+  if (terrain.length === 0) {
+    initTerrain();
+  }
+
   // Background
   ctx.fillStyle = "#0b0b14";
   ctx.fillRect(0, 0, W, H);
