@@ -781,10 +781,10 @@ export function renderHud(
   );
   ctx.restore();
 }
-  // Draw death overlay
-  if (deathOverlay.isDead) {
-    drawDeathOverlay(ctx, W, H);
-  }
+
+// Draw death overlay
+if (deathOverlay.isDead) {
+  drawDeathOverlay(ctx, W, H);
 }
 
 function drawDeathOverlay(ctx: CanvasRenderingContext2D, W: number, H: number): void {
