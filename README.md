@@ -6,6 +6,18 @@ A production-grade tactical tank game with advanced armor systems, directional d
 
 > *"Armor is not just protection—it's a tactical system that rewards positioning and precision."* — Commander Garnett
 
+## 📚 Documentation
+
+### 🎯 Upgrade Documentation
+
+Based on Claude Chrome's comprehensive technical review, we have a complete upgrade plan for the game:
+
+- **[TANK-YOU-AGAIN_UPGRADE_PLAN.md](./TANK-YOU-AGAIN_UPGRADE_PLAN.md)** - 67-item systematic upgrade plan and 12-week rollout strategy
+- **[TECHNICAL_IMPLEMENTATION_GUIDE.md](./TECHNICAL_IMPLEMENTATION_GUIDE.md)** - Detailed technical specifications and code examples
+- **[UPGRADE_PROGRESS_TRACKER.md](./UPGRADE_PROGRESS_TRACKER.md)** - Interactive checklist system for tracking implementation progress
+
+🏆 **Quick Status**: 17 identified deficiencies across 4 priority levels (Critical, Major, Moderate, Minor)
+
 ## 🚀 Features
 
 ### 🔧 Core Gameplay
