@@ -40,6 +40,8 @@ import {
 import type { Connection } from "./connection.js";
 import { send } from "./connection.js";
 import { EMPTY_INPUT, type PlayerCommandState, type PlayerInputState } from "./loop-types.js";
+import type { AIChallengeLevel } from "./sim/ai-enemy.js";
+import { AIEnemy } from "./sim/ai-enemy.js";
 import { findHit, stepProjectile, tryFire } from "./sim/combat.js";
 import { applyDamage } from "./sim/damage.js";
 import { creditFuel, debitFuel } from "./sim/economy.js";
@@ -85,6 +87,13 @@ export class RoomLoop {
 
   private readonly pickupSpawnRef = { value: 0 };
   private readonly teamCensus = new Map<TeamColor, number>();
+
+  /** AI enemies management */
+  private readonly aiEnemies = new Map<string, AIEnemy>();
+  private aiDifficulty: AIChallengeLevel = 'medium';
+  private readonly aiSpawnInterval = 120;
+  private lastAISpawnTick = 0;
+  private aiCount = 0;
 
   /** Hook: called with the room's tank state after a kill resolves. */
   public onXpDelta:
@@ -376,6 +385,9 @@ export class RoomLoop {
     maybeSpawnPickup(this.pickups, t, this.pickupSpawnRef);
     this.collectPickups();
 
+    // 4.5. Update AI enemies.
+    this.updateAIEnemies();
+
     // 5. Emit snapshots.
     const events = this.pendingEvents;
     this.pendingEvents = [];
@@ -538,6 +550,87 @@ export class RoomLoop {
   private forgetRadarEntity(entityId: string): void {
     for (const reveals of this.radarReveals.values()) {
       reveals.delete(entityId);
+    }
+  }
+
+  // AI enemy management methods
+  addAIEnemy(difficulty: AIChallengeLevel = this.aiDifficulty): AIEnemy {
+    const aiId = `ai-${this.aiCount++}`;
+    const team = pickTeam(this.teamCensus);
+    const ai = new AIEnemy(aiId, team, difficulty);
+    this.aiEnemies.set(aiId, ai);
+    this.teamCensus.set(team, (this.teamCensus.get(team) ?? 0) + 1);
+    
+    // Add to tank map for simulation
+    this.tanks.set(aiId, ai.getTank());
+    
+    return ai;
+  }
+
+  private updateAIEnemies(): void {
+    const currentTick = this.tickIndex;
+    
+    // Spawn new AI enemies periodically
+    if (currentTick - this.lastAISpawnTick >= this.aiSpawnInterval) {
+      this.addAIEnemy();
+      this.lastAISpawnTick = currentTick;
+    }
+    
+    // Update all AI enemies
+    for (const [aiId, ai] of this.aiEnemies) {
+      const worldState = {
+        tanks: Array.from(this.tanks.values()),
+        projectiles: Array.from(this.projectiles.values()),
+        mines: Array.from(this.mines.values()),
+        pickups: Array.from(this.pickups.values()),
+        radarReveals: this.radarReveals,
+        currentTick
+      };
+      
+      const action = ai.update(currentTick, worldState);
+      
+      // Process AI action
+      if (action.moveTarget) {
+        this.commands.set(aiId, {
+          kind: "MOVE_TO",
+          x: action.moveTarget.x,
+          y: action.moveTarget.y,
+          clientTick: currentTick
+        });
+      }
+      
+      if (action.fire) {
+        const fireMsg = {
+          type: "FIRE",
+          weapon: action.fire.weapon,
+          aim: action.fire.aim
+        } as any;
+        this.handleFire(aiId, fireMsg);
+      }
+      
+      if (action.useItem) {
+        const useItemMsg = {
+          type: "USE_ITEM",
+          item: action.useItem
+        } as any;
+        this.handleUseItem(aiId, useItemMsg);
+      }
+      
+      if (action.placeMine) {
+        const placeMineMsg = {
+          type: "PLACE_MINE"
+        } as any;
+        this.handlePlaceMine(aiId, placeMineMsg);
+      }
+      
+      if (action.teleport) {
+        const teleportMsg = {
+          type: "TELEPORT",
+          x: action.teleport.x,
+          y: action.teleport.y
+        } as any;
+        this.handleTeleport(aiId, teleportMsg);
+      }
     }
   }
 }

@@ -40,6 +40,48 @@ The armor system provides three distinct layers of protection:
 
 **Tactical Tip**: Attack from the rear for maximum damage efficiency, or flank to exploit side weaknesses.
 
+### 🎧 AI Enemies Mode
+
+Now with intelligent AI opponents that adapt their strategy based on difficulty level!
+
+#### 🤖 AI Difficulty Levels
+
+|| Level | Intelligence | Behavior Pattern | AI Name Format |
+|-------|--------|---------------|-----------------|----------------|
+| **Easy** | BasicAI | Simple fuel management, basic attacks | AI-easy-[4char] |
+| **Medium** | SmartAI | Balanced offense/defense with shield | AI-medium-[4char] |
+| **Hard** | ExpertAI | Aggressive tactics with strategic positioning | AI-hard-[4char] |
+| **Expert** | MasterAI | Predictive attacks with multiple targeting | AI-expert-[4char] |
+
+#### 🎮 How AI Works
+
+- **Team Assignment**: AI enemies join BLUE, RED, ORANGE, or PURPLE teams automatically
+- **Auto-spawn**: New AI enemies appear every 120 ticks (6 seconds at 20Hz)
+- **Independent AI**: Each AI tank thinks and acts independently
+- **Difficulty scaling**: AI performance varies significantly across levels
+
+#### 🧠 AI Behavior Patterns
+
+**Easy**: Focuses on basic survival and occasional attacks
+- Manages fuel efficiently
+- Uses shield sporadically
+- Attacks simple targets
+
+**Medium**: Balanced tactical approach  
+- Mix of offense and defense
+- Consistent shield usage
+- Targets visible enemies
+
+**Hard**: Aggressive and mobile
+- Proactive attacks with shield
+- Strategic positioning
+- Uses radar for enemy detection
+
+**Expert**: Advanced tactical awareness
+- Predictive movement patterns
+- Multiple targeting strategies
+- Complex action combinations
+
 ### 🧠 Tactical Guidance
 
 #### 🎯 Armor Management
@@ -67,9 +109,11 @@ The armor system provides three distinct layers of protection:
 
 - **Map size**: 2048×2048 units
 - **Tick rate**: 20 Hz (50ms per tick)
-- **Network**: WebSocket communication
+- **Network**: WebSocket communication & single-player mode
 - **Client**: TypeScript/Canvas rendering
 - **Server**: Node.js with authoritative simulation
+- **AI**: Modular behavior trees with difficulty scaling
+- **AI Architecture**: Perception System → Decision Engine → Behavior Tree
 
 ## 🚨 Known Issues
 

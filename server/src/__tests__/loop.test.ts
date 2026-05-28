@@ -371,3 +371,36 @@ describe("RoomLoop", () => {
     expect(a).toBe(b);
   });
 });
+
+
+describe("AIEnemies", () => {
+  it("adds an AI enemy to the room", () => {
+    const room = new RoomLoop();
+    const ai = room.addAIEnemy("medium");
+    expect(ai.getTank().name).toMatch(/AI-medium-/);
+    expect(room.getTanksForTesting().size).toBe(1);
+  });
+
+  it("creates AI enemies with different difficulty levels", () => {
+    const room = new RoomLoop();
+    const easyAI = room.addAIEnemy("easy");
+    const mediumAI = room.addAIEnemy("medium");
+    const hardAI = room.addAIEnemy("hard");
+    const expertAI = room.addAIEnemy("expert");
+    
+    expect(easyAI.getDifficulty()).toBe("easy");
+    expect(mediumAI.getDifficulty()).toBe("medium");
+    expect(hardAI.getDifficulty()).toBe("hard");
+    expect(expertAI.getDifficulty()).toBe("expert");
+  });
+
+  it("assigns different teams to AI enemies", () => {
+    const room = new RoomLoop();
+    const ai1 = room.addAIEnemy("medium");
+    const ai2 = room.addAIEnemy("medium");
+    const ai3 = room.addAIEnemy("medium");
+    
+    const teams = [ai1.getTank().team, ai2.getTank().team, ai3.getTank().team];
+    expect(new Set(teams).size).toBeGreaterThan(1);
+  });
+});
