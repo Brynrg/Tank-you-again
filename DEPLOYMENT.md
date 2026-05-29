@@ -4,6 +4,16 @@
 > `speedrungames.net/games/tank-you-again/`. Follows the canonical contract in
 > `Brynrg/speedrungames/AGENTS.md`.
 
+> **⚠️ Current workflows (this doc is partly historical).** There is **one**
+> CI/backend workflow, [`.github/workflows/ci-and-deploy.yml`](./.github/workflows/ci-and-deploy.yml)
+> (CI + Fly backend deploy), and a separate frontend deploy
+> [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml). The frontend
+> deploy calls the **portal's reusable workflow** (`deploy-game.yml`), which runs
+> `ingest-game-build.mjs` and opens an **auto-merging** portal PR — it does **not**
+> `cp` files into the portal. References below to `deploy-frontend.yml` /
+> `deploy-backend.yml` are stale (those files never existed as separate workflows).
+> **Never hand-copy `client/dist` into the portal.**
+
 ## Architecture summary
 
 ```

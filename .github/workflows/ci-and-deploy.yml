@@ -128,83 +128,9 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-  deploy-frontend:
-    needs: ci
-    if: |
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      needs.ci.outputs.frontend_changed == 'true'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: deploy-frontend
-      cancel-in-progress: false
-    env:
-      GAME_SLUG: tank-you-again
-      TARGET_REPO: Brynrg/speedrungames
-      TARGET_BRANCH: main
-    steps:
-      - name: Checkout Tank-you-again
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-
-      - name: Install
-        run: npm ci --no-audit --no-fund
-
-      - name: Build client (Vite) with subpath base
-        run: npx vite build --base=/games/${{ env.GAME_SLUG }}/
-        working-directory: client
-        env:
-          NODE_ENV: production
-          VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
-
-      - name: Verify build output
-        run: |
-          test -f client/dist/index.html
-          test -d client/dist/assets
-
-      - name: Checkout portal repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.TARGET_REPO }}
-          token: ${{ secrets.SPEEDRUNGAMES_TOKEN }}
-          ref: ${{ env.TARGET_BRANCH }}
-          path: site
-
-      - name: Replace static game files (keep portal manifest.json)
-        run: |
-          DEST="site/apps/web/public/games/${GAME_SLUG}"
-          mkdir -p "$DEST"
-          # Preserve the portal-owned manifest.json byte-for-byte using a
-          # tempfile copy. Doing this through a shell variable + echo mangles
-          # JSON content (backslashes, embedded quotes, trailing whitespace),
-          # so we use file ops only.
-          PRESERVED=""
-          if [ -f "$DEST/manifest.json" ]; then
-            PRESERVED="$(mktemp)"
-            cp "$DEST/manifest.json" "$PRESERVED"
-          fi
-          rm -rf "$DEST"/*
-          cp -R client/dist/. "$DEST"/
-          if [ -n "$PRESERVED" ]; then
-            cp "$PRESERVED" "$DEST/manifest.json"
-            rm -f "$PRESERVED"
-          fi
-
-      - name: Commit & push if changed
-        working-directory: site
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "apps/web/public/games/${GAME_SLUG}"
-          if git diff --cached --quiet; then
-            echo "No changes — already up to date."
-            exit 0
-          fi
-          SHORT_SHA=$(git -C "$GITHUB_WORKSPACE" rev-parse --short HEAD)
-          git commit -m "Sync ${GAME_SLUG} from Tank-you-again@${SHORT_SHA}"
-          git push origin "${TARGET_BRANCH}"
+  # NOTE: the old `deploy-frontend` job (raw `cp -R client/dist` into the portal)
+  # was REMOVED. It hand-copied build output, which buried a build in a dist/
+  # subfolder and shipped a "no visible change" deploy. Client deploys now go
+  # through .github/workflows/deploy.yml -> the portal reusable workflow
+  # (Brynrg/speedrungames/.github/workflows/deploy-game.yml), which runs the
+  # canonical ingest and opens an auto-merging portal PR. Never hand-copy.

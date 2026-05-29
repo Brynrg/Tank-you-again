@@ -25,6 +25,20 @@ Deploy targets:
 - Backend → `tank-you-again.fly.dev` (Fly.io, free tier, shared-cpu-1x, auto-stop)
 - Database → Neon Postgres (free tier, autoscales to zero)
 
+### How the frontend deploys (read before touching deploy)
+
+Push to `main` → [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)
+builds the client and calls the **portal's reusable workflow**
+(`Brynrg/speedrungames/.github/workflows/deploy-game.yml`), which runs the
+canonical ingest and opens an **auto-merging portal PR**. That is the only way
+the client reaches the live site.
+
+> ❌ **Never** `cp` `client/dist` (or `dist/`) into the speedrungames portal,
+> and never hand-edit `apps/web/public/games/tank-you-again/`. Doing exactly
+> that once buried the build in a `dist/` subfolder and shipped a "no visible
+> change" deploy. To deploy: **push**, or run the portal's
+> `scripts/ingest-game-build.mjs` — never copy files.
+
 ## The contract — what you must do
 
 ### Before you push

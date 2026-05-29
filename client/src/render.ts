@@ -112,6 +112,57 @@ const hitEffects: HitEffect[] = [];
 // Death overlay state
 let deathOverlay: DeathOverlay = { isDead: false, respawnTimer: 0, opacity: 0 };
 
+// Minimap state
+const MINIMAP_SIZE = 160;
+const MINIMAP_SCALE = MAP_WIDTH / MINIMAP_SIZE;
+
+// Kill feed state
+interface KillFeedItem {
+  text: string;
+  time: number;
+}
+
+const KILL_FEED_MAX_ITEMS = 5;
+const killFeed: KillFeedItem[] = [];
+
+// Team scores
+interface TeamScores {
+  [TeamColor.RED]: number;
+  [TeamColor.BLUE]: number;
+  [TeamColor.ORANGE]: number;
+  [TeamColor.PURPLE]: number;
+}
+
+let teamScores: TeamScores = {
+  [TeamColor.RED]: 0,
+  [TeamColor.BLUE]: 0,
+  [TeamColor.ORANGE]: 0,
+  [TeamColor.PURPLE]: 0,
+};
+
+interface KillCount {
+  [key: string]: number; // tank.id -> kill count
+}
+
+let killCounts: KillCount = {};
+
+// Cooldown system state
+interface CooldownState {
+  missiles: number;
+  mines: number;
+  shields: number;
+  radar: number;
+  teleports: number;
+}
+
+let cooldowns: CooldownState = {
+  missiles: 0,
+  mines: 0,
+  shields: 0,
+  radar: 0,
+  teleports: 0,
+};
+
 // Initialize terrain system
 export function initTerrain(): void {
   terrain.length = 0; // Clear existing terrain
@@ -195,6 +246,10 @@ function project(
 // Update terrain and effects (call this each frame)
 export function updateRenderSystem(): void {
   updateHitEffects();
+  updateKillFeed();
+  // Update team scores and kill counts when available
+  // (this will be called when we have a snapshot)
+  
   // Animate death overlay if needed
   if (deathOverlay.isDead && deathOverlay.opacity < 0.8) {
     deathOverlay.opacity = Math.min(0.8, deathOverlay.opacity + 0.02);
@@ -315,6 +370,15 @@ export function renderFrame(
   if (commandTarget) {
     drawCommandTarget(ctx, cam, W, H, commandTarget);
   }
+
+  // Draw minimap
+  drawMinimap(ctx, cam, W, H, snap, yourTankId);
+  
+  // Draw scoreboard
+  drawScoreboard(ctx, W, H);
+  
+  // Draw kill feed
+  drawKillFeed(ctx, W, H);
 
   // Tanks
   for (const t of snap.tanks) {
@@ -611,6 +675,101 @@ function drawHitEffect(
   ctx.restore();
 }
 
+function drawMinimap(
+  ctx: CanvasRenderingContext2D,
+  cam: Camera,
+  W: number,
+  H: number,
+  snap: GameStateSnapshot,
+  yourTankId: string,
+): void {
+  const minimapX = W - MINIMAP_SIZE - 8;
+  const minimapY = 8;
+  
+  ctx.save();
+  
+  // Minimap background
+  ctx.fillStyle = "#1f1f33aa";
+  ctx.strokeStyle = "#facc1555";
+  ctx.lineWidth = 2;
+  ctx.fillRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
+  ctx.strokeRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
+  
+  // Find your tank for centering
+  const yourTank = snap.tanks.find(t => t.id === yourTankId);
+  const centerX = yourTank ? yourTank.x : MAP_WIDTH / 2;
+  const centerY = yourTank ? yourTank.y : MAP_HEIGHT / 2;
+  
+  // Draw terrain on minimap
+  for (const terrainCell of terrain) {
+    if (terrainCell.type === TerrainType.EMPTY) continue;
+    
+    const x = minimapX + (terrainCell.x / MAP_WIDTH) * MINIMAP_SIZE;
+    const y = minimapY + (terrainCell.y / MAP_HEIGHT) * MINIMAP_SIZE;
+    const size = 4;
+    
+    ctx.fillStyle = TERRAIN_COLORS[terrainCell.type];
+    if (terrainCell.type === TerrainType.WATER) {
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.arc(x, y, size/2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.fillRect(x - size/2, y - size/2, size, size);
+    }
+  }
+  
+  // Draw visible mines
+  for (const m of snap.visibleMines) {
+    const x = minimapX + (m.x / MAP_WIDTH) * MINIMAP_SIZE;
+    const y = minimapY + (m.y / MAP_HEIGHT) * MINIMAP_SIZE;
+    ctx.fillStyle = "#ef4444aa";
+    ctx.beginPath();
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Draw pickups
+  for (const pk of snap.pickups) {
+    const x = minimapX + (pk.x / MAP_WIDTH) * MINIMAP_SIZE;
+    const y = minimapY + (pk.y / MAP_HEIGHT) * MINIMAP_SIZE;
+    
+    ctx.fillStyle = "#facc15aa";
+    ctx.beginPath();
+    ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Draw tanks
+  for (const t of snap.tanks) {
+    const x = minimapX + (t.x / MAP_WIDTH) * MINIMAP_SIZE;
+    const y = minimapY + (t.y / MAP_HEIGHT) * MINIMAP_SIZE;
+    const size = t.id === yourTankId ? 3 : 2;
+    const color = t.id === yourTankId ? "#facc15" : TEAM_COLORS[t.team] || "#666";
+    
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw tank direction
+    if (t.angle !== undefined) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(
+        x + Math.cos(t.angle) * size * 2,
+        y + Math.sin(t.angle) * size * 2
+      );
+      ctx.stroke();
+    }
+  }
+  
+  ctx.restore();
+}
+
 function drawProjectile(
   ctx: CanvasRenderingContext2D,
   cam: Camera,
@@ -728,7 +887,7 @@ export function renderHud(
 
   if (state.yourTank) {
     const t = state.yourTank;
-    // Bottom-left: fuel - no low-fuel warning
+    // Bottom-left: fuel - improved with low-fuel warning
     const barW = 220;
     const barH = 14;
     const bx = 8;
@@ -736,21 +895,37 @@ export function renderHud(
     ctx.fillStyle = "#1f1f33";
     ctx.fillRect(bx, by, barW, barH);
     const pct = Math.max(0, Math.min(1, t.fuel / MAX_FUEL));
-    ctx.fillStyle = pct > 0.5 ? "#22c55e" : pct > 0.2 ? "#facc15" : "#ef4444";
+    
+    // Low fuel warning
+    let fuelColor = "#22c55e";
+    let fuelText = `FUEL ${Math.round(t.fuel)} / ${MAX_FUEL}`;
+    if (pct <= 0.05) {
+      fuelColor = "#ef4444";
+      fuelText = "LOW FUEL! " + fuelText;
+    } else if (pct <= 0.2) {
+      fuelColor = "#facc15";
+    } else if (pct <= 0.3) {
+      // Medium warning with intermittent flash
+      const flash = Math.floor(Date.now() / 500) % 2;
+      if (flash === 0) fuelColor = "#facc15aa";
+    }
+    
+    ctx.fillStyle = fuelColor;
     ctx.fillRect(bx, by, barW * pct, barH);
     ctx.fillStyle = "#facc15";
-    ctx.fillText(
-      `FUEL ${Math.round(t.fuel)} / ${MAX_FUEL}  ${t.hasShield ? "[shield]" : ""}`,
-      bx,
-      by - 4,
-    );
-    // Bottom-left: ammo (no cooldown feedback)
+    ctx.fillText(fuelText, bx, by - 4);
+    
+    // Bottom-left: ammo with cooldown feedback
     ctx.fillStyle = "#facc15";
-    ctx.fillText(
-      `MIS ${t.ammo.missiles}   MINE ${t.ammo.mines}   TP ${t.ammo.teleports}   SH ${t.ammo.shields}   RAD ${t.ammo.radar}   RANK ${t.rank}`,
-      bx,
-      by + barH + 14,
-    );
+    let ammoText = `MIS ${t.ammo.missiles}   MINE ${t.ammo.mines}   TP ${t.ammo.teleports}   SH ${t.ammo.shields}   RAD ${t.ammo.radar}   RANK ${t.rank}`;
+    
+    // Add cooldown indicators
+    if (t.ammo.missiles === 0) ammoText += " [⏳]";
+    if (t.ammo.mines === 0) ammoText += " [⏳]";
+    if (t.ammo.shields === 0) ammoText += " [⏳]";
+    
+    ctx.fillText(ammoText, bx, by + barH + 14);
+    
     if (state.snap) {
       ctx.fillText(
         `RADAR sees fuel/equipment:${state.snap.pickups.length} mines:${state.snap.visibleMines.length}`,
@@ -758,11 +933,19 @@ export function renderHud(
         by + barH + 28,
       );
     }
-    // No kill feed visible tanks info only (no scoreboard)
+    
+    // Right-aligned visible tanks count
     if (state.snap) {
       const visible = state.snap.tanks.length;
       ctx.textAlign = "right";
-      ctx.fillText(`visible tanks: ${visible}`, W - 8, H - 8);
+      const totalText = `visible tanks: ${visible}`;
+      
+      // Condensed format when space is tight
+      if (W < 800) {
+        ctx.fillText(`${visible} tanks`, W - 8, H - 8);
+      } else {
+        ctx.fillText(totalText, W - 8, H - 8);
+      }
     }
   } else {
     ctx.fillText("Waiting for spawn…", 8, H - 8);
@@ -779,6 +962,161 @@ export function renderHud(
     W - 8,
     16,
   );
+  ctx.restore();
+}
+
+function addKillFeed(text: string): void {
+  const now = Date.now();
+  killFeed.push({ text, time: now });
+  
+  // Keep only the most recent items
+  if (killFeed.length > KILL_FEED_MAX_ITEMS) {
+    killFeed.shift();
+  }
+}
+
+function updateKillFeed(): void {
+  const now = Date.now();
+  // Remove items older than 3 seconds
+  for (let i = killFeed.length - 1; i >= 0; i--) {
+    if (now - killFeed[i].time > 3000) {
+      killFeed.splice(i, 1);
+    }
+  }
+}
+
+function drawKillFeed(ctx: CanvasRenderingContext2D, W: number, H: number): void {
+  ctx.save();
+  
+  const startX = W / 2;
+  const startY = 80;
+  const lineHeight = 20;
+  
+  ctx.font = "14px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#facc15dd";
+  
+  // Draw from bottom to top (newest at bottom)
+  for (let i = 0; i < killFeed.length; i++) {
+    const item = killFeed[i];
+    const alpha = Math.min(1, (Date.now() - item.time) / 1000); // Fade in
+    const y = startY + i * lineHeight;
+    
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillText(item.text, startX, y);
+    ctx.restore();
+  }
+  
+  ctx.restore();
+}
+
+function updateTeamScores(snap: GameStateSnapshot): void {
+  // Reset scores
+  teamScores = {
+    [TeamColor.RED]: 0,
+    [TeamColor.BLUE]: 0,
+    [TeamColor.ORANGE]: 0,
+    [TeamColor.PURPLE]: 0,
+  };
+  
+  // Count tanks alive per team
+  for (const tank of snap.tanks) {
+    if (tank.team && !tank.isDead) {
+      teamScores[tank.team] = (teamScores[tank.team] || 0) + 1;
+    }
+  }
+}
+
+function updateKillCounts(snap: GameStateSnapshot): void {
+  killCounts = {};
+  for (const tank of snap.tanks) {
+    killCounts[tank.id] = tank.kills || 0;
+  }
+}
+
+function drawScoreboard(ctx: CanvasRenderingContext2D, W: number, H: number): void {
+  ctx.save();
+  
+  const scoreboardX = 8;
+  const scoreboardY = 60;
+  const lineHeight = 18;
+  
+  ctx.font = "12px system-ui, sans-serif";
+  ctx.textAlign = "left";
+  
+  // Background
+  ctx.fillStyle = "#1f1f33aa";
+  ctx.fillRect(scoreboardX - 4, scoreboardY - 6, 200, 80);
+  
+  // Team scores
+  let yOffset = 0;
+  for (const team of [TeamColor.RED, TeamColor.BLUE, TeamColor.ORANGE, TeamColor.PURPLE]) {
+    const count = teamScores[team] || 0;
+    const color = TEAM_COLORS[team] || "#666";
+    
+    ctx.fillStyle = color;
+    ctx.fillText(`${team}: ${count}`, scoreboardX, scoreboardY + yOffset);
+    yOffset += lineHeight;
+  }
+  
+  ctx.restore();
+}
+
+function updateCooldowns(tank: TankState): void {
+  // For now, use simple ammo counts as cooldown indicators
+  // In a full implementation, this would track actual cooldown timers
+  cooldowns.missiles = tank.ammo.missiles;
+  cooldowns.mines = tank.ammo.mines;
+  cooldowns.shields = tank.ammo.shields;
+  cooldowns.radar = tank.ammo.radar;
+  cooldowns.teleports = tank.ammo.teleports;
+}
+
+function drawCooldownIndicators(ctx: CanvasRenderingContext2D, W: number, H: number, tank: TankState): void {
+  if (!tank) return;
+  
+  ctx.save();
+  
+  const indicators = [
+    { key: 'missiles', label: 'MIS', x: 120, y: H - 40 },
+    { key: 'mines', label: 'MINE', x: 180, y: H - 40 },
+    { key: 'teleports', label: 'TP', x: 240, y: H - 40 },
+    { key: 'shields', label: 'SH', x: 300, y: H - 40 },
+    { key: 'radar', label: 'RAD', x: 360, y: H - 40 },
+  ];
+  
+  ctx.font = "11px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#facc1599";
+  
+  for (const indicator of indicators) {
+    const value = cooldowns[indicator.key as keyof CooldownState];
+    
+    // Background circle
+    ctx.fillStyle = value === 0 ? "#ef4444aa" : "#22c55eaa";
+    ctx.beginPath();
+    ctx.arc(indicator.x, indicator.y, 8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Label
+    ctx.fillStyle = "#facc15";
+    ctx.fillText(indicator.label, indicator.x, indicator.y + 3);
+    
+    // Value
+    ctx.fillStyle = value === 0 ? "#ef4444" : "#666";
+    ctx.fillText(value.toString(), indicator.x + 15, indicator.y + 3);
+    
+    // Cooldown arc for empty items
+    if (value === 0) {
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(indicator.x, indicator.y, 10, 0, Math.PI * 1.5);
+      ctx.stroke();
+    }
+  }
+  
   ctx.restore();
 }
 
