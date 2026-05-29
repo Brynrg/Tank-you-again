@@ -55,7 +55,7 @@ jobs:
       # .github/workflows/deploy.yml (Vite/esbuild, no tsc), so the backend
       # deploy gate must not hang on the client's separate pre-existing
       # type-debt. Run `npm run typecheck:client` to see/fix that debt.
-      - name: Typecheck (backend: shared + server + scripts)
+      - name: "Typecheck (backend: shared + server + scripts)"
         run: npm run typecheck:backend
 
       - name: Unit tests
