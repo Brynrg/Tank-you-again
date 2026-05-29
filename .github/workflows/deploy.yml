@@ -1,0 +1,35 @@
+name: Deploy to speedrungames.net
+
+# Auto-deploys the CLIENT to the portal on every push to main.
+#
+# Deliberately decoupled from ci-and-deploy.yml: this only builds the client
+# (Vite/esbuild, no server typecheck) and ships it via the portal's reusable
+# workflow, which runs the canonical ingest and opens an auto-merging portal PR.
+# The Fly backend continues to deploy via ci-and-deploy.yml's deploy-backend job.
+#
+# Never copy build output into the portal by hand — that buried a build once.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+      - "shared/**"
+      - "game.manifest.json"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: Brynrg/speedrungames/.github/workflows/deploy-game.yml@main
+    with:
+      slug: tank-you-again
+      build-command: npm run build:portal --workspace=client && node scripts/stage-dist.mjs
+      dist-dir: dist
+      status: preview
+    secrets:
+      SPEEDRUNGAMES_TOKEN: ${{ secrets.SPEEDRUNGAMES_TOKEN }}
+      VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
