@@ -7,35 +7,35 @@ export interface TreeNode {
 
 export class SequenceNode implements TreeNode {
   private readonly children: TreeNode[];
-  
+
   constructor(children: TreeNode[]) {
     this.children = children;
   }
-  
+
   evaluate(): AIAction {
     const action: AIAction = {};
-    
+
     for (const child of this.children) {
       const childAction = child.evaluate();
       Object.assign(action, childAction);
-      
+
       // If any child returns no action, stop executing
       if (Object.keys(childAction).length === 0) {
         break;
       }
     }
-    
+
     return action;
   }
 }
 
 export class SelectorNode implements TreeNode {
   private readonly children: TreeNode[];
-  
+
   constructor(children: TreeNode[]) {
     this.children = children;
   }
-  
+
   evaluate(): AIAction {
     for (const child of this.children) {
       const action = child.evaluate();
@@ -43,14 +43,14 @@ export class SelectorNode implements TreeNode {
         return action;
       }
     }
-    
+
     return {};
   }
 }
 
 export class LeafNode implements TreeNode {
   constructor(private readonly evaluateFn: () => AIAction) {}
-  
+
   evaluate(): AIAction {
     return this.evaluateFn();
   }
@@ -60,7 +60,9 @@ export class LeafNode implements TreeNode {
 export class IsLowFuelNode implements TreeNode {
   evaluate(): AIAction {
     // Return basic action for low fuel check
-    return { /* Low fuel condition met */ };
+    return {
+      /* Low fuel condition met */
+    };
   }
 }
 
@@ -94,11 +96,11 @@ export class IsLowAmmoNode implements TreeNode {
 
 export class UseItemNode implements TreeNode {
   private readonly itemType: string;
-  
+
   constructor(itemType: string) {
     this.itemType = itemType;
   }
-  
+
   evaluate(): AIAction {
     return { useItem: this.itemType as any };
   }
@@ -121,7 +123,7 @@ export class IsHighThreatNode implements TreeNode {
 export class UseShieldNode implements TreeNode {
   evaluate(): AIAction {
     const action: AIAction = {};
-    action.useItem = 'SHIELD';
+    action.useItem = "SHIELD";
     return action;
   }
 }
@@ -179,7 +181,7 @@ export class HasLowAmmoNode implements TreeNode {
 export class UseRadarNode implements TreeNode {
   evaluate(): AIAction {
     const action: AIAction = {};
-    action.useItem = 'RADAR';
+    action.useItem = "RADAR";
     return action;
   }
 }
@@ -208,110 +210,88 @@ export class AmbushNode implements TreeNode {
 export class BehaviorTree {
   public readonly difficulty: AIChallengeLevel;
   private readonly root: TreeNode;
-  
+
   constructor(difficulty: AIChallengeLevel) {
     this.difficulty = difficulty;
     this.root = this.buildBehaviorTree();
   }
-  
+
   private buildBehaviorTree(): TreeNode {
     switch (this.difficulty) {
-      case 'easy':
+      case "easy":
         return new SelectorNode([
-          new SequenceNode([
-            new IsLowFuelNode(),
-            new MoveToPickupNode()
-          ]),
-          new SequenceNode([
-            new HasVisibleEnemyNode(),
-            new MoveToEnemyNode()
-          ]),
-          new SequenceNode([
-            new IsLowAmmoNode(),
-            new UseItemNode('SHIELD')
-          ]),
-          new RandomMoveNode()
+          new SequenceNode([new IsLowFuelNode(), new MoveToPickupNode()]),
+          new SequenceNode([new HasVisibleEnemyNode(), new MoveToEnemyNode()]),
+          new SequenceNode([new IsLowAmmoNode(), new UseItemNode("SHIELD")]),
+          new RandomMoveNode(),
         ]);
-        
-      case 'medium':
+
+      case "medium":
         return new SelectorNode([
-          new SequenceNode([
-            new IsLowFuelNode(),
-            new MoveToPickupNode()
-          ]),
+          new SequenceNode([new IsLowFuelNode(), new MoveToPickupNode()]),
           new SequenceNode([
             new IsHighThreatNode(),
             new UseShieldNode(),
-            new MoveToSafePositionNode()
+            new MoveToSafePositionNode(),
           ]),
-          new SequenceNode([
-            new HasVisibleEnemyNode(),
-            new AttackNode(),
-            new PlaceMineNode()
-          ]),
-          new RandomMoveNode()
+          new SequenceNode([new HasVisibleEnemyNode(), new AttackNode(), new PlaceMineNode()]),
+          new RandomMoveNode(),
         ]);
-        
-      case 'hard':
+
+      case "hard":
         return new SelectorNode([
-          new SequenceNode([
-            new IsLowFuelNode(),
-            new MoveToPickupNode()
-          ]),
+          new SequenceNode([new IsLowFuelNode(), new MoveToPickupNode()]),
           new SequenceNode([
             new IsHighThreatNode(),
             new UseShieldNode(),
             new UseTeleportNode(),
-            new MoveToSafePositionNode()
-          ]),
-          new SequenceNode([
-            new HasVisibleEnemyNode(),
-            new PredictiveAttackNode(),
-            new FlankNode(),
-            new PlaceMineNode()
-          ]),
-          new SequenceNode([
-            new HasLowAmmoNode(),
-            new UseItemNode('RADAR'),
-            new UseItemNode('SHIELD')
-          ]),
-          new RandomMoveNode()
-        ]);
-        
-      case 'expert':
-        return new SelectorNode([
-          new SequenceNode([
-            new IsLowFuelNode(),
-            new MoveToPickupNode()
-          ]),
-          new SequenceNode([
-            new IsHighThreatNode(),
-            new UseShieldNode(),
-            new UseTeleportNode(),
-            new MoveToSafePositionNode()
+            new MoveToSafePositionNode(),
           ]),
           new SequenceNode([
             new HasVisibleEnemyNode(),
             new PredictiveAttackNode(),
             new FlankNode(),
             new PlaceMineNode(),
-            new UseRadarNode()
           ]),
           new SequenceNode([
             new HasLowAmmoNode(),
-            new UseItemNode('RADAR'),
-            new UseItemNode('SHIELD')
+            new UseItemNode("RADAR"),
+            new UseItemNode("SHIELD"),
+          ]),
+          new RandomMoveNode(),
+        ]);
+
+      case "expert":
+        return new SelectorNode([
+          new SequenceNode([new IsLowFuelNode(), new MoveToPickupNode()]),
+          new SequenceNode([
+            new IsHighThreatNode(),
+            new UseShieldNode(),
+            new UseTeleportNode(),
+            new MoveToSafePositionNode(),
+          ]),
+          new SequenceNode([
+            new HasVisibleEnemyNode(),
+            new PredictiveAttackNode(),
+            new FlankNode(),
+            new PlaceMineNode(),
+            new UseRadarNode(),
+          ]),
+          new SequenceNode([
+            new HasLowAmmoNode(),
+            new UseItemNode("RADAR"),
+            new UseItemNode("SHIELD"),
           ]),
           new SequenceNode([
             new HasMultipleEnemiesNode(),
             new TargetWeakestNode(),
-            new AmbushNode()
+            new AmbushNode(),
           ]),
-          new RandomMoveNode()
+          new RandomMoveNode(),
         ]);
     }
   }
-  
+
   evaluate(): AIAction {
     return this.root.evaluate();
   }

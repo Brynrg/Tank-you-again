@@ -90,7 +90,7 @@ export class RoomLoop {
 
   /** AI enemies management */
   private readonly aiEnemies = new Map<string, AIEnemy>();
-  private aiDifficulty: AIChallengeLevel = 'medium';
+  private aiDifficulty: AIChallengeLevel = "medium";
   private readonly aiSpawnInterval = 120;
   private lastAISpawnTick = 0;
   private aiCount = 0;
@@ -562,22 +562,22 @@ export class RoomLoop {
     const ai = new AIEnemy(aiId, team, difficulty);
     this.aiEnemies.set(aiId, ai);
     this.teamCensus.set(team, (this.teamCensus.get(team) ?? 0) + 1);
-    
+
     // Add to tank map for simulation
     this.tanks.set(aiId, ai.getTank());
-    
+
     return ai;
   }
 
   private updateAIEnemies(): void {
     const currentTick = this.tickIndex;
-    
+
     // Spawn new AI enemies periodically
     if (currentTick - this.lastAISpawnTick >= this.aiSpawnInterval) {
       this.addAIEnemy();
       this.lastAISpawnTick = currentTick;
     }
-    
+
     // Update all AI enemies
     for (const [aiId, ai] of this.aiEnemies) {
       const worldState = {
@@ -586,50 +586,50 @@ export class RoomLoop {
         mines: Array.from(this.mines.values()),
         pickups: Array.from(this.pickups.values()),
         radarReveals: this.radarReveals,
-        currentTick
+        currentTick,
       };
-      
+
       const action = ai.update(currentTick, worldState);
-      
+
       // Process AI action
       if (action.moveTarget) {
         this.commands.set(aiId, {
           kind: "MOVE_TO",
           x: action.moveTarget.x,
           y: action.moveTarget.y,
-          clientTick: currentTick
+          clientTick: currentTick,
         });
       }
-      
+
       if (action.fire) {
         const fireMsg = {
           type: "FIRE",
           weapon: action.fire.weapon,
-          aim: action.fire.aim
+          aim: action.fire.aim,
         } as any;
         this.handleFire(aiId, fireMsg);
       }
-      
+
       if (action.useItem) {
         const useItemMsg = {
           type: "USE_ITEM",
-          item: action.useItem
+          item: action.useItem,
         } as any;
         this.handleUseItem(aiId, useItemMsg);
       }
-      
+
       if (action.placeMine) {
         const placeMineMsg = {
-          type: "PLACE_MINE"
+          type: "PLACE_MINE",
         } as any;
         this.handlePlaceMine(aiId, placeMineMsg);
       }
-      
+
       if (action.teleport) {
         const teleportMsg = {
           type: "TELEPORT",
           x: action.teleport.x,
-          y: action.teleport.y
+          y: action.teleport.y,
         } as any;
         this.handleTeleport(aiId, teleportMsg);
       }

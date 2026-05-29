@@ -1,7 +1,7 @@
-import { 
-  ClientMessageType, 
-  ServerMessageType, 
-  type ClientMessage, 
+import {
+  ClientMessageType,
+  ServerMessageType,
+  type ClientMessage,
   type ServerMessage,
   type GameStateSnapshot,
 } from "@shared/types";
@@ -19,7 +19,10 @@ export class SinglePlayerNetClient {
   private onStatus?: (status: NetStatus) => void;
   private clientTick = 0;
 
-  constructor(options: { onMessage: (msg: ServerMessage) => void; onStatus?: (status: NetStatus) => void; }) {
+  constructor(options: {
+    onMessage: (msg: ServerMessage) => void;
+    onStatus?: (status: NetStatus) => void;
+  }) {
     this.onMessage = options.onMessage;
     this.onStatus = options.onStatus;
   }
@@ -36,15 +39,17 @@ export class SinglePlayerNetClient {
     const response: ServerMessage = {
       type: ServerMessageType.SNAPSHOT,
       tick: 0,
-      snapshot: this.snapshot || {
-        tick: 0,
-        timestamp: Date.now(),
-        tanks: [],
-        projectiles: [],
-        pickups: [],
-        visibleMines: [],
-        events: [],
-      } as GameStateSnapshot,
+      snapshot:
+        this.snapshot ||
+        ({
+          tick: 0,
+          timestamp: Date.now(),
+          tanks: [],
+          projectiles: [],
+          pickups: [],
+          visibleMines: [],
+          events: [],
+        } as GameStateSnapshot),
     };
     if (this.onMessage) {
       this.onMessage(response);
@@ -58,7 +63,7 @@ export class SinglePlayerNetClient {
     const response: ServerMessage = {
       type: ServerMessageType.SNAPSHOT,
       tick: snapshot.tick,
-      snapshot
+      snapshot,
     };
     if (this.onMessage) {
       this.onMessage(response);

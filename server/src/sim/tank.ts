@@ -1,4 +1,16 @@
-import { TankState, TeamColor, MilitaryRank, INITIAL_MISSILES, INITIAL_MINES, INITIAL_TELEPORTS, INITIAL_SHIELDS, INITIAL_RADAR, SPAWN_FUEL, SPAWN_PROTECTION_TICKS, MAX_FUEL } from "@shared/types";
+import {
+  TankState,
+  TeamColor,
+  MilitaryRank,
+  INITIAL_MISSILES,
+  INITIAL_MINES,
+  INITIAL_TELEPORTS,
+  INITIAL_SHIELDS,
+  INITIAL_RADAR,
+  SPAWN_FUEL,
+  SPAWN_PROTECTION_TICKS,
+  MAX_FUEL,
+} from "@shared/types";
 
 export function createTank(
   id: string,

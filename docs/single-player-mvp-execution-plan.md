@@ -100,26 +100,26 @@ shared/types.ts
 Add these shared enums near the existing enum section:
 
 export enum GameMode {
-  MULTIPLAYER = "MULTIPLAYER",
-  SINGLE_PLAYER = "SINGLE_PLAYER",
+MULTIPLAYER = "MULTIPLAYER",
+SINGLE_PLAYER = "SINGLE_PLAYER",
 }
 
 export enum TankControllerKind {
-  PLAYER = "PLAYER",
-  AI = "AI",
+PLAYER = "PLAYER",
+AI = "AI",
 }
 
 export enum AIPersonality {
-  AGGRESSIVE = "AGGRESSIVE",
-  DEFENSIVE = "DEFENSIVE",
-  BALANCED = "BALANCED",
+AGGRESSIVE = "AGGRESSIVE",
+DEFENSIVE = "DEFENSIVE",
+BALANCED = "BALANCED",
 }
 
 export enum DifficultyLevel {
-  EASY = 1,
-  MEDIUM = 2,
-  HARD = 3,
-  EXPERT = 4,
+EASY = 1,
+MEDIUM = 2,
+HARD = 3,
+EXPERT = 4,
 }
 
 ### Extend `TankState`
@@ -129,11 +129,11 @@ Add optional AI-safe fields to the existing `TankState` interface:
 controller?: TankControllerKind;
 
 ai?: {
-  personality: AIPersonality;
-  difficulty: DifficultyLevel;
-  targetTankId: string | null;
-  lastDecisionTick: number;
-  lastAction: string;
+personality: AIPersonality;
+difficulty: DifficultyLevel;
+targetTankId: string | null;
+lastDecisionTick: number;
+lastAction: string;
 };
 
 These fields must be optional so existing multiplayer code remains compatible.
@@ -185,9 +185,9 @@ Also inspect any other file that creates or owns `RoomLoop` instances.
 Add or adapt a room options interface:
 
 interface RoomLoopOptions {
-  gameMode?: GameMode;
-  aiDifficulty?: DifficultyLevel;
-  aiCount?: number;
+gameMode?: GameMode;
+aiDifficulty?: DifficultyLevel;
+aiCount?: number;
 }
 
 ### Defaults
@@ -210,13 +210,14 @@ private readonly aiCount: number;
 private aiInitialized = false;
 
 private readonly aiCombatState = new Map<
-  string,
-  {
-    lastBulletTick: number;
-    lastMissileTick: number;
-    lastMineTick: number;
-  }
->();
+string,
+{
+lastBulletTick: number;
+lastMissileTick: number;
+lastMineTick: number;
+}
+
+> ();
 
 Add a server-only AI brain state map if needed, keyed by tank id. Keep server-only brain state out of the network snapshot unless the client truly needs it.
 
@@ -249,11 +250,11 @@ server/src/sim/ai-spawn.ts
 ### Export Types and Function
 
 export interface SpawnAIOptions {
-  count: number;
-  difficulty: DifficultyLevel;
-  currentTick: number;
-  existingTanks: Iterable<TankState>;
-  rng?: () => number;
+count: number;
+difficulty: DifficultyLevel;
+currentTick: number;
+existingTanks: Iterable<TankState>;
+rng?: () => number;
 }
 
 export function spawnAITanks(opts: SpawnAIOptions): TankState[];
@@ -314,26 +315,26 @@ Use module-level exports. Do not create a static-only class.
 ### Export `AIIntent`
 
 export interface AIIntent {
-  moveTarget: { x: number; y: number } | null;
-  aim: number;
-  fireBullet: boolean;
-  fireMissile: boolean;
-  placeMine: boolean;
-  useShield: boolean;
-  useRadar: boolean;
-  teleportTarget: { x: number; y: number } | null;
-  actionLabel: string;
+moveTarget: { x: number; y: number } | null;
+aim: number;
+fireBullet: boolean;
+fireMissile: boolean;
+placeMine: boolean;
+useShield: boolean;
+useRadar: boolean;
+teleportTarget: { x: number; y: number } | null;
+actionLabel: string;
 }
 
 ### Export `decideAIIntent`
 
 export function decideAIIntent(args: {
-  aiTank: TankState;
-  tanks: Iterable<TankState>;
-  visibleMines: Iterable<MineState>;
-  projectiles: Iterable<ProjectileState>;
-  currentTick: number;
-  rng?: () => number;
+aiTank: TankState;
+tanks: Iterable<TankState>;
+visibleMines: Iterable<MineState>;
+projectiles: Iterable<ProjectileState>;
+currentTick: number;
+rng?: () => number;
 }): AIIntent;
 
 ### Targeting Rules
@@ -385,7 +386,7 @@ Use steering-style behavior for MVP:
 4. avoid map edges
 5. avoid visible/known mines within 120 units
 
-Do not implement full pathfinding, A*, flow fields, destructible navigation, or wall navigation in this phase.
+Do not implement full pathfinding, A\*, flow fields, destructible navigation, or wall navigation in this phase.
 
 ### Output Rules
 
@@ -420,22 +421,22 @@ Use module-level exports. Do not create a static-only class.
 ### Export `calculateAIAim`
 
 export function calculateAIAim(args: {
-  aiTank: TankState;
-  target: TankState;
-  difficulty: DifficultyLevel;
-  currentTick: number;
-  rng?: () => number;
+aiTank: TankState;
+target: TankState;
+difficulty: DifficultyLevel;
+currentTick: number;
+rng?: () => number;
 }): number;
 
 ### Export `chooseAIWeapon`
 
 export function chooseAIWeapon(args: {
-  aiTank: TankState;
-  target: TankState;
-  distance: number;
-  difficulty: DifficultyLevel;
-  personality: AIPersonality;
-  rng?: () => number;
+aiTank: TankState;
+target: TankState;
+distance: number;
+difficulty: DifficultyLevel;
+personality: AIPersonality;
+rng?: () => number;
 }): ProjectileKind | null;
 
 ### Aim Rules
@@ -529,16 +530,16 @@ if (!combatState) return;
 
 const weapon = intent.fireMissile ? ProjectileKind.MISSILE : ProjectileKind.BULLET;
 const lastTick =
-  weapon === ProjectileKind.MISSILE
-    ? combatState.lastMissileTick
-    : combatState.lastBulletTick;
+weapon === ProjectileKind.MISSILE
+? combatState.lastMissileTick
+: combatState.lastBulletTick;
 
 const result = tryFire(aiTank, weapon, intent.aim, this.tickIndex, lastTick);
 
 if (result.ok && result.projectile) {
-  this.projectiles.set(result.projectile.id, result.projectile);
-  if (weapon === ProjectileKind.MISSILE) combatState.lastMissileTick = this.tickIndex;
-  else combatState.lastBulletTick = this.tickIndex;
+this.projectiles.set(result.projectile.id, result.projectile);
+if (weapon === ProjectileKind.MISSILE) combatState.lastMissileTick = this.tickIndex;
+else combatState.lastBulletTick = this.tickIndex;
 }
 
 ### Equipment Use
@@ -581,10 +582,10 @@ shared/types.ts
 In `client/src/loop.ts`, add optional `gameMode`:
 
 export interface RunOptions {
-  canvas: HTMLCanvasElement;
-  wsUrl: string;
-  guestName: string;
-  gameMode?: GameMode;
+canvas: HTMLCanvasElement;
+wsUrl: string;
+guestName: string;
+gameMode?: GameMode;
 }
 
 ### Add Mode to Net Client
@@ -592,9 +593,9 @@ export interface RunOptions {
 In `client/src/net.ts`, add optional `gameMode` to `NetClientOptions`, store it, and send it in the auth message:
 
 this.send({
-  type: ClientMessageType.AUTH,
-  guestName: this.guestName,
-  gameMode: this.gameMode,
+type: ClientMessageType.AUTH,
+guestName: this.guestName,
+gameMode: this.gameMode,
 });
 
 ### URL Param Activation
@@ -753,7 +754,7 @@ Do not implement these in this pass:
 ### AI Navigation V2
 
 - raycasts
-- coarse-grid A*
+- coarse-grid A\*
 - flow fields
 - destructible obstacle navigation
 - wall-aware movement
