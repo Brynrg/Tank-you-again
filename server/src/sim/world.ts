@@ -77,6 +77,7 @@ export function makeTank(args: {
     spawnProtectedUntilTick: args.currentTick + SPAWN_PROTECTION_TICKS,
     isDead: false,
     respawnAtTick: 0,
+    armor: { front: 100, side: 100, rear: 100 },
   };
 }
 

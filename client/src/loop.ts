@@ -7,7 +7,10 @@ import {
 } from "@shared/types";
 
 import { attach as attachInput, type InputLayer } from "./input.js";
-import { SinglePlayerNetClient, type NetStatus as SinglePlayerNetStatus } from "./single-player-net.js";
+import {
+  SinglePlayerNetClient,
+  type NetStatus as SinglePlayerNetStatus,
+} from "./single-player-net.js";
 import { NetClient, type NetStatus } from "./net.js";
 import { followTank, makeCamera, renderFrame, renderHud, type Camera } from "./render.js";
 
@@ -46,50 +49,52 @@ export function run(opts: RunOptions): RunHandle {
   let clientTick = 0;
   let lastFrameMs = performance.now();
 
-  const net: UnifiedNetClient = (opts.singlePlayer ?? false) ? 
-    new SinglePlayerNetClient({
-      onMessage: (msg: ServerMessage) => {
-        if (msg.type === ServerMessageType.WELCOME) {
-          yourTankId = msg.yourTankId;
-        } else if (msg.type === ServerMessageType.SNAPSHOT) {
-          lastSnapshot = msg.snapshot;
-          yourTank = lastSnapshot.tanks.find((t) => t.id === yourTankId) ?? null;
-          const target = input.getCommandTarget();
-          if (target && yourTank) {
-            const dx = target.x - yourTank.x;
-            const dy = target.y - yourTank.y;
-            if (Math.hypot(dx, dy) <= COMMAND_ARRIVAL_RADIUS * 2) input.clearCommandTarget();
-          }
-        } else if (msg.type === ServerMessageType.EVENT) {
-          // Inline event handling could trigger sound/particles. Stubbed for now.
-        }
-      },
-      onStatus: (s) => {
-        status = s;
-      },
-    }) : new NetClient({
-    url: opts.wsUrl!,
-    guestName: opts.guestName,
-    onMessage: (msg: ServerMessage) => {
-      if (msg.type === ServerMessageType.WELCOME) {
-        yourTankId = msg.yourTankId;
-      } else if (msg.type === ServerMessageType.SNAPSHOT) {
-        lastSnapshot = msg.snapshot;
-        yourTank = lastSnapshot.tanks.find((t) => t.id === yourTankId) ?? null;
-        const target = input.getCommandTarget();
-        if (target && yourTank) {
-          const dx = target.x - yourTank.x;
-          const dy = target.y - yourTank.y;
-          if (Math.hypot(dx, dy) <= COMMAND_ARRIVAL_RADIUS * 2) input.clearCommandTarget();
-        }
-      } else if (msg.type === ServerMessageType.EVENT) {
-        // Inline event handling could trigger sound/particles. Stubbed for now.
-      }
-    },
-    onStatus: (s) => {
-      status = s;
-    },
-  });
+  const net: UnifiedNetClient =
+    (opts.singlePlayer ?? false)
+      ? new SinglePlayerNetClient({
+          onMessage: (msg: ServerMessage) => {
+            if (msg.type === ServerMessageType.WELCOME) {
+              yourTankId = msg.yourTankId;
+            } else if (msg.type === ServerMessageType.SNAPSHOT) {
+              lastSnapshot = msg.snapshot;
+              yourTank = lastSnapshot.tanks.find((t) => t.id === yourTankId) ?? null;
+              const target = input.getCommandTarget();
+              if (target && yourTank) {
+                const dx = target.x - yourTank.x;
+                const dy = target.y - yourTank.y;
+                if (Math.hypot(dx, dy) <= COMMAND_ARRIVAL_RADIUS * 2) input.clearCommandTarget();
+              }
+            } else if (msg.type === ServerMessageType.EVENT) {
+              // Inline event handling could trigger sound/particles. Stubbed for now.
+            }
+          },
+          onStatus: (s) => {
+            status = s;
+          },
+        })
+      : new NetClient({
+          url: opts.wsUrl!,
+          guestName: opts.guestName,
+          onMessage: (msg: ServerMessage) => {
+            if (msg.type === ServerMessageType.WELCOME) {
+              yourTankId = msg.yourTankId;
+            } else if (msg.type === ServerMessageType.SNAPSHOT) {
+              lastSnapshot = msg.snapshot;
+              yourTank = lastSnapshot.tanks.find((t) => t.id === yourTankId) ?? null;
+              const target = input.getCommandTarget();
+              if (target && yourTank) {
+                const dx = target.x - yourTank.x;
+                const dy = target.y - yourTank.y;
+                if (Math.hypot(dx, dy) <= COMMAND_ARRIVAL_RADIUS * 2) input.clearCommandTarget();
+              }
+            } else if (msg.type === ServerMessageType.EVENT) {
+              // Inline event handling could trigger sound/particles. Stubbed for now.
+            }
+          },
+          onStatus: (s) => {
+            status = s;
+          },
+        });
 
   let rafHandle: number = 0;
   function frame(): void {
@@ -174,7 +179,7 @@ export function run(opts: RunOptions): RunHandle {
     stop() {
       cancelAnimationFrame(rafHandle);
       input.detach();
-      if ('destroy' in net) {
+      if ("destroy" in net) {
         (net as { destroy: () => void }).destroy();
       } else {
         (net as { close: () => void }).close();

@@ -1,12 +1,15 @@
 import { MilitaryRank, TeamColor, type TankState } from "@shared/types";
 import { makeTank } from "./world.js";
+import { PerceptionSystem } from "./ai-perception.js";
+import { DecisionEngine } from "./ai-decision.js";
+import { BehaviorTree } from "./ai-behavior-tree.js";
 
-export type AIChallengeLevel = 'easy' | 'medium' | 'hard' | 'expert';
+export type AIChallengeLevel = "easy" | "medium" | "hard" | "expert";
 
 export interface AIAction {
   moveTarget?: { x: number; y: number };
-  fire?: { weapon: 'BULLET' | 'MISSILE'; aim: number };
-  useItem?: 'FUEL_CRATE' | 'SHIELD' | 'RADAR' | 'MISSILE' | 'MINE_PACK' | 'TELEPORT_CHARGE';
+  fire?: { weapon: "BULLET" | "MISSILE"; aim: number };
+  useItem?: "FUEL_CRATE" | "SHIELD" | "RADAR" | "MISSILE" | "MINE_PACK" | "TELEPORT_CHARGE";
   placeMine?: boolean;
   teleport?: { x: number; y: number };
 }
@@ -29,8 +32,8 @@ export class AIEnemy {
   private perception: any;
   private decisionEngine: any;
   private lastActionTick: number;
-  
-  constructor(tankId: string, team: TeamColor, difficulty: AIChallengeLevel = 'medium') {
+
+  constructor(tankId: string, team: TeamColor, difficulty: AIChallengeLevel = "medium") {
     this.tank = makeTank({
       id: tankId,
       name: `AI-${difficulty}-${Math.random().toString(36).substr(2, 4)}`,
@@ -38,10 +41,10 @@ export class AIEnemy {
       rank: this.getRankByDifficulty(difficulty),
       currentTick: 0,
     });
-    
+
     this.difficulty = difficulty;
     this.lastActionTick = 0;
-    
+
     // Initialize AI modules with error handling
     try {
       this.perception = new PerceptionSystem();
@@ -54,37 +57,37 @@ export class AIEnemy {
       this.behaviorTree = null;
     }
   }
-  
+
   update(currentTick: number, worldState: any): AIAction {
     // Use existing perception, decision, and behavior modules with null checks
     let sensedWorld: any;
     if (this.perception) {
       sensedWorld = this.perception.sense(this.tank, worldState);
     }
-    
+
     let action: AIAction = {};
     if (this.decisionEngine && sensedWorld) {
       action = this.decisionEngine.decide(this.tank, sensedWorld);
     }
-    
+
     this.lastActionTick = currentTick;
     return action;
   }
-  
+
   getTank(): TankState {
     return this.tank;
   }
-  
+
   getDifficulty(): AIChallengeLevel {
     return this.difficulty;
   }
-  
+
   private getRankByDifficulty(level: AIChallengeLevel): MilitaryRank {
     const rankMap: Record<AIChallengeLevel, MilitaryRank> = {
-      'easy': MilitaryRank.RECRUIT,
-      'medium': MilitaryRank.SERGEANT,
-      'hard': MilitaryRank.COLONEL,
-      'expert': MilitaryRank.GENERAL
+      easy: MilitaryRank.RECRUIT,
+      medium: MilitaryRank.SERGEANT,
+      hard: MilitaryRank.COLONEL,
+      expert: MilitaryRank.GENERAL,
     };
     return rankMap[level] || MilitaryRank.SERGEANT;
   }

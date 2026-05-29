@@ -166,7 +166,7 @@ let cooldowns: CooldownState = {
 // Initialize terrain system
 export function initTerrain(): void {
   terrain.length = 0; // Clear existing terrain
-  
+
   // Create sample terrain pattern
   const terrainSize = 64; // Reduced from 128
   for (let x = 0; x < MAP_WIDTH; x += terrainSize) {
@@ -174,15 +174,16 @@ export function initTerrain(): void {
       // Random terrain type with pattern
       const types = [TerrainType.EMPTY, TerrainType.WATER, TerrainType.FOREST, TerrainType.ROCK];
       const type = types[Math.floor(Math.random() * types.length)];
-      
+
       if (type !== TerrainType.EMPTY) {
         terrain.push({ type: type!, x, y });
       }
     }
   }
-  
+
   // Add some walls
-  for (let i = 0; i < 30; i++) { // Increased from 15
+  for (let i = 0; i < 30; i++) {
+    // Increased from 15
     const type = Math.random() > 0.5 ? TerrainType.WALL : TerrainType.ROCK;
     terrain.push({
       type,
@@ -195,9 +196,11 @@ export function initTerrain(): void {
 // Add hit effect
 export function addHitEffect(x: number, y: number, type: HitEffectType): void {
   hitEffects.push({
-    x, y, type,
+    x,
+    y,
+    type,
     frame: 0,
-    maxFrames: type === HitEffectType.BULLET ? 2 : type === HitEffectType.MISSILE ? 3 : 4
+    maxFrames: type === HitEffectType.BULLET ? 2 : type === HitEffectType.MISSILE ? 3 : 4,
   });
 }
 
@@ -249,7 +252,7 @@ export function updateRenderSystem(): void {
   updateKillFeed();
   // Update team scores and kill counts when available
   // (this will be called when we have a snapshot)
-  
+
   // Animate death overlay if needed
   if (deathOverlay.isDead && deathOverlay.opacity < 0.8) {
     deathOverlay.opacity = Math.min(0.8, deathOverlay.opacity + 0.02);
@@ -288,29 +291,29 @@ export function renderFrame(
   for (const pk of snap.pickups) {
     const p = project(cam, W, H, pk.x, pk.y);
     ctx.save();
-    
+
     // Different colors for different pickup types
     const colors = {
       [ItemType.FUEL_CRATE]: "#22c55e",
-      [ItemType.MISSILE]: "#ef4444", 
+      [ItemType.MISSILE]: "#ef4444",
       [ItemType.MINE_PACK]: "#8b5cf6",
       [ItemType.SHIELD]: "#22d3ee",
       [ItemType.RADAR]: "#facc15",
       [ItemType.TELEPORT_CHARGE]: "#a855f7",
     };
-    
+
     const color = colors[pk.type] || "#facc15";
-    
+
     // Draw pickup with gradient
     const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 15 * cam.zoom);
     gradient.addColorStop(0, color);
     gradient.addColorStop(1, color + "99");
-    
+
     ctx.fillStyle = gradient;
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    
+
     // Different shapes for different types
     if (pk.type === ItemType.FUEL_CRATE) {
       // Square for fuel
@@ -322,14 +325,14 @@ export function renderFrame(
       ctx.fill();
       ctx.stroke();
     }
-    
+
     // Inner symbol
     ctx.fillStyle = "#0b0b14";
     ctx.font = `${Math.max(10, 12 * cam.zoom)}px system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(PICKUP_GLYPHS[pk.type] ?? "?", p.x, p.y);
-    
+
     // Pulsing effect
     const time = Date.now() / 1000;
     const pulse = 0.8 + Math.sin(time * 3) * 0.2;
@@ -339,7 +342,7 @@ export function renderFrame(
     ctx.beginPath();
     ctx.arc(p.x, p.y, 12 * cam.zoom, 0, Math.PI * 2);
     ctx.stroke();
-    
+
     ctx.restore();
   }
 
@@ -373,10 +376,10 @@ export function renderFrame(
 
   // Draw minimap
   drawMinimap(ctx, cam, W, H, snap, yourTankId);
-  
+
   // Draw scoreboard
   drawScoreboard(ctx, W, H);
-  
+
   // Draw kill feed
   drawKillFeed(ctx, W, H);
 
@@ -453,27 +456,27 @@ function drawTerrain(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: n
   for (const t of terrain) {
     const p = project(cam, W, H, t.x, t.y);
     const size = 96 * cam.zoom; // Increased terrain tile size
-    
+
     ctx.save();
     ctx.fillStyle = TERRAIN_COLORS[t.type];
-    
+
     if (t.type === TerrainType.WALL) {
       // Draw walls as rectangles
-      ctx.fillRect(p.x - size/2, p.y - size/2, size, size);
+      ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
     } else if (t.type === TerrainType.WATER) {
       // Draw water as circles
       ctx.globalAlpha = 0.2;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, size/2, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2);
       ctx.fill();
     } else if (t.type === TerrainType.FOREST) {
       // Draw forest as squares with pattern
-      ctx.fillRect(p.x - size/2, p.y - size/2, size, size);
+      ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
       ctx.fillStyle = "#22c55e55";
       for (let i = 0; i < 3; i++) {
         const offsetX = (Math.random() - 0.5) * size * 0.6;
         const offsetY = (Math.random() - 0.5) * size * 0.6;
-        ctx.fillRect(p.x + offsetX - size/8, p.y + offsetY - size/8, size/4, size/4);
+        ctx.fillRect(p.x + offsetX - size / 8, p.y + offsetY - size / 8, size / 4, size / 4);
       }
     } else if (t.type === TerrainType.ROCK) {
       // Draw rocks as irregular polygons
@@ -481,7 +484,7 @@ function drawTerrain(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: n
       const sides = 6;
       for (let i = 0; i < sides; i++) {
         const angle = (i / sides) * Math.PI * 2;
-        const radius = size/2 * (0.8 + Math.random() * 0.4);
+        const radius = (size / 2) * (0.8 + Math.random() * 0.4);
         const x = p.x + Math.cos(angle) * radius;
         const y = p.y + Math.sin(angle) * radius;
         if (i === 0) ctx.moveTo(x, y);
@@ -505,9 +508,9 @@ function drawTank(
   const p = project(cam, W, H, t.x, t.y);
   const r = TANK_RADIUS * cam.zoom;
   const teamColor = TEAM_COLORS[t.team] ?? "#666";
-  
+
   ctx.save();
- 
+
   // Spawn-protection ring
   if (t.isSpawnProtected) {
     ctx.strokeStyle = "#facc15";
@@ -518,7 +521,7 @@ function drawTank(
     ctx.stroke();
     ctx.setLineDash([]);
   }
-  
+
   // Shield ring
   if (t.hasShield) {
     ctx.strokeStyle = "#22d3ee";
@@ -527,17 +530,17 @@ function drawTank(
     ctx.arc(p.x, p.y, r + 3, 0, Math.PI * 2);
     ctx.stroke();
   }
-  
+
   // Hull with gradient shading
   ctx.translate(p.x, p.y);
   ctx.rotate(t.angle);
-  
+
   // Create gradient for hull (lighter top, darker bottom)
   const hullGradient = ctx.createLinearGradient(-r, -r * 0.7, -r, r * 0.7);
   const baseColor = t.isDead ? "#333" : teamColor;
   hullGradient.addColorStop(0, t.isDead ? "#444" : lightenColor(baseColor, 0.3));
   hullGradient.addColorStop(1, t.isDead ? "#222" : darkenColor(baseColor, 0.3));
-  
+
   ctx.fillStyle = hullGradient;
   ctx.strokeStyle = "#000";
   ctx.lineWidth = 1;
@@ -545,14 +548,14 @@ function drawTank(
   ctx.rect(-r, -r * 0.7, r * 2, r * 1.4);
   ctx.fill();
   ctx.stroke();
-  
+
   // Track detail: two thin black lines on hull sides
   ctx.fillStyle = "#000";
   ctx.fillRect(-r + 2, -r * 0.7, 2, r * 1.4);
   ctx.fillRect(r - 4, -r * 0.7, 2, r * 1.4);
-  
+
   ctx.rotate(-t.angle);
- 
+
   // Turret with gradient shading
   ctx.rotate(t.turretAngle);
   const turretGradient = ctx.createLinearGradient(0, -r * 0.18, 0, r * 0.18);
@@ -563,13 +566,13 @@ function drawTank(
   ctx.beginPath();
   ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2);
   ctx.fill();
-  
+
   // Barrel tip: small dark rectangle at barrel end
   ctx.fillStyle = "#000";
   ctx.fillRect(r * 0.8, -r * 0.09, r * 0.4, r * 0.18);
-  
+
   ctx.restore();
- 
+
   // Team stripes: colored border (3px) around hull
   ctx.save();
   ctx.strokeStyle = teamColor;
@@ -578,7 +581,7 @@ function drawTank(
   ctx.arc(p.x, p.y, r + 4, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
-  
+
   // Local-tank highlight
   if (isLocal) {
     ctx.save();
@@ -589,7 +592,7 @@ function drawTank(
     ctx.stroke();
     ctx.restore();
   }
- 
+
   // Name + fuel bar
   ctx.save();
   ctx.font = `${Math.max(11, 12 * cam.zoom)}px system-ui, sans-serif`;
@@ -607,18 +610,18 @@ function drawTank(
   ctx.fillStyle = pct > 0.5 ? "#22c55e" : pct > 0.2 ? "#facc15" : "#ef4444";
   ctx.fillRect(bx, by, barW * pct, barH);
   ctx.restore();
- 
+
   // Armor visualization
   ctx.save();
   ctx.translate(p.x, p.y);
   ctx.rotate(t.angle);
-  
+
   // Front armor visualization
   const frontArmorPct = t.armor.front / 100;
   const frontColor = frontArmorPct > 0.7 ? "#22c55e" : frontArmorPct > 0.4 ? "#facc15" : "#ef4444";
   ctx.fillStyle = frontColor;
   ctx.fillRect(-r, -r * 0.7, r * 2, r * 1.4 * frontArmorPct);
-  
+
   // Side armor visualization (left and right)
   const sideArmorPct = t.armor.side / 100;
   const sideColor = sideArmorPct > 0.7 ? "#22c55e" : sideArmorPct > 0.4 ? "#facc15" : "#ef4444";
@@ -627,13 +630,13 @@ function drawTank(
   ctx.fillRect(-r, -r * 0.7, r * 0.5, r * 1.4 * sideArmorPct);
   // Right side
   ctx.fillRect(r * 1.5, -r * 0.7, r * 0.5, r * 1.4 * sideArmorPct);
-  
+
   // Rear armor visualization
   const rearArmorPct = t.armor.rear / 100;
   const rearColor = rearArmorPct > 0.7 ? "#22c55e" : rearArmorPct > 0.4 ? "#facc15" : "#ef4444";
   ctx.fillStyle = rearColor;
   ctx.fillRect(-r, r * 0.7 - r * 1.4 * rearArmorPct, r * 2, r * 1.4 * rearArmorPct);
-  
+
   ctx.restore();
 }
 
@@ -647,10 +650,10 @@ function drawHitEffect(
   const p = project(cam, W, H, effect.x, effect.y);
   const progress = effect.frame / effect.maxFrames;
   const alpha = 1 - progress;
-  
+
   ctx.save();
   ctx.globalAlpha = alpha;
-  
+
   if (effect.type === HitEffectType.BULLET) {
     // Yellow flash ring
     ctx.strokeStyle = HIT_EFFECT_COLORS[HitEffectType.BULLET];
@@ -671,7 +674,7 @@ function drawHitEffect(
     ctx.arc(p.x, p.y, 25 * cam.zoom * (1 - progress * 0.3), 0, Math.PI * 2);
     ctx.fill();
   }
-  
+
   ctx.restore();
 }
 
@@ -685,41 +688,41 @@ function drawMinimap(
 ): void {
   const minimapX = W - MINIMAP_SIZE - 8;
   const minimapY = 8;
-  
+
   ctx.save();
-  
+
   // Minimap background
   ctx.fillStyle = "#1f1f33aa";
   ctx.strokeStyle = "#facc1555";
   ctx.lineWidth = 2;
   ctx.fillRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
   ctx.strokeRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
-  
+
   // Find your tank for centering
-  const yourTank = snap.tanks.find(t => t.id === yourTankId);
+  const yourTank = snap.tanks.find((t) => t.id === yourTankId);
   const centerX = yourTank ? yourTank.x : MAP_WIDTH / 2;
   const centerY = yourTank ? yourTank.y : MAP_HEIGHT / 2;
-  
+
   // Draw terrain on minimap
   for (const terrainCell of terrain) {
     if (terrainCell.type === TerrainType.EMPTY) continue;
-    
+
     const x = minimapX + (terrainCell.x / MAP_WIDTH) * MINIMAP_SIZE;
     const y = minimapY + (terrainCell.y / MAP_HEIGHT) * MINIMAP_SIZE;
     const size = 4;
-    
+
     ctx.fillStyle = TERRAIN_COLORS[terrainCell.type];
     if (terrainCell.type === TerrainType.WATER) {
       ctx.globalAlpha = 0.3;
       ctx.beginPath();
-      ctx.arc(x, y, size/2, 0, Math.PI * 2);
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
     } else {
-      ctx.fillRect(x - size/2, y - size/2, size, size);
+      ctx.fillRect(x - size / 2, y - size / 2, size, size);
     }
   }
-  
+
   // Draw visible mines
   for (const m of snap.visibleMines) {
     const x = minimapX + (m.x / MAP_WIDTH) * MINIMAP_SIZE;
@@ -729,44 +732,41 @@ function drawMinimap(
     ctx.arc(x, y, 2, 0, Math.PI * 2);
     ctx.fill();
   }
-  
+
   // Draw pickups
   for (const pk of snap.pickups) {
     const x = minimapX + (pk.x / MAP_WIDTH) * MINIMAP_SIZE;
     const y = minimapY + (pk.y / MAP_HEIGHT) * MINIMAP_SIZE;
-    
+
     ctx.fillStyle = "#facc15aa";
     ctx.beginPath();
     ctx.arc(x, y, 1.5, 0, Math.PI * 2);
     ctx.fill();
   }
-  
+
   // Draw tanks
   for (const t of snap.tanks) {
     const x = minimapX + (t.x / MAP_WIDTH) * MINIMAP_SIZE;
     const y = minimapY + (t.y / MAP_HEIGHT) * MINIMAP_SIZE;
     const size = t.id === yourTankId ? 3 : 2;
     const color = t.id === yourTankId ? "#facc15" : TEAM_COLORS[t.team] || "#666";
-    
+
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Draw tank direction
     if (t.angle !== undefined) {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.lineTo(
-        x + Math.cos(t.angle) * size * 2,
-        y + Math.sin(t.angle) * size * 2
-      );
+      ctx.lineTo(x + Math.cos(t.angle) * size * 2, y + Math.sin(t.angle) * size * 2);
       ctx.stroke();
     }
   }
-  
+
   ctx.restore();
 }
 
@@ -779,7 +779,7 @@ function drawProjectile(
 ): void {
   const sp = project(cam, W, H, p.x, p.y);
   ctx.save();
-  
+
   if (p.kind === ProjectileKind.BULLET) {
     // Enhanced bullet with glow trail
     // Glowing effect
@@ -789,14 +789,14 @@ function drawProjectile(
     ctx.beginPath();
     ctx.arc(sp.x, sp.y, 4 * cam.zoom, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Inner circle
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#fff";
     ctx.beginPath();
     ctx.arc(sp.x, sp.y, 2 * cam.zoom, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Motion trail
     const trailLength = 10;
     for (let i = 0; i < trailLength; i++) {
@@ -809,16 +809,15 @@ function drawProjectile(
       ctx.arc(trailX, trailY, (4 - i * 0.3) * cam.zoom, 0, Math.PI * 2);
       ctx.fill();
     }
-    
   } else {
     // Enhanced missile with trail
     ctx.fillStyle = "#ef4444";
     ctx.translate(sp.x, sp.y);
     ctx.rotate(Math.atan2(p.vy, p.vx));
-    
+
     // Main missile body
     ctx.fillRect(-8 * cam.zoom, -3 * cam.zoom, 12 * cam.zoom, 6 * cam.zoom);
-    
+
     // Nose cone
     ctx.fillStyle = "#ef4444aa";
     ctx.beginPath();
@@ -827,7 +826,7 @@ function drawProjectile(
     ctx.lineTo(8 * cam.zoom, 3 * cam.zoom);
     ctx.closePath();
     ctx.fill();
-    
+
     // Rocket trail
     const time = Date.now() / 1000;
     const trailLength = 15;
@@ -836,11 +835,11 @@ function drawProjectile(
       ctx.globalAlpha = alpha;
       const trailWidth = 6 - i * 0.3;
       const trailX = -8 * cam.zoom - i * 1.2 * cam.zoom;
-      
+
       ctx.fillStyle = "#ef4444";
-      ctx.fillRect(trailX, -trailWidth/2, 4, trailWidth);
+      ctx.fillRect(trailX, -trailWidth / 2, 4, trailWidth);
     }
-    
+
     ctx.shadowBlur = 0;
   }
   ctx.restore();
@@ -867,7 +866,7 @@ export function renderHud(
 
   // Top-left: status / tick / rtt (raw debug info)
   ctx.fillText(`srv tick=${state.serverTick}  rtt=${state.rttMs}ms  ws=${state.status}`, 8, 16);
-  
+
   // Raw debug info area - show more detailed information
   if (state.snap) {
     ctx.fillStyle = "#facc15bb";
@@ -877,7 +876,7 @@ export function renderHud(
       34,
     );
     ctx.fillText(
-      `Projectiles: ${state.snap.projectiles.length} | Teams: ${new Set(state.snap.tanks.map(t => t.team)).size}`,
+      `Projectiles: ${state.snap.projectiles.length} | Teams: ${new Set(state.snap.tanks.map((t) => t.team)).size}`,
       8,
       52,
     );
@@ -895,7 +894,7 @@ export function renderHud(
     ctx.fillStyle = "#1f1f33";
     ctx.fillRect(bx, by, barW, barH);
     const pct = Math.max(0, Math.min(1, t.fuel / MAX_FUEL));
-    
+
     // Low fuel warning
     let fuelColor = "#22c55e";
     let fuelText = `FUEL ${Math.round(t.fuel)} / ${MAX_FUEL}`;
@@ -909,23 +908,23 @@ export function renderHud(
       const flash = Math.floor(Date.now() / 500) % 2;
       if (flash === 0) fuelColor = "#facc15aa";
     }
-    
+
     ctx.fillStyle = fuelColor;
     ctx.fillRect(bx, by, barW * pct, barH);
     ctx.fillStyle = "#facc15";
     ctx.fillText(fuelText, bx, by - 4);
-    
+
     // Bottom-left: ammo with cooldown feedback
     ctx.fillStyle = "#facc15";
     let ammoText = `MIS ${t.ammo.missiles}   MINE ${t.ammo.mines}   TP ${t.ammo.teleports}   SH ${t.ammo.shields}   RAD ${t.ammo.radar}   RANK ${t.rank}`;
-    
+
     // Add cooldown indicators
     if (t.ammo.missiles === 0) ammoText += " [⏳]";
     if (t.ammo.mines === 0) ammoText += " [⏳]";
     if (t.ammo.shields === 0) ammoText += " [⏳]";
-    
+
     ctx.fillText(ammoText, bx, by + barH + 14);
-    
+
     if (state.snap) {
       ctx.fillText(
         `RADAR sees fuel/equipment:${state.snap.pickups.length} mines:${state.snap.visibleMines.length}`,
@@ -933,13 +932,13 @@ export function renderHud(
         by + barH + 28,
       );
     }
-    
+
     // Right-aligned visible tanks count
     if (state.snap) {
       const visible = state.snap.tanks.length;
       ctx.textAlign = "right";
       const totalText = `visible tanks: ${visible}`;
-      
+
       // Condensed format when space is tight
       if (W < 800) {
         ctx.fillText(`${visible} tanks`, W - 8, H - 8);
@@ -968,7 +967,7 @@ export function renderHud(
 function addKillFeed(text: string): void {
   const now = Date.now();
   killFeed.push({ text, time: now });
-  
+
   // Keep only the most recent items
   if (killFeed.length > KILL_FEED_MAX_ITEMS) {
     killFeed.shift();
@@ -987,27 +986,27 @@ function updateKillFeed(): void {
 
 function drawKillFeed(ctx: CanvasRenderingContext2D, W: number, H: number): void {
   ctx.save();
-  
+
   const startX = W / 2;
   const startY = 80;
   const lineHeight = 20;
-  
+
   ctx.font = "14px system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillStyle = "#facc15dd";
-  
+
   // Draw from bottom to top (newest at bottom)
   for (let i = 0; i < killFeed.length; i++) {
     const item = killFeed[i];
     const alpha = Math.min(1, (Date.now() - item.time) / 1000); // Fade in
     const y = startY + i * lineHeight;
-    
+
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillText(item.text, startX, y);
     ctx.restore();
   }
-  
+
   ctx.restore();
 }
 
@@ -1019,7 +1018,7 @@ function updateTeamScores(snap: GameStateSnapshot): void {
     [TeamColor.ORANGE]: 0,
     [TeamColor.PURPLE]: 0,
   };
-  
+
   // Count tanks alive per team
   for (const tank of snap.tanks) {
     if (tank.team && !tank.isDead) {
@@ -1037,29 +1036,29 @@ function updateKillCounts(snap: GameStateSnapshot): void {
 
 function drawScoreboard(ctx: CanvasRenderingContext2D, W: number, H: number): void {
   ctx.save();
-  
+
   const scoreboardX = 8;
   const scoreboardY = 60;
   const lineHeight = 18;
-  
+
   ctx.font = "12px system-ui, sans-serif";
   ctx.textAlign = "left";
-  
+
   // Background
   ctx.fillStyle = "#1f1f33aa";
   ctx.fillRect(scoreboardX - 4, scoreboardY - 6, 200, 80);
-  
+
   // Team scores
   let yOffset = 0;
   for (const team of [TeamColor.RED, TeamColor.BLUE, TeamColor.ORANGE, TeamColor.PURPLE]) {
     const count = teamScores[team] || 0;
     const color = TEAM_COLORS[team] || "#666";
-    
+
     ctx.fillStyle = color;
     ctx.fillText(`${team}: ${count}`, scoreboardX, scoreboardY + yOffset);
     yOffset += lineHeight;
   }
-  
+
   ctx.restore();
 }
 
@@ -1073,40 +1072,45 @@ function updateCooldowns(tank: TankState): void {
   cooldowns.teleports = tank.ammo.teleports;
 }
 
-function drawCooldownIndicators(ctx: CanvasRenderingContext2D, W: number, H: number, tank: TankState): void {
+function drawCooldownIndicators(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  tank: TankState,
+): void {
   if (!tank) return;
-  
+
   ctx.save();
-  
+
   const indicators = [
-    { key: 'missiles', label: 'MIS', x: 120, y: H - 40 },
-    { key: 'mines', label: 'MINE', x: 180, y: H - 40 },
-    { key: 'teleports', label: 'TP', x: 240, y: H - 40 },
-    { key: 'shields', label: 'SH', x: 300, y: H - 40 },
-    { key: 'radar', label: 'RAD', x: 360, y: H - 40 },
+    { key: "missiles", label: "MIS", x: 120, y: H - 40 },
+    { key: "mines", label: "MINE", x: 180, y: H - 40 },
+    { key: "teleports", label: "TP", x: 240, y: H - 40 },
+    { key: "shields", label: "SH", x: 300, y: H - 40 },
+    { key: "radar", label: "RAD", x: 360, y: H - 40 },
   ];
-  
+
   ctx.font = "11px system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillStyle = "#facc1599";
-  
+
   for (const indicator of indicators) {
     const value = cooldowns[indicator.key as keyof CooldownState];
-    
+
     // Background circle
     ctx.fillStyle = value === 0 ? "#ef4444aa" : "#22c55eaa";
     ctx.beginPath();
     ctx.arc(indicator.x, indicator.y, 8, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Label
     ctx.fillStyle = "#facc15";
     ctx.fillText(indicator.label, indicator.x, indicator.y + 3);
-    
+
     // Value
     ctx.fillStyle = value === 0 ? "#ef4444" : "#666";
     ctx.fillText(value.toString(), indicator.x + 15, indicator.y + 3);
-    
+
     // Cooldown arc for empty items
     if (value === 0) {
       ctx.strokeStyle = "#ef4444";
@@ -1116,7 +1120,7 @@ function drawCooldownIndicators(ctx: CanvasRenderingContext2D, W: number, H: num
       ctx.stroke();
     }
   }
-  
+
   ctx.restore();
 }
 
@@ -1127,24 +1131,28 @@ if (deathOverlay.isDead) {
 
 function drawDeathOverlay(ctx: CanvasRenderingContext2D, W: number, H: number): void {
   ctx.save();
-  
+
   // Semi-transparent dark overlay
   ctx.globalAlpha = deathOverlay.opacity;
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, W, H);
-  
+
   // "YOU DIED" text
   if (deathOverlay.respawnTimer > 0) {
     ctx.fillStyle = "#fff";
     ctx.font = "24px system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("YOU DIED", W/2, H/2 - 30);
-    
+    ctx.fillText("YOU DIED", W / 2, H / 2 - 30);
+
     // Respawn countdown
     ctx.font = "18px system-ui, sans-serif";
-    ctx.fillText(`Respawning in ${Math.ceil(deathOverlay.respawnTimer / 20)}...`, W/2, H/2 + 10);
+    ctx.fillText(
+      `Respawning in ${Math.ceil(deathOverlay.respawnTimer / 20)}...`,
+      W / 2,
+      H / 2 + 10,
+    );
   }
-  
+
   ctx.restore();
 }

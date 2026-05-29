@@ -7,8 +7,5 @@
     "rootDir": "./src",
     "typeRoots": ["./node_modules/@types", "../shared/types"]
   },
-  "include": ["src/**/*"],
-  "references": [
-    {"path": "../shared"}
-  ]
+  "include": ["src/**/*", "../shared/types.ts"]
 }

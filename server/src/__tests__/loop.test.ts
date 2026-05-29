@@ -372,7 +372,6 @@ describe("RoomLoop", () => {
   });
 });
 
-
 describe("AIEnemies", () => {
   it("adds an AI enemy to the room", () => {
     const room = new RoomLoop();
@@ -387,7 +386,7 @@ describe("AIEnemies", () => {
     const mediumAI = room.addAIEnemy("medium");
     const hardAI = room.addAIEnemy("hard");
     const expertAI = room.addAIEnemy("expert");
-    
+
     expect(easyAI.getDifficulty()).toBe("easy");
     expect(mediumAI.getDifficulty()).toBe("medium");
     expect(hardAI.getDifficulty()).toBe("hard");
@@ -399,7 +398,7 @@ describe("AIEnemies", () => {
     const ai1 = room.addAIEnemy("medium");
     const ai2 = room.addAIEnemy("medium");
     const ai3 = room.addAIEnemy("medium");
-    
+
     const teams = [ai1.getTank().team, ai2.getTank().team, ai3.getTank().team];
     expect(new Set(teams).size).toBeGreaterThan(1);
   });

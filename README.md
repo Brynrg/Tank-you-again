@@ -4,7 +4,7 @@ A production-grade tactical tank game with advanced armor systems, directional d
 
 ![Game Screenshot](https://via.placeholder.com/800x600/0b0b14/facc15?text=Tank-you-again+Battlefield+2006)
 
-> *"Armor is not just protection—it's a tactical system that rewards positioning and precision."* — Commander Garnett
+> _"Armor is not just protection—it's a tactical system that rewards positioning and precision."_ — Commander Garnett
 
 ## 📚 Documentation
 
@@ -21,6 +21,7 @@ Based on Claude Chrome's comprehensive technical review, we have a complete upgr
 ## 🚀 Features
 
 ### 🔧 Core Gameplay
+
 - **Armor Matrix System**: Front (100%), Side (80%), Rear (60%) armor with directional damage calculation
 - **Double-click fire**: Precise bullet targeting with double-click mechanics
 - **Click-and-hold pickup/drop**: Short click = move, long press (>300ms) = use item
@@ -29,26 +30,26 @@ Based on Claude Chrome's comprehensive technical review, we have a complete upgr
 
 ### 🎮 Controls
 
-| Action | Key/Control |
-|--------|-------------|
-| **Move** | Left-click (single) |
-| **Fire Bullet** | Left-click (double) or Space |
-| **Fire Missile** | Right-click or K |
-| **Place Mine** | M |
-| **Activate Radar** | R |
-| **Toggle Shield** | Shift |
-| **Stop Movement** | X or Escape |
+| Action              | Key/Control                   |
+| ------------------- | ----------------------------- |
+| **Move**            | Left-click (single)           |
+| **Fire Bullet**     | Left-click (double) or Space  |
+| **Fire Missile**    | Right-click or K              |
+| **Place Mine**      | M                             |
+| **Activate Radar**  | R                             |
+| **Toggle Shield**   | Shift                         |
+| **Stop Movement**   | X or Escape                   |
 | **Pickup/Use Item** | Long-press (300ms+) on pickup |
 
 ### 🛡️ Armor System
 
 The armor system provides three distinct layers of protection:
 
-| Armor Section | Integrity | Damage Multiplier | Visual Indicator |
-|---------------|-----------|-------------------|------------------|
-| **Front** | 100% | 1.0x | Green → Yellow → Red (main hull) |
-| **Side** | 80% | 0.8x | Green → Yellow → Red (left/right panels) |
-| **Rear** | 60% | 0.6x | Green → Yellow → Red (rear section) |
+| Armor Section | Integrity | Damage Multiplier | Visual Indicator                         |
+| ------------- | --------- | ----------------- | ---------------------------------------- |
+| **Front**     | 100%      | 1.0x              | Green → Yellow → Red (main hull)         |
+| **Side**      | 80%       | 0.8x              | Green → Yellow → Red (left/right panels) |
+| **Rear**      | 60%       | 0.6x              | Green → Yellow → Red (rear section)      |
 
 **Tactical Tip**: Attack from the rear for maximum damage efficiency, or flank to exploit side weaknesses.
 
@@ -58,12 +59,12 @@ Now with intelligent AI opponents that adapt their strategy based on difficulty 
 
 #### 🤖 AI Difficulty Levels
 
-|| Level | Intelligence | Behavior Pattern | AI Name Format |
-|-------|--------|---------------|-----------------|----------------|
-| **Easy** | BasicAI | Simple fuel management, basic attacks | AI-easy-[4char] |
-| **Medium** | SmartAI | Balanced offense/defense with shield | AI-medium-[4char] |
-| **Hard** | ExpertAI | Aggressive tactics with strategic positioning | AI-hard-[4char] |
-| **Expert** | MasterAI | Predictive attacks with multiple targeting | AI-expert-[4char] |
+|            | Level    | Intelligence                                  | Behavior Pattern  | AI Name Format |
+| ---------- | -------- | --------------------------------------------- | ----------------- | -------------- |
+| **Easy**   | BasicAI  | Simple fuel management, basic attacks         | AI-easy-[4char]   |
+| **Medium** | SmartAI  | Balanced offense/defense with shield          | AI-medium-[4char] |
+| **Hard**   | ExpertAI | Aggressive tactics with strategic positioning | AI-hard-[4char]   |
+| **Expert** | MasterAI | Predictive attacks with multiple targeting    | AI-expert-[4char] |
 
 #### 🎮 How AI Works
 
@@ -75,21 +76,25 @@ Now with intelligent AI opponents that adapt their strategy based on difficulty 
 #### 🧠 AI Behavior Patterns
 
 **Easy**: Focuses on basic survival and occasional attacks
+
 - Manages fuel efficiently
 - Uses shield sporadically
 - Attacks simple targets
 
-**Medium**: Balanced tactical approach  
+**Medium**: Balanced tactical approach
+
 - Mix of offense and defense
 - Consistent shield usage
 - Targets visible enemies
 
 **Hard**: Aggressive and mobile
+
 - Proactive attacks with shield
 - Strategic positioning
 - Uses radar for enemy detection
 
 **Expert**: Advanced tactical awareness
+
 - Predictive movement patterns
 - Multiple targeting strategies
 - Complex action combinations
@@ -97,12 +102,14 @@ Now with intelligent AI opponents that adapt their strategy based on difficulty 
 ### 🧠 Tactical Guidance
 
 #### 🎯 Armor Management
+
 - **Frontal assault**: Best for heavy tanks with high front armor
 - **Flanking**: Exploit weaker side armor (80%) with precise positioning
 - **Rear ambush**: Maximum damage multiplier (0.6x) against exposed rear armor
 - **Shield timing**: Activate shield before entering high-traffic zones
 
 #### 📊 Resource Management
+
 - **Fuel as health**: Movement and firing drain fuel
 - **Radar usage**: Use radar to reveal hidden pickups and mines
 - **Teleport strategy**: Save teleport charges for escape or repositioning
@@ -111,7 +118,7 @@ Now with intelligent AI opponents that adapt their strategy based on difficulty 
 ### 📈 Progression System
 
 - **Rank system**: Recruit → Commander (10 ranks total)
-- **XP rewards**: 
+- **XP rewards**:
   - Kill: +25 XP
   - Assist: +10 XP
   - Death: -15 XP
@@ -148,7 +155,8 @@ npm run dev
 - Engine by Hermes AI Agent
 - Battlefield 2006 tactical systems implemented
 
-> *"This isn't just a game—it's a tactical simulator that rewards mastery of positioning, timing, and resource management."* — System Design Document v1.0
+> _"This isn't just a game—it's a tactical simulator that rewards mastery of positioning, timing, and resource management."_ — System Design Document v1.0
 
 ---
-*Generated by Hermes AI Agent on May 23, 2026*
+
+_Generated by Hermes AI Agent on May 23, 2026_
