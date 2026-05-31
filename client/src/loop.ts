@@ -103,12 +103,16 @@ export function run(opts: RunOptions): RunHandle {
     lastFrameMs = now;
     clientTick += 1;
 
+    // Feed the latest world view so clicks can target live enemies/mines.
+    if (lastSnapshot) input.updateWorld(lastSnapshot, yourTankId);
+
     // Send input + queued one-shots
     net.send(input.currentInput(clientTick));
     for (const command of input.consumeCommandQueue(clientTick)) net.send(command);
     for (const fire of input.consumeFireQueue()) net.send(fire);
     for (const mine of input.consumeMineQueue()) net.send(mine);
     for (const use of input.consumeUseItemQueue()) net.send(use);
+    for (const dep of input.consumeDepositQueue()) net.send(dep);
 
     // Camera follow
     followTank(camera, yourTank, dt);

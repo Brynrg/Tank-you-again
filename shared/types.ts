@@ -158,6 +158,8 @@ export enum ClientMessageType {
   FIRE = "FIRE",
   PLACE_MINE = "PLACE_MINE",
   TELEPORT = "TELEPORT",
+  /** Drop a fuel canister at the tank's current position (TankPit fuel deposit). */
+  DEPOSIT_FUEL = "DEPOSIT_FUEL",
   CHAT = "CHAT",
   PING = "PING",
 }
@@ -230,6 +232,12 @@ export interface ClientTeleportMessage {
   y: number;
 }
 
+export interface ClientDepositFuelMessage {
+  type: ClientMessageType.DEPOSIT_FUEL;
+  /** Fuel to convert into a dropped canister. Server clamps to available fuel. */
+  amount: number;
+}
+
 export interface ClientChatMessage {
   type: ClientMessageType.CHAT;
   text: string;
@@ -281,6 +289,7 @@ export type ClientMessage =
   | ClientPlaceMineMessage
   | ClientUseItemMessage
   | ClientTeleportMessage
+  | ClientDepositFuelMessage
   | ClientChatMessage
   | ClientPingMessage;
 
@@ -295,8 +304,11 @@ export type ServerMessage =
 
 export const SERVER_TICK_RATE = 20; // Hz
 export const TICK_MS = 1000 / SERVER_TICK_RATE; // 50 ms
-export const MAP_WIDTH = 2048;
-export const MAP_HEIGHT = 2048;
+// Field of play. Tripled in AREA from the original 2048² (3× area ≈ 1.732× per
+// side) for a larger TankPit-style arena where roaming, scanning, and
+// teleporting matter. round(2048 * sqrt(3)) = 3547.
+export const MAP_WIDTH = 3547;
+export const MAP_HEIGHT = 3547;
 
 // Tank
 export const TANK_RADIUS = 18;
@@ -351,8 +363,12 @@ export const TELEPORT_MAX_RANGE = 400;
 // Pickups
 export const PICKUP_RADIUS = 18;
 export const PICKUP_SPAWN_INTERVAL_TICKS = SERVER_TICK_RATE * 12; // 12 sec
-export const PICKUP_MAX_ACTIVE = 18;
+// Scaled for the 3×-larger arena so the field doesn't feel barren.
+export const PICKUP_MAX_ACTIVE = 40;
 export const FUEL_CRATE_RESTORE = 350;
+/** Fuel converted into a dropped canister when a tank deposits fuel. Matches
+ *  FUEL_CRATE_RESTORE so a deposit is cost-neutral (cache fuel, no free gain). */
+export const FUEL_DEPOSIT_AMOUNT = 350;
 export const MISSILE_PICKUP_AMOUNT = 3;
 export const MINE_PICKUP_AMOUNT = 2;
 export const TELEPORT_PICKUP_AMOUNT = 1;

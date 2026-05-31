@@ -9,32 +9,33 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
     overlay.style.cssText = [
       "position:fixed",
       "inset:0",
-      "background:rgba(11,11,20,0.92)",
+      "background:rgba(20,24,14,0.94)",
       "display:flex",
       "align-items:center",
       "justify-content:center",
       "z-index:1000",
-      "color:#facc15",
-      "font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif",
+      "color:#e8b923",
+      "font-family:'Courier New',monospace",
     ].join(";");
 
     const card = document.createElement("form");
     card.style.cssText = [
-      "background:#13131f",
+      "background:linear-gradient(160deg,#23271b,#15170f)",
       "padding:24px 28px",
-      "border-radius:8px",
-      "min-width:300px",
-      "box-shadow:0 8px 40px rgba(0,0,0,.6)",
-      "border:1px solid #facc1533",
+      "border-radius:4px",
+      "min-width:320px",
+      "box-shadow:0 8px 40px rgba(0,0,0,.7), inset 0 1px 0 #5c634755",
+      "border:2px solid #5c6347",
     ].join(";");
 
     const title = document.createElement("h1");
-    title.textContent = "Tank You Again";
-    title.style.cssText = "margin:0 0 4px;font-size:20px;font-weight:700";
+    title.textContent = "TANK YOU AGAIN";
+    title.style.cssText =
+      "margin:0 0 4px;font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-shadow:0 2px 0 #000";
 
     const sub = document.createElement("p");
     sub.textContent = "Fuel is health. Scan supplies, mine routes, deactivate rival tanks.";
-    sub.style.cssText = "margin:0 0 16px;font-size:13px;color:#facc1599";
+    sub.style.cssText = "margin:0 0 16px;font-size:12px;color:#e8b92399";
 
     const label = document.createElement("label");
     label.textContent = "Callsign";
@@ -52,30 +53,32 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
     input.style.cssText = [
       "width:100%",
       "padding:8px 10px",
-      "background:#0b0b14",
-      "border:1px solid #facc1555",
-      "border-radius:4px",
-      "color:#facc15",
-      "font:14px system-ui",
+      "background:#0d0f08",
+      "border:1px solid #5c6347",
+      "border-radius:3px",
+      "color:#e8b923",
+      "font:14px 'Courier New',monospace",
       "box-sizing:border-box",
     ].join(";");
 
     const hint = document.createElement("div");
     hint.textContent = "3-16 chars: letters, digits, _ or -";
-    hint.style.cssText = "font-size:11px;color:#facc1577;margin-top:6px";
+    hint.style.cssText = "font-size:11px;color:#e8b92377;margin-top:6px";
 
     const btn = document.createElement("button");
     btn.type = "submit";
-    btn.textContent = "Deploy →";
+    btn.textContent = "▶ DEPLOY";
     btn.style.cssText = [
-      "margin-top:14px",
+      "margin-top:16px",
       "width:100%",
-      "padding:10px",
-      "background:linear-gradient(135deg,#facc15,#f97316)",
-      "color:#0b0b14",
-      "border:0",
-      "border-radius:4px",
-      "font:600 14px system-ui",
+      "padding:11px",
+      "background:linear-gradient(180deg,#5fa83a,#3c6b22)",
+      "color:#0d0f08",
+      "border:1px solid #2c3320",
+      "border-radius:3px",
+      "font:700 14px 'Courier New',monospace",
+      "letter-spacing:2px",
+      "text-transform:uppercase",
       "cursor:pointer",
     ].join(";");
 

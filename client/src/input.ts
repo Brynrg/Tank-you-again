@@ -1,41 +1,51 @@
 import {
   ClientMessageType,
+  ItemType,
+  MINE_RADIUS,
+  ProjectileKind,
+  TANK_RADIUS,
+  type ClientDepositFuelMessage,
   type ClientFireMessage,
   type ClientInputMessage,
   type ClientMoveToMessage,
   type ClientPlaceMineMessage,
   type ClientStopMessage,
-  ItemType,
-  ProjectileKind,
   type ClientUseItemMessage,
+  type GameStateSnapshot,
+  type TankState,
+  FUEL_DEPOSIT_AMOUNT,
 } from "@shared/types";
 
 import type { Camera } from "./render.js";
 
 /**
- * Lightweight input layer:
- *   - Left click issues a server-owned move command
- *   - WASD + arrows remain as a legacy/direct-control fallback
- *   - Mouse position → aim angle (turret + projectile direction)
- *   - Space → bullet
- *   - Right click (or `K`) → missile
+ * TankPit-style point-and-click input layer:
+ *   - Left click on an enemy tank or mine → SHOOT it (auto-aimed)
+ *   - Left click on empty ground → MOVE there
+ *   - Mouse position → turret aim (for Space / hold-fire)
+ *   - Space → bullet toward cursor
+ *   - Right click / `K` → missile (auto-aims at a target under the cursor)
  *   - `M` → place mine
- *   - `R` → active radar scan
+ *   - `R` → active radar scan (costs fuel)
+ *   - `F` → deposit a fuel canister at your position
  *   - `Shift` → toggle shield
- *   - `X` / Escape → stop current move command
+ *   - `X` / Escape → stop the current move command
+ *   - WASD / arrows → optional direct driving fallback
  *
- * `attach(canvas, camera)` wires the listeners. `currentInput(clientTick)`
- * snapshots the input state into an INPUT message ready to send. `consumeFireQueue()` etc.
- * drain one-shot intents (firing) so they aren't double-counted.
+ * `attach(canvas, camera)` wires listeners. `updateWorld()` feeds the latest
+ * snapshot so clicks can be resolved against live enemy/mine positions.
  */
 export interface InputLayer {
   detach(): void;
+  /** Feed the latest snapshot + local tank id so clicks can target entities. */
+  updateWorld(snapshot: GameStateSnapshot, yourTankId: string): void;
   currentInput(clientTick: number): ClientInputMessage;
   consumeCommandQueue(clientTick: number): Array<ClientMoveToMessage | ClientStopMessage>;
   clearCommandTarget(): void;
   consumeFireQueue(): ClientFireMessage[];
   consumeMineQueue(): ClientPlaceMineMessage[];
   consumeUseItemQueue(): ClientUseItemMessage[];
+  consumeDepositQueue(): ClientDepositFuelMessage[];
   getCommandTarget(): { x: number; y: number } | null;
 }
 
@@ -49,193 +59,121 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
   > = [];
   const mineQueue: ClientPlaceMineMessage[] = [];
   const useItemQueue: ClientUseItemMessage[] = [];
+  const depositQueue: ClientDepositFuelMessage[] = [];
   let commandTarget: { x: number; y: number } | null = null;
+
+  // Latest world view, fed by updateWorld().
+  let snapshot: GameStateSnapshot | null = null;
+  let yourTankId = "";
+
+  function selfTank(): TankState | null {
+    return snapshot?.tanks.find((t) => t.id === yourTankId) ?? null;
+  }
+
+  /** Aim angle from the local tank toward a world point. */
+  function aimAt(target: { x: number; y: number }): number {
+    const me = selfTank();
+    if (me) return Math.atan2(target.y - me.y, target.x - me.x);
+    // Fallback: assume the tank sits at the camera focus (it does — camera follows it).
+    return Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
+  }
+
+  /**
+   * Resolve a world-space click to an enemy tank or visible mine, if one is
+   * close enough to be considered "clicked on". Returns null for empty ground.
+   */
+  function targetAt(world: { x: number; y: number }): { x: number; y: number } | null {
+    if (!snapshot) return null;
+    const me = selfTank();
+    let best: { x: number; y: number } | null = null;
+    let bestDist = Infinity;
+
+    for (const t of snapshot.tanks) {
+      if (t.id === yourTankId || t.isDead) continue;
+      if (me && t.team === me.team) continue; // don't shoot allies
+      const d = Math.hypot(t.x - world.x, t.y - world.y);
+      if (d <= TANK_RADIUS * 1.8 && d < bestDist) {
+        bestDist = d;
+        best = { x: t.x, y: t.y };
+      }
+    }
+    for (const m of snapshot.visibleMines) {
+      const d = Math.hypot(m.x - world.x, m.y - world.y);
+      if (d <= MINE_RADIUS && d < bestDist) {
+        bestDist = d;
+        best = { x: m.x, y: m.y };
+      }
+    }
+    return best;
+  }
 
   function onKeyDown(e: KeyboardEvent): void {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     keys.add(k);
     if (e.repeat) return;
-    if (k === "m") mineQueue.push({ type: ClientMessageType.PLACE_MINE });
-    else if (k === "k")
-      fireQueue.push({ type: ClientMessageType.FIRE, weapon: ProjectileKind.MISSILE });
-    else if (k === "r")
+    if (k === "m") {
+      mineQueue.push({ type: ClientMessageType.PLACE_MINE });
+    } else if (k === "k") {
+      fireQueue.push({
+        type: ClientMessageType.FIRE,
+        weapon: ProjectileKind.MISSILE,
+        aim: missileAim(),
+      });
+    } else if (k === "r") {
       useItemQueue.push({ type: ClientMessageType.USE_ITEM, item: ItemType.RADAR });
-    else if (k === " ") {
+    } else if (k === "f") {
+      depositQueue.push({ type: ClientMessageType.DEPOSIT_FUEL, amount: FUEL_DEPOSIT_AMOUNT });
+    } else if (k === " ") {
       e.preventDefault();
       fireQueue.push({
         type: ClientMessageType.FIRE,
         weapon: ProjectileKind.BULLET,
-        aim: currentAim(),
+        aim: cursorAim(),
       });
     } else if (k === "x" || k === "Escape") {
       commandTarget = null;
       commandQueue.push({ type: ClientMessageType.STOP });
-    } else if (k === "Shift")
+    } else if (k === "Shift") {
       useItemQueue.push({ type: ClientMessageType.USE_ITEM, item: ItemType.SHIELD });
+    }
   }
+
   function onKeyUp(e: KeyboardEvent): void {
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     keys.delete(k);
   }
-  function onMouseMove(e: MouseEvent): void {
-    updateMouse(e);
-  }
-  function onMouseDown(e: MouseEvent): void {
-    updateMouse(e);
-    if (e.button === 0) {
-      const target = screenToWorld(e);
-      if (e.detail === 2) {
-        // Double-click
-        fireQueue.push({
-          type: ClientMessageType.FIRE,
-          weapon: ProjectileKind.BULLET,
-          aim: currentAim(),
-        });
-      } else {
-        // Single-click
-        commandTarget = target;
-        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
-      }
-    } else if (e.button === 2) {
-      // Right-click
-      e.preventDefault();
-      fireQueue.push({
-        type: ClientMessageType.FIRE,
-        weapon: ProjectileKind.MISSILE,
-        aim: currentAim(),
-      });
-    }
-  }
-
-  let isHolding = false;
-  let holdStartTime = 0;
-  let holdTarget: { x: number; y: number } | null = null;
-
-  function onMouseUp(e: MouseEvent): void {
-    if (e.button === 0 && isHolding) {
-      const target = screenToWorld(e);
-      if (Date.now() - holdStartTime < 300) {
-        // Short click
-        commandTarget = target;
-        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
-      } else {
-        // Long press (hold)
-        if (holdTarget) {
-          useItemQueue.push({
-            type: ClientMessageType.USE_ITEM,
-            item:
-              holdTarget.type === ItemType.FUEL_CRATE
-                ? ItemType.FUEL_CRATE
-                : holdTarget.type === ItemType.MISSILE
-                  ? ItemType.MISSILE
-                  : holdTarget.type === ItemType.MINE_PACK
-                    ? ItemType.MINE_PACK
-                    : holdTarget.type === ItemType.SHIELD
-                      ? ItemType.SHIELD
-                      : holdTarget.type === ItemType.RADAR
-                        ? ItemType.RADAR
-                        : ItemType.TELEPORT_CHARGE,
-          });
-        }
-      }
-      isHolding = false;
-      holdTarget = null;
-    }
-  }
 
   function onMouseMove(e: MouseEvent): void {
     updateMouse(e);
-
-    // Check if we're over a pickup
-    if (isHolding && lastSnapshot) {
-      const worldPos = screenToWorld(e);
-      const pickup = lastSnapshot.pickups.find((p) => {
-        const dx = worldPos.x - p.x;
-        const dy = worldPos.y - p.y;
-        return Math.hypot(dx, dy) < PICKUP_RADIUS + TANK_RADIUS;
-      });
-      if (pickup) {
-        holdTarget = pickup;
-      }
-    }
   }
 
   function onMouseDown(e: MouseEvent): void {
     updateMouse(e);
-
+    const world = screenToWorld();
     if (e.button === 0) {
-      const target = screenToWorld(e);
-      if (e.detail === 2) {
-        // Double-click
+      // Left click: shoot if it landed on an enemy/mine, otherwise move.
+      const target = targetAt(world);
+      if (target) {
         fireQueue.push({
           type: ClientMessageType.FIRE,
           weapon: ProjectileKind.BULLET,
-          aim: currentAim(),
+          aim: aimAt(target),
         });
       } else {
-        // Single-click
-        commandTarget = target;
-        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
+        commandTarget = world;
+        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: world.x, y: world.y });
       }
     } else if (e.button === 2) {
-      // Right-click
+      // Right click: fire a missile, auto-aimed at a target under the cursor.
       e.preventDefault();
       fireQueue.push({
         type: ClientMessageType.FIRE,
         weapon: ProjectileKind.MISSILE,
-        aim: currentAim(),
+        aim: missileAim(),
       });
     }
   }
 
-  function onMouseUp(e: MouseEvent): void {
-    if (e.button === 0 && isHolding) {
-      const target = screenToWorld(e);
-      if (Date.now() - holdStartTime < 300) {
-        // Short click
-        commandTarget = target;
-        commandQueue.push({ type: ClientMessageType.MOVE_TO, x: target.x, y: target.y });
-      } else {
-        // Long press (hold)
-        if (holdTarget) {
-          useItemQueue.push({
-            type: ClientMessageType.USE_ITEM,
-            item:
-              holdTarget.type === ItemType.FUEL_CRATE
-                ? ItemType.FUEL_CRATE
-                : holdTarget.type === ItemType.MISSILE
-                  ? ItemType.MISSILE
-                  : holdTarget.type === ItemType.MINE_PACK
-                    ? ItemType.MINE_PACK
-                    : holdTarget.type === ItemType.SHIELD
-                      ? ItemType.SHIELD
-                      : holdTarget.type === ItemType.RADAR
-                        ? ItemType.RADAR
-                        : ItemType.TELEPORT_CHARGE,
-          });
-        }
-      }
-      isHolding = false;
-      holdTarget = null;
-    }
-  }
-
-  function onMouseMove(e: MouseEvent): void {
-    updateMouse(e);
-
-    // Check if we're over a pickup
-    if (isHolding && lastSnapshot) {
-      const worldPos = screenToWorld(e);
-      const pickup = lastSnapshot.pickups.find((p) => {
-        const dx = worldPos.x - p.x;
-        const dy = worldPos.y - p.y;
-        return Math.hypot(dx, dy) < PICKUP_RADIUS + TANK_RADIUS;
-      });
-      if (pickup) {
-        holdTarget = pickup;
-      }
-    }
-  }
   function onContextMenu(e: Event): void {
     e.preventDefault();
   }
@@ -250,20 +188,19 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
   canvas.addEventListener("mousedown", onMouseDown);
   canvas.addEventListener("contextmenu", onContextMenu);
 
-  function currentAim(): number {
-    // Convert screen mouse pos → world coords using the camera, then atan2
-    // from the player's own tank to the world cursor. We don't know the
-    // player tank's world position here, so callers should re-compute aim
-    // from the latest snapshot — `currentAim` only gives "aim toward cursor
-    // assuming player is at camera focus."
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const dx = (mouseX - cx) / camera.zoom;
-    const dy = (mouseY - cy) / camera.zoom;
-    return Math.atan2(dy, dx);
+  /** Aim toward the world cursor from the local tank. */
+  function cursorAim(): number {
+    return aimAt(screenToWorld());
   }
 
-  function screenToWorld(e: MouseEvent): { x: number; y: number } {
+  /** Missile aim: lock onto an enemy/mine under the cursor, else aim at cursor. */
+  function missileAim(): number {
+    const world = screenToWorld();
+    const target = targetAt(world);
+    return aimAt(target ?? world);
+  }
+
+  function screenToWorld(): { x: number; y: number } {
     return {
       x: camera.x + (mouseX - canvas.width / 2) / camera.zoom,
       y: camera.y + (mouseY - canvas.height / 2) / camera.zoom,
@@ -287,6 +224,10 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
       canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("contextmenu", onContextMenu);
     },
+    updateWorld(snap: GameStateSnapshot, id: string) {
+      snapshot = snap;
+      yourTankId = id;
+    },
     currentInput(clientTick: number): ClientInputMessage {
       return {
         type: ClientMessageType.INPUT,
@@ -295,7 +236,7 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
         down: keys.has("s") || keys.has("ArrowDown"),
         left: keys.has("a") || keys.has("ArrowLeft"),
         right: keys.has("d") || keys.has("ArrowRight"),
-        aim: currentAim(),
+        aim: cursorAim(),
       };
     },
     consumeCommandQueue(clientTick: number) {
@@ -319,6 +260,11 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
     consumeUseItemQueue() {
       const out = useItemQueue.slice();
       useItemQueue.length = 0;
+      return out;
+    },
+    consumeDepositQueue() {
+      const out = depositQueue.slice();
+      depositQueue.length = 0;
       return out;
     },
     getCommandTarget() {

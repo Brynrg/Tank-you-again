@@ -30,16 +30,23 @@ Based on Claude Chrome's comprehensive technical review, we have a complete upgr
 
 ### 🎮 Controls
 
-| Action              | Key/Control                   |
-| ------------------- | ----------------------------- |
-| **Move**            | Left-click (single)           |
-| **Fire Bullet**     | Left-click (double) or Space  |
-| **Fire Missile**    | Right-click or K              |
-| **Place Mine**      | M                             |
-| **Activate Radar**  | R                             |
-| **Toggle Shield**   | Shift                         |
-| **Stop Movement**   | X or Escape                   |
-| **Pickup/Use Item** | Long-press (300ms+) on pickup |
+TankPit-style point-and-click: clicking an **enemy/mine** fires at it, clicking
+**empty ground** moves there.
+
+| Action               | Key/Control                              |
+| -------------------- | ---------------------------------------- |
+| **Move**             | Left-click empty ground                  |
+| **Fire Bullet**      | Left-click an enemy/mine, or Space       |
+| **Fire Missile**     | Right-click (auto-aims at target) or K   |
+| **Place Mine**       | M                                        |
+| **Activate Radar**   | R (costs fuel + a radar charge)          |
+| **Deposit Fuel**     | F (drops a fuel canister you can return for) |
+| **Toggle Shield**    | Shift                                    |
+| **Stop Movement**    | X or Escape                              |
+| **Direct drive**     | WASD / arrow keys (optional fallback)    |
+
+> Destroying an enemy tank scatters **salvage** — a fuel crate plus a random
+> piece of equipment — matching classic Battlefield/TankPit.
 
 ### 🛡️ Armor System
 
