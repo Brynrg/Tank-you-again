@@ -1280,7 +1280,7 @@ export function renderHud(
   ctx.fillStyle = "#facc1599";
   ctx.textAlign = "right";
   ctx.fillText(
-    "LMB enemy=fire / ground=move · Space fire · RMB/K missile · M mine · R radar · F deposit fuel · Shift shield · X stop",
+    "LMB enemy=fire / ground=move · Space fire · RMB/K missile · M mine · R radar · T teleport · F deposit fuel · Shift shield · X stop",
     W - 8,
     16,
   );

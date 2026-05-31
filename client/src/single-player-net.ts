@@ -32,6 +32,9 @@ import {
   MISSILE_DAMAGE,
   MISSILE_SPEED,
   MISSILE_TTL_TICKS,
+  RANK_ORDER,
+  RANK_XP_THRESHOLDS,
+  XP_PER_KILL,
   PICKUP_MAX_ACTIVE,
   PICKUP_RADIUS,
   PICKUP_SPAWN_INTERVAL_TICKS,
@@ -76,6 +79,8 @@ interface TankBrain {
   shieldUntilTick: number;
   radarUntilTick: number;
   kills: number;
+  /** Accumulated experience; drives rank promotion. */
+  xp: number;
   isBot: boolean;
   /** AI wander heading, re-rolled periodically. */
   wanderUntilTick: number;
@@ -118,6 +123,10 @@ export class SinglePlayerNetClient {
   }) {
     this.onMessage = options.onMessage;
     this.onStatus = options.onStatus;
+
+    // Announce "connected" so the HUD doesn't sit on "connecting" forever —
+    // the local engine is authoritative and always available.
+    this.onStatus?.(this.status);
 
     this.spawnWorld();
 
@@ -282,6 +291,7 @@ export class SinglePlayerNetClient {
       shieldUntilTick: 0,
       radarUntilTick: 0,
       kills: 0,
+      xp: 0,
       isBot,
       wanderUntilTick: 0,
       wanderAngle: Math.random() * Math.PI * 2,
@@ -578,16 +588,25 @@ export class SinglePlayerNetClient {
     brain.moveTarget = null;
   }
 
-  /** Drop a fuel canister at the tank's position, spending that fuel. */
+  /**
+   * Drop a fuel canister a short distance ahead of the tank, spending that
+   * fuel. Offsetting past the pickup-collision radius means the crate forms a
+   * real cache you can leave and return to, instead of being re-collected on
+   * the same tick.
+   */
   private depositFuel(tank: TankState, amount: number): void {
     const reserve = 50; // never strand yourself with a deposit
     if (tank.fuel - reserve < amount) return;
     tank.fuel -= amount;
+    // Place it behind the hull (opposite the facing) just outside pickup range.
+    const drop = TANK_RADIUS + PICKUP_RADIUS + 12;
+    const dropX = clamp(tank.x - Math.cos(tank.angle) * drop, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS);
+    const dropY = clamp(tank.y - Math.sin(tank.angle) * drop, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS);
     this.pickups.push({
       id: `k${this.nextId++}`,
       type: ItemType.FUEL_CRATE,
-      x: tank.x,
-      y: tank.y,
+      x: dropX,
+      y: dropY,
     });
   }
 
@@ -635,7 +654,18 @@ export class SinglePlayerNetClient {
     this.dropSalvage(tank.x, tank.y);
     if (attackerId) {
       const killer = this.brains.get(attackerId);
-      if (killer) killer.kills++;
+      const killerTank = this.tanks.find((t) => t.id === attackerId);
+      if (killer) {
+        killer.kills++;
+        killer.xp += XP_PER_KILL;
+        if (killerTank) {
+          const promoted = rankForXp(killer.xp);
+          if (promoted !== killerTank.rank) {
+            killerTank.rank = promoted;
+            this.events.push({ tick: this.tick, kind: "rank_up", subjectId: killerTank.id });
+          }
+        }
+      }
       this.events.push({ tick: this.tick, kind: "kill", subjectId: attackerId, objectId: tank.id });
     }
   }
@@ -754,4 +784,14 @@ export class SinglePlayerNetClient {
 
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v;
+}
+
+/** Highest rank whose XP threshold the given total meets. */
+function rankForXp(xp: number): MilitaryRank {
+  let rank = RANK_ORDER[0]!;
+  for (const r of RANK_ORDER) {
+    if (xp >= RANK_XP_THRESHOLDS[r]) rank = r;
+    else break;
+  }
+  return rank;
 }

@@ -113,6 +113,7 @@ export function run(opts: RunOptions): RunHandle {
     for (const mine of input.consumeMineQueue()) net.send(mine);
     for (const use of input.consumeUseItemQueue()) net.send(use);
     for (const dep of input.consumeDepositQueue()) net.send(dep);
+    for (const tp of input.consumeTeleportQueue()) net.send(tp);
 
     // Camera follow
     followTank(camera, yourTank, dt);

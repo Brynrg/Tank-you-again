@@ -10,6 +10,7 @@ import {
   type ClientMoveToMessage,
   type ClientPlaceMineMessage,
   type ClientStopMessage,
+  type ClientTeleportMessage,
   type ClientUseItemMessage,
   type GameStateSnapshot,
   type TankState,
@@ -27,6 +28,7 @@ import type { Camera } from "./render.js";
  *   - Right click / `K` → missile (auto-aims at a target under the cursor)
  *   - `M` → place mine
  *   - `R` → active radar scan (costs fuel)
+ *   - `T` → teleport toward the cursor (range-clamped by the server)
  *   - `F` → deposit a fuel canister at your position
  *   - `Shift` → toggle shield
  *   - `X` / Escape → stop the current move command
@@ -46,6 +48,7 @@ export interface InputLayer {
   consumeMineQueue(): ClientPlaceMineMessage[];
   consumeUseItemQueue(): ClientUseItemMessage[];
   consumeDepositQueue(): ClientDepositFuelMessage[];
+  consumeTeleportQueue(): ClientTeleportMessage[];
   getCommandTarget(): { x: number; y: number } | null;
 }
 
@@ -60,6 +63,7 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
   const mineQueue: ClientPlaceMineMessage[] = [];
   const useItemQueue: ClientUseItemMessage[] = [];
   const depositQueue: ClientDepositFuelMessage[] = [];
+  const teleportQueue: ClientTeleportMessage[] = [];
   let commandTarget: { x: number; y: number } | null = null;
 
   // Latest world view, fed by updateWorld().
@@ -123,6 +127,9 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
       useItemQueue.push({ type: ClientMessageType.USE_ITEM, item: ItemType.RADAR });
     } else if (k === "f") {
       depositQueue.push({ type: ClientMessageType.DEPOSIT_FUEL, amount: FUEL_DEPOSIT_AMOUNT });
+    } else if (k === "t") {
+      const w = screenToWorld();
+      teleportQueue.push({ type: ClientMessageType.TELEPORT, x: w.x, y: w.y });
     } else if (k === " ") {
       e.preventDefault();
       fireQueue.push({
@@ -265,6 +272,11 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
     consumeDepositQueue() {
       const out = depositQueue.slice();
       depositQueue.length = 0;
+      return out;
+    },
+    consumeTeleportQueue() {
+      const out = teleportQueue.slice();
+      teleportQueue.length = 0;
       return out;
     },
     getCommandTarget() {
