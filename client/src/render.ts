@@ -7,25 +7,56 @@ import {
   TANK_RADIUS,
   TeamColor,
   type GameStateSnapshot,
+  type PickupState,
   type ProjectileState,
   type TankState,
 } from "@shared/types";
 
-// Terrain types for visual enhancement
+// Terrain types for visual enhancement. Themed after Command & Conquer:
+// Red Alert's temperate theater — grass, ore fields, water, rock, walls.
 enum TerrainType {
   EMPTY = "EMPTY",
   WALL = "WALL",
   WATER = "WATER",
   FOREST = "FOREST",
   ROCK = "ROCK",
+  /** Red Alert gold ore field — clustered glittering nuggets. */
+  ORE = "ORE",
 }
 
-// Terrain data structure
+// Terrain data structure. Shape jitter (forest tufts, rock vertices) is
+// precomputed at init time so the terrain stays put instead of flickering —
+// the renderer must never call Math.random() per frame.
 interface TerrainCell {
   type: TerrainType;
   x: number;
   y: number;
+  /** Precomputed forest tuft offsets, in tile-fractions of size. */
+  tufts?: Array<{ ox: number; oy: number }>;
+  /** Precomputed rock outline radii (one per hexagon vertex), as fractions. */
+  rockRadii?: number[];
+  /** Precomputed ore nugget positions/sizes, in tile-fractions. */
+  oreBits?: Array<{ ox: number; oy: number; r: number }>;
 }
+
+// ── Command & Conquer: Red Alert palette ───────────────────────────────────
+// Temperate-theater battlefield: olive ground, gold ore, steel-and-amber HUD.
+const RA = {
+  groundDark: "#2c3320", // base battlefield dirt/grass (darkest)
+  groundLite: "#3a4429", // lighter grass patches
+  grid: "#222a18", // faint field gridlines
+  oreGold: "#e8b923", // Red Alert ore yellow-gold
+  oreGlint: "#fff1b8",
+  water: "#1f4e6b",
+  waterLite: "#2f6f93",
+  rock: "#6b6253", // cliffs / rocky outcrops
+  rockDark: "#4a443a",
+  wall: "#8a8378", // concrete / sandbag wall
+  steel: "#1b1d18", // HUD panel fill
+  steelEdge: "#5c6347", // HUD panel bevel
+  amber: "#e8b923", // HUD text / accents (RA EVA amber)
+  amberDim: "#e8b92399",
+} as const;
 
 // Hit effect types
 enum HitEffectType {
@@ -54,11 +85,13 @@ export interface Camera {
   zoom: number;
 }
 
+// Faction colors, tuned to Red Alert's multiplayer house palette
+// (Allies gold, Soviet red, plus blue and purple house colors).
 const TEAM_COLORS: Record<TeamColor, string> = {
-  [TeamColor.BLUE]: "#3b82f6",
-  [TeamColor.RED]: "#ef4444",
-  [TeamColor.ORANGE]: "#f97316",
-  [TeamColor.PURPLE]: "#a855f7",
+  [TeamColor.BLUE]: "#2f7fd6",
+  [TeamColor.RED]: "#c0392b",
+  [TeamColor.ORANGE]: "#e8b923",
+  [TeamColor.PURPLE]: "#8e44ad",
 };
 
 const PICKUP_GLYPHS: Record<ItemType, string> = {
@@ -70,13 +103,14 @@ const PICKUP_GLYPHS: Record<ItemType, string> = {
   [ItemType.TELEPORT_CHARGE]: "T",
 };
 
-// Terrain colors
+// Terrain colors (Red Alert temperate palette)
 const TERRAIN_COLORS: Record<TerrainType, string> = {
-  [TerrainType.EMPTY]: "#0b0b14", // Same as background
-  [TerrainType.WALL]: "#6b7280",
-  [TerrainType.WATER]: "#3b82f688", // More visible
-  [TerrainType.FOREST]: "#22c55e88", // More visible
-  [TerrainType.ROCK]: "#9ca3af88", // More visible
+  [TerrainType.EMPTY]: RA.groundDark,
+  [TerrainType.WALL]: RA.wall,
+  [TerrainType.WATER]: RA.water,
+  [TerrainType.FOREST]: "#2f5128", // dark pine green
+  [TerrainType.ROCK]: RA.rock,
+  [TerrainType.ORE]: RA.oreGold,
 };
 
 // Hit effect colors
@@ -108,6 +142,128 @@ const terrain: TerrainCell[] = [];
 
 // Active hit effects
 const hitEffects: HitEffect[] = [];
+
+// ── Explosion particle system (death / mine / missile blasts) ──────────────
+interface Explosion {
+  x: number;
+  y: number;
+  age: number; // seconds
+  life: number; // total lifetime in seconds
+  radius: number; // peak fireball radius in world units
+  sparks: Array<{ ang: number; speed: number; len: number }>;
+}
+const explosions: Explosion[] = [];
+/** Snapshot ticks whose events we've already turned into effects (dedupe). */
+const processedEventTicks = new Set<number>();
+
+/** Spawn a fireball + shockwave + flying sparks at a world position. */
+export function spawnExplosion(x: number, y: number, scale = 1): void {
+  const sparks = Array.from({ length: Math.round(10 * scale) }, () => ({
+    ang: Math.random() * Math.PI * 2,
+    speed: 120 + Math.random() * 220,
+    len: 6 + Math.random() * 10,
+  }));
+  explosions.push({ x, y, age: 0, life: 0.6 + 0.2 * scale, radius: 34 * scale, sparks });
+  if (explosions.length > 64) explosions.shift();
+}
+
+function updateExplosions(dt: number): void {
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    explosions[i]!.age += dt;
+    if (explosions[i]!.age >= explosions[i]!.life) explosions.splice(i, 1);
+  }
+}
+
+/**
+ * Turn this snapshot's combat events into explosions, once per tick. Called
+ * from renderFrame; deduped so the same 20 Hz snapshot rendered across many
+ * rAF frames only fires effects a single time.
+ */
+function processSnapshotEvents(snap: GameStateSnapshot): void {
+  if (processedEventTicks.has(snap.tick)) return;
+  processedEventTicks.add(snap.tick);
+  if (processedEventTicks.size > 256) {
+    // Keep the dedupe set bounded.
+    for (const t of processedEventTicks) {
+      processedEventTicks.delete(t);
+      if (processedEventTicks.size <= 128) break;
+    }
+  }
+  for (const ev of snap.events ?? []) {
+    if (ev.kind !== "death" && ev.kind !== "mine_detonate") continue;
+    const subject = snap.tanks.find((t) => t.id === ev.subjectId);
+    if (subject) spawnExplosion(subject.x, subject.y, ev.kind === "death" ? 1.4 : 1);
+  }
+}
+
+function drawExplosion(
+  ctx: CanvasRenderingContext2D,
+  cam: Camera,
+  W: number,
+  H: number,
+  ex: Explosion,
+): void {
+  const p = project(cam, W, H, ex.x, ex.y);
+  const t = ex.age / ex.life; // 0..1
+  const z = cam.zoom;
+  ctx.save();
+
+  // Expanding shockwave ring.
+  ctx.globalAlpha = (1 - t) * 0.6;
+  ctx.strokeStyle = "#ffd27f";
+  ctx.lineWidth = 2 * z;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, ex.radius * z * (0.4 + t * 1.6), 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Fireball core (shrinks/fades), white → amber → red.
+  const core = ex.radius * z * (1 - t * 0.6);
+  const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, core);
+  grad.addColorStop(0, `rgba(255,255,220,${(1 - t).toFixed(3)})`);
+  grad.addColorStop(0.5, `rgba(232,150,35,${(0.9 * (1 - t)).toFixed(3)})`);
+  grad.addColorStop(1, `rgba(150,40,20,0)`);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, Math.max(0.1, core), 0, Math.PI * 2);
+  ctx.fill();
+
+  // Flying sparks.
+  ctx.globalAlpha = 1 - t;
+  ctx.strokeStyle = "#ffe9a8";
+  ctx.lineWidth = 1.5 * z;
+  for (const s of ex.sparks) {
+    const d = s.speed * ex.age * z;
+    const sx = p.x + Math.cos(s.ang) * d;
+    const sy = p.y + Math.sin(s.ang) * d;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx - Math.cos(s.ang) * s.len * z, sy - Math.sin(s.ang) * s.len * z);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Soft elliptical drop shadow under a world entity, for depth. */
+function drawShadow(
+  ctx: CanvasRenderingContext2D,
+  cam: Camera,
+  W: number,
+  H: number,
+  wx: number,
+  wy: number,
+  rWorld: number,
+): void {
+  const p = project(cam, W, H, wx, wy);
+  const r = rWorld * cam.zoom;
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = "#000";
+  ctx.beginPath();
+  ctx.ellipse(p.x + r * 0.25, p.y + r * 0.4, r * 1.05, r * 0.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
 
 // Death overlay state
 let deathOverlay: DeathOverlay = { isDead: false, respawnTimer: 0, opacity: 0 };
@@ -163,33 +319,63 @@ let cooldowns: CooldownState = {
   teleports: 0,
 };
 
-// Initialize terrain system
+// Precompute the stable shape jitter for a single terrain cell.
+function decorateCell(cell: TerrainCell): TerrainCell {
+  if (cell.type === TerrainType.FOREST) {
+    cell.tufts = Array.from({ length: 4 }, () => ({
+      ox: (Math.random() - 0.5) * 0.7,
+      oy: (Math.random() - 0.5) * 0.7,
+    }));
+  } else if (cell.type === TerrainType.ROCK) {
+    cell.rockRadii = Array.from({ length: 6 }, () => 0.8 + Math.random() * 0.4);
+  } else if (cell.type === TerrainType.ORE) {
+    // A cluster of small gold nuggets, like a Red Alert ore field.
+    cell.oreBits = Array.from({ length: 14 }, () => ({
+      ox: (Math.random() - 0.5) * 0.9,
+      oy: (Math.random() - 0.5) * 0.9,
+      r: 0.06 + Math.random() * 0.07,
+    }));
+  }
+  return cell;
+}
+
+// Initialize terrain system. Features are sparse and spaced on a coarse grid so
+// the arena reads as scattered cover, not a wall of overlapping blobs.
 export function initTerrain(): void {
   terrain.length = 0; // Clear existing terrain
 
-  // Create sample terrain pattern
-  const terrainSize = 64; // Reduced from 128
-  for (let x = 0; x < MAP_WIDTH; x += terrainSize) {
-    for (let y = 0; y < MAP_HEIGHT; y += terrainSize) {
-      // Random terrain type with pattern
-      const types = [TerrainType.EMPTY, TerrainType.WATER, TerrainType.FOREST, TerrainType.ROCK];
-      const type = types[Math.floor(Math.random() * types.length)];
-
-      if (type !== TerrainType.EMPTY) {
-        terrain.push({ type: type!, x, y });
-      }
+  // One feature per coarse cell, ~34% populated. Red Alert mix: lots of
+  // tree stands and gold ore fields, with water and rocky outcrops between.
+  const gridStep = 256;
+  const weighted: TerrainType[] = [
+    TerrainType.FOREST,
+    TerrainType.FOREST,
+    TerrainType.ORE,
+    TerrainType.ORE,
+    TerrainType.WATER,
+    TerrainType.ROCK,
+  ];
+  for (let x = gridStep / 2; x < MAP_WIDTH; x += gridStep) {
+    for (let y = gridStep / 2; y < MAP_HEIGHT; y += gridStep) {
+      if (Math.random() > 0.34) continue;
+      const type = weighted[Math.floor(Math.random() * weighted.length)]!;
+      // Jitter placement within the cell so the grid isn't obvious.
+      const jx = x + (Math.random() - 0.5) * gridStep * 0.4;
+      const jy = y + (Math.random() - 0.5) * gridStep * 0.4;
+      terrain.push(decorateCell({ type, x: jx, y: jy }));
     }
   }
 
-  // Add some walls
-  for (let i = 0; i < 30; i++) {
-    // Increased from 15
+  // A handful of solid walls/rocks as hard cover.
+  for (let i = 0; i < 10; i++) {
     const type = Math.random() > 0.5 ? TerrainType.WALL : TerrainType.ROCK;
-    terrain.push({
-      type,
-      x: Math.random() * MAP_WIDTH,
-      y: Math.random() * MAP_HEIGHT,
-    });
+    terrain.push(
+      decorateCell({
+        type,
+        x: Math.random() * MAP_WIDTH,
+        y: Math.random() * MAP_HEIGHT,
+      }),
+    );
   }
 }
 
@@ -277,9 +463,10 @@ export function renderFrame(
     initTerrain();
   }
 
-  // Background
-  ctx.fillStyle = "#0b0b14";
+  // Background — Red Alert temperate battlefield ground.
+  ctx.fillStyle = RA.groundDark;
   ctx.fillRect(0, 0, W, H);
+  drawGroundTexture(ctx, cam, W, H);
 
   // Draw terrain
   drawTerrain(ctx, cam, W, H);
@@ -287,74 +474,36 @@ export function renderFrame(
   drawGrid(ctx, cam, W, H);
   drawMapBounds(ctx, cam, W, H);
 
-  // Pickups (drawn below tanks)
+  // Turn this tick's death/mine events into explosions, then advance them.
+  processSnapshotEvents(snap);
+  updateExplosions(1 / 60);
+
+  // Pickups (drawn below tanks) as beveled supply crates.
   for (const pk of snap.pickups) {
-    const p = project(cam, W, H, pk.x, pk.y);
-    ctx.save();
-
-    // Different colors for different pickup types
-    const colors = {
-      [ItemType.FUEL_CRATE]: "#22c55e",
-      [ItemType.MISSILE]: "#ef4444",
-      [ItemType.MINE_PACK]: "#8b5cf6",
-      [ItemType.SHIELD]: "#22d3ee",
-      [ItemType.RADAR]: "#facc15",
-      [ItemType.TELEPORT_CHARGE]: "#a855f7",
-    };
-
-    const color = colors[pk.type] || "#facc15";
-
-    // Draw pickup with gradient
-    const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 15 * cam.zoom);
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(1, color + "99");
-
-    ctx.fillStyle = gradient;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-
-    // Different shapes for different types
-    if (pk.type === ItemType.FUEL_CRATE) {
-      // Square for fuel
-      ctx.fillRect(p.x - 10 * cam.zoom, p.y - 10 * cam.zoom, 20 * cam.zoom, 20 * cam.zoom);
-      ctx.strokeRect(p.x - 10 * cam.zoom, p.y - 10 * cam.zoom, 20 * cam.zoom, 20 * cam.zoom);
-    } else {
-      // Circle for others
-      ctx.arc(p.x, p.y, 10 * cam.zoom, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    // Inner symbol
-    ctx.fillStyle = "#0b0b14";
-    ctx.font = `${Math.max(10, 12 * cam.zoom)}px system-ui, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(PICKUP_GLYPHS[pk.type] ?? "?", p.x, p.y);
-
-    // Pulsing effect
-    const time = Date.now() / 1000;
-    const pulse = 0.8 + Math.sin(time * 3) * 0.2;
-    ctx.globalAlpha = pulse;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 12 * cam.zoom, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.restore();
+    drawShadow(ctx, cam, W, H, pk.x, pk.y, 10);
+    drawPickup(ctx, cam, W, H, pk);
   }
 
-  // Visible mines (own / ally / radar-detected)
+  // Visible mines (own / ally / radar-detected) — spiked sea-mine look.
   for (const m of snap.visibleMines) {
     const p = project(cam, W, H, m.x, m.y);
+    const r = 8 * cam.zoom;
     ctx.save();
-    ctx.fillStyle = "#ef4444aa";
+    ctx.fillStyle = "#1a1a1a";
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + Math.cos(a) * r * 1.5, p.y + Math.sin(a) * r * 1.5);
+      ctx.lineWidth = 2 * cam.zoom;
+      ctx.strokeStyle = "#1a1a1a";
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#c0392b";
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 8 * cam.zoom, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#fff8";
+    ctx.strokeStyle = "#ff8a7a";
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
@@ -365,28 +514,94 @@ export function renderFrame(
     drawProjectile(ctx, cam, W, H, proj);
   }
 
-  // Draw hit effects
+  // Draw hit effects + explosions (above ground, below HUD).
   for (const effect of hitEffects) {
     drawHitEffect(ctx, cam, W, H, effect);
+  }
+  for (const ex of explosions) {
+    drawExplosion(ctx, cam, W, H, ex);
   }
 
   if (commandTarget) {
     drawCommandTarget(ctx, cam, W, H, commandTarget);
   }
 
-  // Draw minimap
-  drawMinimap(ctx, cam, W, H, snap, yourTankId);
-
-  // Draw scoreboard
-  drawScoreboard(ctx, W, H);
-
-  // Draw kill feed
-  drawKillFeed(ctx, W, H);
-
-  // Tanks
+  // Tanks (with drop shadows for depth).
   for (const t of snap.tanks) {
+    if (!t.isDead) drawShadow(ctx, cam, W, H, t.x, t.y, TANK_RADIUS);
     drawTank(ctx, cam, W, H, t, t.id === yourTankId);
   }
+
+  // Screen-space HUD layers.
+  drawMinimap(ctx, cam, W, H, snap, yourTankId);
+  drawScoreboard(ctx, W, H);
+  drawKillFeed(ctx, W, H);
+
+  // CRT war-room overlay (vignette + scanlines) — drawn last.
+  drawCrtOverlay(ctx, W, H);
+}
+
+/** A Red Alert supply crate: beveled wooden box with a colored equipment band. */
+function drawPickup(
+  ctx: CanvasRenderingContext2D,
+  cam: Camera,
+  W: number,
+  H: number,
+  pk: PickupState,
+): void {
+  const colors: Record<ItemType, string> = {
+    [ItemType.FUEL_CRATE]: "#5fa83a",
+    [ItemType.MISSILE]: "#c0392b",
+    [ItemType.MINE_PACK]: "#8e44ad",
+    [ItemType.SHIELD]: "#2f9fd0",
+    [ItemType.RADAR]: "#e8b923",
+    [ItemType.TELEPORT_CHARGE]: "#a855f7",
+  };
+  const color = colors[pk.type] ?? "#e8b923";
+  const p = project(cam, W, H, pk.x, pk.y);
+  const s = 11 * cam.zoom;
+  // Gentle bob so crates feel alive without per-frame randomness.
+  const bob = Math.sin(Date.now() / 400 + p.x) * 1.5 * cam.zoom;
+  const y = p.y + bob;
+
+  ctx.save();
+  // Crate body.
+  ctx.fillStyle = "#6b5536";
+  ctx.fillRect(p.x - s, y - s, s * 2, s * 2);
+  // Bevels.
+  ctx.fillStyle = "#ffffff2e";
+  ctx.fillRect(p.x - s, y - s, s * 2, s * 0.28);
+  ctx.fillStyle = "#0000004d";
+  ctx.fillRect(p.x - s, y + s - s * 0.28, s * 2, s * 0.28);
+  // Colored equipment band.
+  ctx.fillStyle = color;
+  ctx.fillRect(p.x - s, y - s * 0.34, s * 2, s * 0.68);
+  ctx.strokeStyle = "#2218";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(p.x - s, y - s, s * 2, s * 2);
+  // Glyph.
+  ctx.fillStyle = "#11140c";
+  ctx.font = `bold ${Math.max(10, 12 * cam.zoom)}px 'Courier New', monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(PICKUP_GLYPHS[pk.type] ?? "?", p.x, y);
+  ctx.restore();
+}
+
+/** Subtle CRT look: dark vignette corners + faint horizontal scanlines. */
+function drawCrtOverlay(ctx: CanvasRenderingContext2D, W: number, H: number): void {
+  ctx.save();
+  // Vignette.
+  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+  vg.addColorStop(0, "rgba(0,0,0,0)");
+  vg.addColorStop(1, "rgba(0,0,0,0.45)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+  // Scanlines.
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = "#000";
+  for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+  ctx.restore();
 }
 
 function drawCommandTarget(
@@ -421,7 +636,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: numb
   const endY = cam.y + H / (2 * cam.zoom);
 
   ctx.save();
-  ctx.strokeStyle = "#1f1f33";
+  ctx.strokeStyle = RA.grid;
   ctx.lineWidth = 1;
   for (let x = startX; x < endX; x += step) {
     const a = project(cam, W, H, x, startY);
@@ -446,51 +661,122 @@ function drawMapBounds(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H:
   const tl = project(cam, W, H, 0, 0);
   const br = project(cam, W, H, MAP_WIDTH, MAP_HEIGHT);
   ctx.save();
-  ctx.strokeStyle = "#facc1555";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = RA.steelEdge;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+  ctx.strokeStyle = RA.amber + "66";
+  ctx.lineWidth = 1;
   ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
   ctx.restore();
 }
 
+/**
+ * Subtle large-scale ground mottling so the battlefield reads as patchy
+ * grass/dirt rather than a flat color. Cheap: a sparse static dot grid keyed
+ * to world coordinates (deterministic, no per-frame randomness).
+ */
+function drawGroundTexture(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: number): void {
+  const step = 128;
+  const startX = Math.floor((cam.x - W / (2 * cam.zoom)) / step) * step;
+  const startY = Math.floor((cam.y - H / (2 * cam.zoom)) / step) * step;
+  const endX = cam.x + W / (2 * cam.zoom);
+  const endY = cam.y + H / (2 * cam.zoom);
+  ctx.save();
+  for (let x = startX; x < endX; x += step) {
+    for (let y = startY; y < endY; y += step) {
+      // Deterministic hash → lighter grass blotch on ~half the cells.
+      const h = (Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1;
+      if (h > 0.5 || h < -0.5) continue;
+      const p = project(cam, W, H, x + 64, y + 64);
+      ctx.fillStyle = RA.groundLite;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 70 * cam.zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 function drawTerrain(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: number): void {
+  const size = 72 * cam.zoom;
   for (const t of terrain) {
     const p = project(cam, W, H, t.x, t.y);
-    const size = 96 * cam.zoom; // Increased terrain tile size
+
+    // Skip anything off-screen — cheap cull, big win on the 2048² map.
+    if (p.x < -size || p.x > W + size || p.y < -size || p.y > H + size) continue;
 
     ctx.save();
     ctx.fillStyle = TERRAIN_COLORS[t.type];
 
     if (t.type === TerrainType.WALL) {
-      // Draw walls as rectangles
-      ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
+      // Concrete wall block with a beveled highlight/shadow (RA pillbox feel).
+      const s = size;
+      ctx.fillStyle = RA.wall;
+      ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+      ctx.fillStyle = "#ffffff22";
+      ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s * 0.18); // top highlight
+      ctx.fillStyle = "#00000044";
+      ctx.fillRect(p.x - s / 2, p.y + s / 2 - s * 0.18, s, s * 0.18); // bottom shadow
+      ctx.strokeStyle = RA.rockDark;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(p.x - s / 2, p.y - s / 2, s, s);
     } else if (t.type === TerrainType.WATER) {
-      // Draw water as circles
-      ctx.globalAlpha = 0.2;
+      // Water pool with a lighter inner ripple.
+      ctx.fillStyle = RA.water;
+      ctx.globalAlpha = 0.85;
       ctx.beginPath();
       ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2);
       ctx.fill();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = RA.waterLite;
+      ctx.beginPath();
+      ctx.arc(p.x - size * 0.12, p.y - size * 0.12, size * 0.28, 0, Math.PI * 2);
+      ctx.fill();
     } else if (t.type === TerrainType.FOREST) {
-      // Draw forest as squares with pattern
-      ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
-      ctx.fillStyle = "#22c55e55";
-      for (let i = 0; i < 3; i++) {
-        const offsetX = (Math.random() - 0.5) * size * 0.6;
-        const offsetY = (Math.random() - 0.5) * size * 0.6;
-        ctx.fillRect(p.x + offsetX - size / 8, p.y + offsetY - size / 8, size / 4, size / 4);
+      // Tree stand: dark canopy disc plus stable tufts (precomputed offsets).
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#3f6b33";
+      for (const tuft of t.tufts ?? []) {
+        ctx.beginPath();
+        ctx.arc(p.x + tuft.ox * size, p.y + tuft.oy * size, size / 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (t.type === TerrainType.ORE) {
+      // Red Alert ore field: a scatter of glittering gold nuggets.
+      for (const bit of t.oreBits ?? []) {
+        const bx = p.x + bit.ox * size;
+        const by = p.y + bit.oy * size;
+        ctx.fillStyle = RA.oreGold;
+        ctx.beginPath();
+        ctx.arc(bx, by, bit.r * size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = RA.oreGlint;
+        ctx.beginPath();
+        ctx.arc(bx - bit.r * size * 0.3, by - bit.r * size * 0.3, bit.r * size * 0.4, 0, Math.PI * 2);
+        ctx.fill();
       }
     } else if (t.type === TerrainType.ROCK) {
-      // Draw rocks as irregular polygons
+      // Irregular boulder (stable vertex radii) with a top highlight.
+      const radii = t.rockRadii ?? [1, 1, 1, 1, 1, 1];
+      ctx.fillStyle = RA.rock;
       ctx.beginPath();
-      const sides = 6;
-      for (let i = 0; i < sides; i++) {
-        const angle = (i / sides) * Math.PI * 2;
-        const radius = (size / 2) * (0.8 + Math.random() * 0.4);
+      for (let i = 0; i < radii.length; i++) {
+        const angle = (i / radii.length) * Math.PI * 2;
+        const radius = (size / 2) * radii[i]!;
         const x = p.x + Math.cos(angle) * radius;
         const y = p.y + Math.sin(angle) * radius;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
       ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#ffffff1f";
+      ctx.beginPath();
+      ctx.arc(p.x - size * 0.12, p.y - size * 0.14, size * 0.22, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
@@ -522,13 +808,22 @@ function drawTank(
     ctx.setLineDash([]);
   }
 
-  // Shield ring
+  // Shield: a translucent energy bubble with a bright rim.
   if (t.hasShield) {
-    ctx.strokeStyle = "#22d3ee";
-    ctx.lineWidth = 3;
+    ctx.save();
+    const sb = ctx.createRadialGradient(p.x, p.y, r * 0.6, p.x, p.y, r + 7);
+    sb.addColorStop(0, "#22d3ee00");
+    sb.addColorStop(1, "#22d3ee44");
+    ctx.fillStyle = sb;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, r + 3, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, r + 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#67e8f9";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r + 7, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
   }
 
   // Hull with gradient shading
@@ -593,51 +888,60 @@ function drawTank(
     ctx.restore();
   }
 
-  // Name + fuel bar
+  // Name + fuel bar (RA amber callsign over a thin steel-framed gauge).
   ctx.save();
-  ctx.font = `${Math.max(11, 12 * cam.zoom)}px system-ui, sans-serif`;
+  ctx.font = `${Math.max(10, 11 * cam.zoom)}px 'Courier New', monospace`;
   ctx.textAlign = "center";
-  ctx.fillStyle = "#facc15";
+  ctx.fillStyle = "#000a";
+  ctx.fillText(t.name, p.x + 1, p.y - r - 13); // text shadow
+  ctx.fillStyle = RA.amber;
   ctx.fillText(t.name, p.x, p.y - r - 14);
-  // Fuel bar
-  const barW = r * 2.5;
-  const barH = 3;
+  // Fuel bar.
+  const barW = r * 2.6;
+  const barH = 4;
   const bx = p.x - barW / 2;
-  const by = p.y - r - 8;
-  ctx.fillStyle = "#1f1f33";
-  ctx.fillRect(bx, by, barW, barH);
+  const by = p.y - r - 9;
+  ctx.fillStyle = "#000a";
+  ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
   const pct = Math.max(0, Math.min(1, t.fuel / MAX_FUEL));
-  ctx.fillStyle = pct > 0.5 ? "#22c55e" : pct > 0.2 ? "#facc15" : "#ef4444";
+  ctx.fillStyle = pct > 0.5 ? "#5fa83a" : pct > 0.2 ? RA.amber : "#c0392b";
   ctx.fillRect(bx, by, barW * pct, barH);
   ctx.restore();
 
-  // Armor visualization
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(t.angle);
-
-  // Front armor visualization
-  const frontArmorPct = t.armor.front / 100;
-  const frontColor = frontArmorPct > 0.7 ? "#22c55e" : frontArmorPct > 0.4 ? "#facc15" : "#ef4444";
-  ctx.fillStyle = frontColor;
-  ctx.fillRect(-r, -r * 0.7, r * 2, r * 1.4 * frontArmorPct);
-
-  // Side armor visualization (left and right)
-  const sideArmorPct = t.armor.side / 100;
-  const sideColor = sideArmorPct > 0.7 ? "#22c55e" : sideArmorPct > 0.4 ? "#facc15" : "#ef4444";
-  ctx.fillStyle = sideColor;
-  // Left side
-  ctx.fillRect(-r, -r * 0.7, r * 0.5, r * 1.4 * sideArmorPct);
-  // Right side
-  ctx.fillRect(r * 1.5, -r * 0.7, r * 0.5, r * 1.4 * sideArmorPct);
-
-  // Rear armor visualization
-  const rearArmorPct = t.armor.rear / 100;
-  const rearColor = rearArmorPct > 0.7 ? "#22c55e" : rearArmorPct > 0.4 ? "#facc15" : "#ef4444";
-  ctx.fillStyle = rearColor;
-  ctx.fillRect(-r, r * 0.7 - r * 1.4 * rearArmorPct, r * 2, r * 1.4 * rearArmorPct);
-
-  ctx.restore();
+  // Armor readout: a thin segmented ring around the tank (front / sides / rear
+  // arcs), color-coded by integrity. Replaces the old full-body color fill so
+  // the tank sprite itself stays readable. Hidden when dead.
+  if (!t.isDead) {
+    const armorColor = (pct: number): string =>
+      pct > 0.7 ? "#5fa83a" : pct > 0.4 ? "#e8b923" : "#c0392b";
+    const ringR = r + 5;
+    const gap = 0.18; // radians of empty space between segments
+    // Arcs are placed relative to the hull heading (t.angle): front faces +x.
+    const segments: Array<{ center: number; half: number; pct: number }> = [
+      { center: 0, half: Math.PI * 0.28, pct: t.armor.front / 100 }, // front
+      { center: Math.PI, half: Math.PI * 0.22, pct: t.armor.rear / 100 }, // rear
+      { center: -Math.PI / 2, half: Math.PI * 0.2, pct: t.armor.side / 100 }, // left
+      { center: Math.PI / 2, half: Math.PI * 0.2, pct: t.armor.side / 100 }, // right
+    ];
+    ctx.save();
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "butt";
+    for (const seg of segments) {
+      const a0 = t.angle + seg.center - seg.half + gap / 2;
+      const a1 = t.angle + seg.center + seg.half - gap / 2;
+      // Track (dark) behind the segment.
+      ctx.strokeStyle = "#0009";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, ringR, a0, a1);
+      ctx.stroke();
+      // Filled portion proportional to integrity.
+      ctx.strokeStyle = armorColor(seg.pct);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, ringR, a0, a0 + (a1 - a0) * Math.max(0, Math.min(1, seg.pct)));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 
 function drawHitEffect(
@@ -691,11 +995,14 @@ function drawMinimap(
 
   ctx.save();
 
-  // Minimap background
-  ctx.fillStyle = "#1f1f33aa";
-  ctx.strokeStyle = "#facc1555";
-  ctx.lineWidth = 2;
+  // Minimap background — steel radar panel (RA tactical map).
+  ctx.fillStyle = RA.groundDark + "ee";
   ctx.fillRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
+  ctx.strokeStyle = RA.steelEdge;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
+  ctx.strokeStyle = RA.amber + "66";
+  ctx.lineWidth = 1;
   ctx.strokeRect(minimapX, minimapY, MINIMAP_SIZE, MINIMAP_SIZE);
 
   // Find your tank for centering
@@ -860,16 +1167,16 @@ export function renderHud(
   const H = ctx.canvas.height;
 
   ctx.save();
-  ctx.font = "12px system-ui, sans-serif";
+  ctx.font = "12px 'Courier New', monospace";
   ctx.textAlign = "left";
-  ctx.fillStyle = "#facc15dd";
+  ctx.fillStyle = RA.amber + "cc";
 
   // Top-left: status / tick / rtt (raw debug info)
   ctx.fillText(`srv tick=${state.serverTick}  rtt=${state.rttMs}ms  ws=${state.status}`, 8, 16);
 
   // Raw debug info area - show more detailed information
   if (state.snap) {
-    ctx.fillStyle = "#facc15bb";
+    ctx.fillStyle = RA.amber + "aa";
     ctx.fillText(
       `Tanks: ${state.snap.tanks.length} | Pickups: ${state.snap.pickups.length} | Mines: ${state.snap.visibleMines.length}`,
       8,
@@ -882,40 +1189,56 @@ export function renderHud(
     );
   }
 
-  ctx.fillStyle = "#facc15dd";
+  ctx.fillStyle = RA.amber + "dd";
 
   if (state.yourTank) {
     const t = state.yourTank;
-    // Bottom-left: fuel - improved with low-fuel warning
-    const barW = 220;
+    // Bottom-left: steel command panel behind fuel + ammo (RA HUD feel).
+    const barW = 240;
     const barH = 14;
-    const bx = 8;
-    const by = H - 62;
-    ctx.fillStyle = "#1f1f33";
+    const bx = 12;
+    const by = H - 64;
+    const panelX = bx - 8;
+    const panelY = by - 22;
+    const panelW = barW + 16;
+    const panelH = 74;
+    ctx.fillStyle = RA.steel + "e6";
+    ctx.fillRect(panelX, panelY, panelW, panelH);
+    ctx.strokeStyle = RA.steelEdge;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panelX, panelY, panelW, panelH);
+    ctx.fillStyle = "#ffffff14"; // top bevel highlight
+    ctx.fillRect(panelX, panelY, panelW, 2);
+
+    // Fuel gauge track.
+    ctx.fillStyle = "#000000aa";
     ctx.fillRect(bx, by, barW, barH);
     const pct = Math.max(0, Math.min(1, t.fuel / MAX_FUEL));
 
     // Low fuel warning
-    let fuelColor = "#22c55e";
+    let fuelColor = "#5fa83a"; // RA olive-green "ok"
     let fuelText = `FUEL ${Math.round(t.fuel)} / ${MAX_FUEL}`;
     if (pct <= 0.05) {
-      fuelColor = "#ef4444";
+      fuelColor = "#c0392b";
       fuelText = "LOW FUEL! " + fuelText;
     } else if (pct <= 0.2) {
-      fuelColor = "#facc15";
+      fuelColor = RA.amber;
     } else if (pct <= 0.3) {
       // Medium warning with intermittent flash
       const flash = Math.floor(Date.now() / 500) % 2;
-      if (flash === 0) fuelColor = "#facc15aa";
+      if (flash === 0) fuelColor = RA.amber + "aa";
     }
 
     ctx.fillStyle = fuelColor;
     ctx.fillRect(bx, by, barW * pct, barH);
-    ctx.fillStyle = "#facc15";
-    ctx.fillText(fuelText, bx, by - 4);
+    ctx.strokeStyle = RA.steelEdge;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, barW, barH);
+    ctx.fillStyle = RA.amber;
+    ctx.fillText(fuelText, bx, by - 6);
 
     // Bottom-left: ammo with cooldown feedback
-    ctx.fillStyle = "#facc15";
+    ctx.fillStyle = RA.amber;
     let ammoText = `MIS ${t.ammo.missiles}   MINE ${t.ammo.mines}   TP ${t.ammo.teleports}   SH ${t.ammo.shields}   RAD ${t.ammo.radar}   RANK ${t.rank}`;
 
     // Add cooldown indicators
@@ -957,7 +1280,7 @@ export function renderHud(
   ctx.fillStyle = "#facc1599";
   ctx.textAlign = "right";
   ctx.fillText(
-    "LMB move · Space fire · RMB/K missile · M mine · R radar · Shift shield · X stop",
+    "LMB enemy=fire / ground=move · Space fire · RMB/K missile · M mine · R radar · F deposit fuel · Shift shield · X stop",
     W - 8,
     16,
   );
