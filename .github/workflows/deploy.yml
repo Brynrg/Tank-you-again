@@ -29,7 +29,7 @@ jobs:
       slug: tank-you-again
       build-command: npm run build:portal --workspace=client && node scripts/stage-dist.mjs
       dist-dir: dist
-      status: preview
+      status: live
     secrets:
       SPEEDRUNGAMES_TOKEN: ${{ secrets.SPEEDRUNGAMES_TOKEN }}
       VITE_WS_URL: ${{ secrets.VITE_WS_URL }}

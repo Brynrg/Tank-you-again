@@ -56,7 +56,7 @@ function lastSnapshot(conn: Connection): GameStateSnapshot {
 
 describe("RoomLoop", () => {
   it("advances tickIndex and spawns a tank for an added connection", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -72,7 +72,7 @@ describe("RoomLoop", () => {
   });
 
   it("applies INPUT and moves the tank in the requested direction", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -98,7 +98,7 @@ describe("RoomLoop", () => {
   });
 
   it("debits fuel while moving", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -121,7 +121,7 @@ describe("RoomLoop", () => {
   });
 
   it("moves toward an authoritative MOVE_TO command", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -147,7 +147,7 @@ describe("RoomLoop", () => {
   });
 
   it("stops an active MOVE_TO command when STOP is ingested", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -176,7 +176,7 @@ describe("RoomLoop", () => {
   });
 
   it("fires a bullet on FIRE and emits it from the right owner", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     room.addConnection({
       conn,
@@ -200,7 +200,7 @@ describe("RoomLoop", () => {
   });
 
   it("hides distant pickups until an active radar scan reveals them", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -231,7 +231,7 @@ describe("RoomLoop", () => {
   });
 
   it("keeps enemy mines hidden until active radar reveals them per viewer", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -260,7 +260,7 @@ describe("RoomLoop", () => {
   });
 
   it("blocks radar scans when no radar equipment remains", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -278,7 +278,7 @@ describe("RoomLoop", () => {
   });
 
   it("consumes one shield equipment when activating shield", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -299,7 +299,7 @@ describe("RoomLoop", () => {
   });
 
   it("blocks shield activation when no shield equipment remains", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     const tank = room.addConnection({
       conn,
@@ -316,7 +316,7 @@ describe("RoomLoop", () => {
   });
 
   it("removes a tank cleanly on removeConnection", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const conn = makeFakeConnection();
     room.addConnection({
       conn,
@@ -331,7 +331,7 @@ describe("RoomLoop", () => {
 
   it("is deterministic across runs with identical inputs", () => {
     function trace(): string {
-      const room = new RoomLoop();
+      const room = new RoomLoop({ aiTargetCount: 0 });
       const conn = makeFakeConnection();
       const tank = room.addConnection({
         conn,
@@ -374,14 +374,14 @@ describe("RoomLoop", () => {
 
 describe("AIEnemies", () => {
   it("adds an AI enemy to the room", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const ai = room.addAIEnemy("medium");
     expect(ai.getTank().name).toMatch(/AI-medium-/);
     expect(room.getTanksForTesting().size).toBe(1);
   });
 
   it("creates AI enemies with different difficulty levels", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const easyAI = room.addAIEnemy("easy");
     const mediumAI = room.addAIEnemy("medium");
     const hardAI = room.addAIEnemy("hard");
@@ -394,12 +394,40 @@ describe("AIEnemies", () => {
   });
 
   it("assigns different teams to AI enemies", () => {
-    const room = new RoomLoop();
+    const room = new RoomLoop({ aiTargetCount: 0 });
     const ai1 = room.addAIEnemy("medium");
     const ai2 = room.addAIEnemy("medium");
     const ai3 = room.addAIEnemy("medium");
 
     const teams = [ai1.getTank().team, ai2.getTank().team, ai3.getTank().team];
     expect(new Set(teams).size).toBeGreaterThan(1);
+  });
+
+  it("maintains a bounded bot population (no unbounded spawn leak)", () => {
+    const room = new RoomLoop({ aiTargetCount: 3 });
+    const countAI = () =>
+      [...room.getTanksForTesting().keys()].filter((id) => id.startsWith("ai-")).length;
+    room.forceTick(); // tops the population up to the target
+    expect(countAI()).toBe(3);
+    // The old loop called addAIEnemy() every 120 ticks forever; after 400 ticks
+    // that was 3+ extra bots and growing. The bounded loop stays at the target.
+    for (let i = 0; i < 400; i++) room.forceTick();
+    expect(countAI()).toBe(3);
+    expect(room.getTanksForTesting().size).toBe(3);
+  });
+
+  it("drives bots to actually move (not inert)", () => {
+    const room = new RoomLoop({ aiTargetCount: 3 });
+    room.forceTick();
+    const start = new Map(
+      [...room.getTanksForTesting().values()].map((t) => [t.id, { x: t.x, y: t.y }] as const),
+    );
+    for (let i = 0; i < 120; i++) room.forceTick();
+    let moved = 0;
+    for (const t of room.getTanksForTesting().values()) {
+      const s = start.get(t.id);
+      if (s && Math.hypot(t.x - s.x, t.y - s.y) > 1) moved++;
+    }
+    expect(moved).toBeGreaterThan(0);
   });
 });

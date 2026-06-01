@@ -82,6 +82,30 @@ app.get("/leaderboard", async () => {
 const room = new RoomLoop();
 const connections = new Map<string, Connection>(); // connId -> Connection
 
+// ── WebSocket abuse hardening ──────────────────────────────────────────────
+// Client traffic is tiny JSON (inputs at ~60 Hz + occasional actions). Cap the
+// per-message size and rate-limit per connection with a token bucket so a
+// malicious or buggy client can't flood the tick loop.
+const MAX_MSG_BYTES = 4096;
+const MSG_RATE_PER_SEC = 150; // sustained ceiling (well above a 60 Hz input stream)
+const MSG_BURST = 80; // short-burst allowance
+const rateState = new Map<string, { tokens: number; last: number }>();
+
+function allowMessage(connId: string): boolean {
+  const now = Date.now();
+  let st = rateState.get(connId);
+  if (!st) {
+    st = { tokens: MSG_BURST, last: now };
+    rateState.set(connId, st);
+  }
+  const elapsed = (now - st.last) / 1000;
+  st.last = now;
+  st.tokens = Math.min(MSG_BURST, st.tokens + elapsed * MSG_RATE_PER_SEC);
+  if (st.tokens < 1) return false;
+  st.tokens -= 1;
+  return true;
+}
+
 // Persist XP/rank when the room emits an XP delta.
 room.onXpDelta = (tankId, delta, reason) => {
   if (!prisma) return;
@@ -112,6 +136,9 @@ await app.register(async (scope) => {
     app.log.info({ remote: req.ip, connId: conn.id }, "ws client connected");
 
     socket.on("message", (raw: Buffer) => {
+      // Drop oversized or over-rate traffic before doing any work.
+      if (raw.length > MAX_MSG_BYTES) return;
+      if (!allowMessage(conn.id)) return;
       let msg: ClientMessage | null = null;
       try {
         msg = JSON.parse(raw.toString()) as ClientMessage;
@@ -168,6 +195,7 @@ await app.register(async (scope) => {
     socket.on("close", () => {
       room.removeConnection(conn.id);
       connections.delete(conn.id);
+      rateState.delete(conn.id);
       app.log.info({ connId: conn.id }, "ws client disconnected");
     });
   });

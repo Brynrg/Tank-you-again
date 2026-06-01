@@ -7,6 +7,7 @@ import {
 } from "@shared/types";
 
 import { attach as attachInput, type InputLayer } from "./input.js";
+import { SnapshotInterpolator } from "./interpolate.js";
 import {
   SinglePlayerNetClient,
   type NetStatus as SinglePlayerNetStatus,
@@ -44,6 +45,7 @@ export function run(opts: RunOptions): RunHandle {
 
   let yourTankId = "";
   let lastSnapshot: GameStateSnapshot | null = null;
+  const interp = new SnapshotInterpolator();
   let yourTank: TankState | null = null;
   let status: UnifiedNetStatus = "connecting";
   let clientTick = 0;
@@ -57,6 +59,7 @@ export function run(opts: RunOptions): RunHandle {
               yourTankId = msg.yourTankId;
             } else if (msg.type === ServerMessageType.SNAPSHOT) {
               lastSnapshot = msg.snapshot;
+              interp.push(msg.snapshot, performance.now());
               yourTank = lastSnapshot.tanks.find((t) => t.id === yourTankId) ?? null;
               const target = input.getCommandTarget();
               if (target && yourTank) {
@@ -80,6 +83,7 @@ export function run(opts: RunOptions): RunHandle {
               yourTankId = msg.yourTankId;
             } else if (msg.type === ServerMessageType.SNAPSHOT) {
               lastSnapshot = msg.snapshot;
+              interp.push(msg.snapshot, performance.now());
               yourTank = lastSnapshot.tanks.find((t) => t.id === yourTankId) ?? null;
               const target = input.getCommandTarget();
               if (target && yourTank) {
@@ -118,9 +122,13 @@ export function run(opts: RunOptions): RunHandle {
     // Camera follow
     followTank(camera, yourTank, dt);
 
+    // Render the interpolated view (smooth 60fps between 20Hz snapshots). Input
+    // targeting + HUD still use the raw latest snapshot above for accuracy.
+    const renderSnap = interp.sample(now, yourTankId) ?? lastSnapshot;
+
     // Render
-    if (lastSnapshot) {
-      renderFrame(ctx, lastSnapshot, camera, yourTankId, input.getCommandTarget());
+    if (renderSnap) {
+      renderFrame(ctx, renderSnap, camera, yourTankId, input.getCommandTarget());
     } else {
       ctx.fillStyle = "#0b0b14";
       ctx.fillRect(0, 0, opts.canvas.width, opts.canvas.height);

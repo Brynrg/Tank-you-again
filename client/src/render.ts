@@ -592,7 +592,14 @@ function drawPickup(
 function drawCrtOverlay(ctx: CanvasRenderingContext2D, W: number, H: number): void {
   ctx.save();
   // Vignette.
-  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+  const vg = ctx.createRadialGradient(
+    W / 2,
+    H / 2,
+    Math.min(W, H) * 0.35,
+    W / 2,
+    H / 2,
+    Math.max(W, H) * 0.75,
+  );
   vg.addColorStop(0, "rgba(0,0,0,0)");
   vg.addColorStop(1, "rgba(0,0,0,0.45)");
   ctx.fillStyle = vg;
@@ -756,7 +763,13 @@ function drawTerrain(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: n
         ctx.fill();
         ctx.fillStyle = RA.oreGlint;
         ctx.beginPath();
-        ctx.arc(bx - bit.r * size * 0.3, by - bit.r * size * 0.3, bit.r * size * 0.4, 0, Math.PI * 2);
+        ctx.arc(
+          bx - bit.r * size * 0.3,
+          by - bit.r * size * 0.3,
+          bit.r * size * 0.4,
+          0,
+          Math.PI * 2,
+        );
         ctx.fill();
       }
     } else if (t.type === TerrainType.ROCK) {

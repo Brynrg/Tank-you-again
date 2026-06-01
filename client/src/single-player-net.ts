@@ -247,13 +247,7 @@ export class SinglePlayerNetClient {
     for (let i = 0; i < 18; i++) this.spawnPickup();
   }
 
-  private makeTank(
-    name: string,
-    team: TeamColor,
-    isBot: boolean,
-    x: number,
-    y: number,
-  ): TankState {
+  private makeTank(name: string, team: TeamColor, isBot: boolean, x: number, y: number): TankState {
     const id = `t${this.nextId++}`;
     const tank: TankState = {
       id,
@@ -348,7 +342,11 @@ export class SinglePlayerNetClient {
         brain.wanderUntilTick = this.tick + SERVER_TICK_RATE * (2 + Math.random() * 3);
         brain.moveTarget = {
           x: clamp(bot.x + Math.cos(brain.wanderAngle) * 300, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS),
-          y: clamp(bot.y + Math.sin(brain.wanderAngle) * 300, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS),
+          y: clamp(
+            bot.y + Math.sin(brain.wanderAngle) * 300,
+            TANK_RADIUS,
+            MAP_HEIGHT - TANK_RADIUS,
+          ),
         };
       }
     }
@@ -460,7 +458,12 @@ export class SinglePlayerNetClient {
         if (tank.isDead) continue;
         if (Math.hypot(tank.x - pk.x, tank.y - pk.y) <= TANK_RADIUS + PICKUP_RADIUS) {
           this.applyPickup(tank, pk);
-          this.events.push({ tick: this.tick, kind: "pickup", subjectId: tank.id, payload: pk.type });
+          this.events.push({
+            tick: this.tick,
+            kind: "pickup",
+            subjectId: tank.id,
+            payload: pk.type,
+          });
           taken = true;
           break;
         }
@@ -470,10 +473,7 @@ export class SinglePlayerNetClient {
     this.pickups = survivors;
 
     // Periodically replenish.
-    if (
-      this.tick % PICKUP_SPAWN_INTERVAL_TICKS === 0 &&
-      this.pickups.length < PICKUP_MAX_ACTIVE
-    ) {
+    if (this.tick % PICKUP_SPAWN_INTERVAL_TICKS === 0 && this.pickups.length < PICKUP_MAX_ACTIVE) {
       this.spawnPickup();
     }
   }
@@ -492,7 +492,14 @@ export class SinglePlayerNetClient {
     if (tank.fuel < FUEL_FIRE_BULLET) return;
     brain.lastBulletTick = this.tick;
     tank.fuel -= FUEL_FIRE_BULLET;
-    this.spawnProjectile(tank, aim, ProjectileKind.BULLET, BULLET_SPEED, BULLET_DAMAGE, BULLET_TTL_TICKS);
+    this.spawnProjectile(
+      tank,
+      aim,
+      ProjectileKind.BULLET,
+      BULLET_SPEED,
+      BULLET_DAMAGE,
+      BULLET_TTL_TICKS,
+    );
   }
 
   private tryFireMissile(tank: TankState, brain: TankBrain, aim: number): void {
@@ -501,7 +508,14 @@ export class SinglePlayerNetClient {
     brain.lastMissileTick = this.tick;
     tank.ammo.missiles--;
     tank.fuel -= FUEL_FIRE_MISSILE;
-    this.spawnProjectile(tank, aim, ProjectileKind.MISSILE, MISSILE_SPEED, MISSILE_DAMAGE, MISSILE_TTL_TICKS);
+    this.spawnProjectile(
+      tank,
+      aim,
+      ProjectileKind.MISSILE,
+      MISSILE_SPEED,
+      MISSILE_DAMAGE,
+      MISSILE_TTL_TICKS,
+    );
   }
 
   private spawnProjectile(
@@ -601,7 +615,11 @@ export class SinglePlayerNetClient {
     // Place it behind the hull (opposite the facing) just outside pickup range.
     const drop = TANK_RADIUS + PICKUP_RADIUS + 12;
     const dropX = clamp(tank.x - Math.cos(tank.angle) * drop, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS);
-    const dropY = clamp(tank.y - Math.sin(tank.angle) * drop, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS);
+    const dropY = clamp(
+      tank.y - Math.sin(tank.angle) * drop,
+      TANK_RADIUS,
+      MAP_HEIGHT - TANK_RADIUS,
+    );
     this.pickups.push({
       id: `k${this.nextId++}`,
       type: ItemType.FUEL_CRATE,
@@ -619,7 +637,10 @@ export class SinglePlayerNetClient {
       ItemType.RADAR,
       ItemType.TELEPORT_CHARGE,
     ];
-    const drops: ItemType[] = [ItemType.FUEL_CRATE, equip[Math.floor(Math.random() * equip.length)]!];
+    const drops: ItemType[] = [
+      ItemType.FUEL_CRATE,
+      equip[Math.floor(Math.random() * equip.length)]!,
+    ];
     for (const type of drops) {
       this.pickups.push({
         id: `k${this.nextId++}`,

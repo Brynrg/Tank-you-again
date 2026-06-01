@@ -1,10 +1,10 @@
 # Battlefield / TankPit fidelity reference
 
-**Reference game:** the classic 2D *Battlefield* (Bonus.com, 1997 →
+**Reference game:** the classic 2D _Battlefield_ (Bonus.com, 1997 →
 playbattlefield.com, shut down 2008), as preserved and modernized by
 **TankPit** (2012). This is **not** the EA/DICE FPS series.
 
-Goal: clone the *feel* of the original — never its copyrighted assets.
+Goal: clone the _feel_ of the original — never its copyrighted assets.
 
 ## Verified mechanics (sources below)
 

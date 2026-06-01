@@ -40,6 +40,17 @@ import {
 import type { Connection } from "./connection.js";
 import { send } from "./connection.js";
 import { EMPTY_INPUT, type PlayerCommandState, type PlayerInputState } from "./loop-types.js";
+
+/**
+ * Per-actor fire/mine cooldown ticks. A human's `Connection` already carries
+ * these fields; bots get a parallel record. Factoring fire/mine/item logic to
+ * operate on this (rather than a `Connection`) is what lets bots actually act.
+ */
+interface FireCooldowns {
+  lastBulletTick: number;
+  lastMissileTick: number;
+  lastMineTick: number;
+}
 import type { AIChallengeLevel } from "./sim/ai-enemy.js";
 import { AIEnemy } from "./sim/ai-enemy.js";
 import { findHit, stepProjectile, tryFire } from "./sim/combat.js";
@@ -88,21 +99,31 @@ export class RoomLoop {
   private readonly pickupSpawnRef = { value: 0 };
   private readonly teamCensus = new Map<TeamColor, number>();
 
-  /** AI enemies management */
+  /** AI (NPC bot) enemies — full simulation participants driven by the behavior
+   * tree instead of a WebSocket: they move, fire, take damage, and respawn. */
   private readonly aiEnemies = new Map<string, AIEnemy>();
   private aiDifficulty: AIChallengeLevel = "medium";
-  private readonly aiSpawnInterval = 120;
-  private lastAISpawnTick = 0;
+  /** Live bot population to maintain. Dead bots respawn in place, so the
+   * population is bounded — no unbounded spawn leak. Set to 0 to disable bots
+   * (used by tests for a deterministic world). */
+  private readonly aiTargetCount: number;
   private aiCount = 0;
+  /** Per-bot fire/mine cooldown state (bots have no Connection). */
+  private readonly aiCooldowns = new Map<string, FireCooldowns>();
+  /** Per-bot desired turret aim, applied during the movement step. */
+  private readonly aiAim = new Map<string, number>();
 
   /** Hook: called with the room's tank state after a kill resolves. */
   public onXpDelta:
     | ((tankId: string, delta: number, reason: "kill" | "death" | "assist") => void)
     | null = null;
 
+  constructor(opts: { aiTargetCount?: number } = {}) {
+    this.aiTargetCount = opts.aiTargetCount ?? 4;
+  }
+
   start(): void {
-    // Start with an initial AI enemy
-    this.addAIEnemy();
+    // The bot population is maintained each tick by updateAIEnemies().
     if (this.timer) return;
     this.timer = setInterval(() => {
       try {
@@ -229,13 +250,22 @@ export class RoomLoop {
     if (!conn) return;
     const tank = this.tanks.get(conn.tankId);
     if (!tank) return;
-    const lastTick =
-      msg.weapon === ProjectileKind.MISSILE ? conn.lastMissileTick : conn.lastBulletTick;
-    const r = tryFire(tank, msg.weapon, msg.aim, this.tickIndex, lastTick);
+    this.fireWeapon(tank, conn, msg.weapon, msg.aim);
+  }
+
+  /** Fire a weapon for any actor (player or bot), honoring its own cooldowns. */
+  private fireWeapon(
+    tank: TankState,
+    cd: FireCooldowns,
+    weapon: ProjectileKind,
+    aim: number | undefined,
+  ): void {
+    const lastTick = weapon === ProjectileKind.MISSILE ? cd.lastMissileTick : cd.lastBulletTick;
+    const r = tryFire(tank, weapon, aim, this.tickIndex, lastTick);
     if (!r.ok || !r.projectile) return;
     this.projectiles.set(r.projectile.id, r.projectile);
-    if (msg.weapon === ProjectileKind.MISSILE) conn.lastMissileTick = this.tickIndex;
-    else conn.lastBulletTick = this.tickIndex;
+    if (weapon === ProjectileKind.MISSILE) cd.lastMissileTick = this.tickIndex;
+    else cd.lastBulletTick = this.tickIndex;
   }
 
   handlePlaceMine(connId: string, _msg: ClientPlaceMineMessage): void {
@@ -243,11 +273,16 @@ export class RoomLoop {
     if (!conn) return;
     const tank = this.tanks.get(conn.tankId);
     if (!tank) return;
-    if (this.tickIndex - conn.lastMineTick < 20) return; // simple cooldown
+    this.placeMineFor(tank, conn);
+  }
+
+  /** Place a mine for any actor, honoring its own cooldown. */
+  private placeMineFor(tank: TankState, cd: FireCooldowns): void {
+    if (this.tickIndex - cd.lastMineTick < 20) return; // simple cooldown
     const r = placeMine(tank, this.tickIndex);
     if (!r.ok || !r.mine) return;
     this.mines.set(r.mine.id, r.mine);
-    conn.lastMineTick = this.tickIndex;
+    cd.lastMineTick = this.tickIndex;
   }
 
   handleUseItem(connId: string, msg: ClientUseItemMessage): void {
@@ -255,7 +290,12 @@ export class RoomLoop {
     if (!conn) return;
     const tank = this.tanks.get(conn.tankId);
     if (!tank || tank.isDead) return;
-    if (msg.item === ItemType.SHIELD) {
+    this.useItemFor(tank, msg.item);
+  }
+
+  /** Activate an item for any actor (player or bot). */
+  private useItemFor(tank: TankState, item: ItemType): void {
+    if (item === ItemType.SHIELD) {
       if (tank.hasShield) {
         tank.hasShield = false;
         return;
@@ -265,7 +305,7 @@ export class RoomLoop {
       // Shield activation consumes one shield unit; per-tick fuel drain is
       // still applied in tick(), preserving fuel-as-health pressure.
       tank.hasShield = true;
-    } else if (msg.item === ItemType.RADAR) {
+    } else if (item === ItemType.RADAR) {
       if (tank.ammo.radar <= 0) return;
       if (!debitFuel(tank, FUEL_RADAR_SCAN, "RADAR")) return;
       tank.ammo.radar -= 1;
@@ -293,14 +333,66 @@ export class RoomLoop {
     if (!conn) return;
     const tank = this.tanks.get(conn.tankId);
     if (!tank || tank.isDead) return;
+    this.teleportFor(tank, msg.x, msg.y);
+  }
+
+  /** Teleport any actor to (x,y) if in range and affordable. */
+  private teleportFor(tank: TankState, x: number, y: number): void {
     if (tank.ammo.teleports <= 0) return;
-    const dx = msg.x - tank.x;
-    const dy = msg.y - tank.y;
+    const dx = x - tank.x;
+    const dy = y - tank.y;
     if (Math.hypot(dx, dy) > TELEPORT_MAX_RANGE) return;
     if (!debitFuel(tank, FUEL_TELEPORT, "TELEPORT")) return;
     tank.ammo.teleports -= 1;
-    tank.x = clamp(msg.x, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS);
-    tank.y = clamp(msg.y, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS);
+    tank.x = clamp(x, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS);
+    tank.y = clamp(y, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS);
+  }
+
+  /**
+   * Drive one tank for one tick: respawn-if-dead, shield fuel drain, movement
+   * (MOVE_TO command / STOP / free input), fuel-out self-elimination, and
+   * spawn-protection lift. Shared by human players and bots — the only
+   * difference is where `input`/`command` come from.
+   */
+  private driveTank(
+    tank: TankState,
+    input: PlayerInputState,
+    command: PlayerCommandState | undefined,
+    commandKey: string,
+    t: number,
+    dt: number,
+  ): void {
+    if (tank.isDead) {
+      if (t >= tank.respawnAtTick) respawnTank(tank, t);
+      return;
+    }
+
+    if (tank.hasShield) {
+      if (!debitFuel(tank, FUEL_SHIELD_PER_SEC * dt, "SHIELD")) {
+        tank.hasShield = false;
+      }
+    }
+
+    if (command?.kind === "MOVE_TO") {
+      const arrived = stepMoveCommand(tank, command, input.aim, dt);
+      if (arrived) this.commands.delete(commandKey);
+    } else if (command?.kind === "STOP") {
+      this.commands.delete(commandKey);
+      tank.turretAngle = input.aim;
+    } else {
+      stepMovement(tank, input, dt);
+    }
+
+    // Ran out of fuel while alive (no killer)? Self-elim.
+    if (tank.fuel <= 0) {
+      this.killTank(tank, null);
+      return;
+    }
+
+    // Spawn protection auto-lifts.
+    if (tickSpawnProtection(tank, t)) {
+      this.pendingEvents.push({ tick: t, kind: "spawn_protected_end", subjectId: tank.id });
+    }
   }
 
   /** One fixed simulation step. */
@@ -309,50 +401,33 @@ export class RoomLoop {
     const t = this.tickIndex;
     const dt = TICK_MS / 1000;
 
-    // 1. Movement + per-tick costs (shield drain).
+    // 0. Bots decide: set MOVE_TO commands and fire/use items via the actor
+    //    helpers. Runs before movement so decisions apply this same tick.
+    this.updateAIEnemies();
+
+    // 1. Movement + per-tick costs for human players.
     for (const [connId, input] of this.inputs) {
       const conn = this.connections.get(connId);
       if (!conn) continue;
       const tank = this.tanks.get(conn.tankId);
       if (!tank) continue;
+      this.driveTank(tank, input, this.commands.get(connId), connId, t, dt);
+    }
 
-      if (tank.isDead) {
-        if (t >= tank.respawnAtTick) respawnTank(tank, t);
-        continue;
-      }
-
-      // Shield drain
-      if (tank.hasShield) {
-        if (!debitFuel(tank, FUEL_SHIELD_PER_SEC * dt, "SHIELD")) {
-          tank.hasShield = false;
-        }
-      }
-
-      const command = this.commands.get(connId);
-      if (command?.kind === "MOVE_TO") {
-        const arrived = stepMoveCommand(tank, command, input.aim, dt);
-        if (arrived) this.commands.delete(connId);
-      } else if (command?.kind === "STOP") {
-        this.commands.delete(connId);
-        tank.turretAngle = input.aim;
-      } else {
-        stepMovement(tank, input, dt);
-      }
-
-      // Ran out of fuel while alive (no killer)? Self-elim.
-      if (tank.fuel <= 0) {
-        this.killTank(tank, null);
-        continue;
-      }
-
-      // Spawn protection auto-lifts.
-      if (tickSpawnProtection(tank, t)) {
-        this.pendingEvents.push({
-          tick: t,
-          kind: "spawn_protected_end",
-          subjectId: tank.id,
-        });
-      }
+    // 1b. Movement + respawn for bots — identical physics, driven by the
+    //     behavior tree's MOVE_TO command + turret aim instead of a WebSocket.
+    for (const aiId of this.aiEnemies.keys()) {
+      const tank = this.tanks.get(aiId);
+      if (!tank) continue;
+      const input: PlayerInputState = {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+        aim: this.aiAim.get(aiId) ?? tank.turretAngle,
+        clientTick: t,
+      };
+      this.driveTank(tank, input, this.commands.get(aiId), aiId, t, dt);
     }
 
     // 2. Step projectiles.
@@ -386,9 +461,6 @@ export class RoomLoop {
     // 4. Pickups: spawn + collection.
     maybeSpawnPickup(this.pickups, t, this.pickupSpawnRef);
     this.collectPickups();
-
-    // 4.5. Update AI enemies.
-    this.updateAIEnemies();
 
     // 5. Emit snapshots.
     const events = this.pendingEvents;
@@ -561,78 +633,73 @@ export class RoomLoop {
     const team = pickTeam(this.teamCensus);
     const ai = new AIEnemy(aiId, team, difficulty);
     this.aiEnemies.set(aiId, ai);
+    this.aiCooldowns.set(aiId, {
+      lastBulletTick: -1_000_000,
+      lastMissileTick: -1_000_000,
+      lastMineTick: -1_000_000,
+    });
     this.teamCensus.set(team, (this.teamCensus.get(team) ?? 0) + 1);
 
-    // Add to tank map for simulation
+    // Add to tank map so bots are full simulation participants.
     this.tanks.set(aiId, ai.getTank());
 
     return ai;
   }
 
+  /**
+   * Maintain the bot population and run each bot's brain. Bots set a MOVE_TO
+   * command + turret aim (consumed by driveTank in step 1b) and fire/use
+   * items/place mines/teleport through the same actor helpers players use.
+   *
+   * Population is bounded: dead bots stay in the map and respawn via driveTank,
+   * so we only ever top up to `aiTargetCount` — never an unbounded spawn loop.
+   */
   private updateAIEnemies(): void {
-    const currentTick = this.tickIndex;
+    const t = this.tickIndex;
 
-    // Spawn new AI enemies periodically
-    if (currentTick - this.lastAISpawnTick >= this.aiSpawnInterval) {
-      this.addAIEnemy();
-      this.lastAISpawnTick = currentTick;
-    }
+    while (this.aiEnemies.size < this.aiTargetCount) this.addAIEnemy();
 
-    // Update all AI enemies
     for (const [aiId, ai] of this.aiEnemies) {
-      const worldState = {
+      const tank = this.tanks.get(aiId);
+      if (!tank || tank.isDead) continue; // dead bots respawn via driveTank
+      const cd = this.aiCooldowns.get(aiId);
+      if (!cd) continue;
+
+      const action = ai.update(t, {
         tanks: Array.from(this.tanks.values()),
         projectiles: Array.from(this.projectiles.values()),
         mines: Array.from(this.mines.values()),
         pickups: Array.from(this.pickups.values()),
         radarReveals: this.radarReveals,
-        currentTick,
-      };
+        currentTick: t,
+      });
 
-      const action = ai.update(currentTick, worldState);
-
-      // Process AI action
-      if (action.moveTarget) {
+      // Chase the perceived target. If the bot sees nothing AND isn't already
+      // moving, send it on patrol so it roams the map and finds fights — the
+      // decision engine returns no moveTarget when nothing is in sight, which
+      // would otherwise leave bots standing inert in a corner.
+      let moveTarget = action.moveTarget;
+      if (!moveTarget && !this.commands.has(aiId)) {
+        moveTarget = {
+          x: TANK_RADIUS + Math.random() * (MAP_WIDTH - 2 * TANK_RADIUS),
+          y: TANK_RADIUS + Math.random() * (MAP_HEIGHT - 2 * TANK_RADIUS),
+        };
+      }
+      if (moveTarget) {
         this.commands.set(aiId, {
           kind: "MOVE_TO",
-          x: action.moveTarget.x,
-          y: action.moveTarget.y,
-          clientTick: currentTick,
+          x: clamp(moveTarget.x, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS),
+          y: clamp(moveTarget.y, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS),
+          clientTick: t,
         });
       }
-
       if (action.fire) {
-        const fireMsg = {
-          type: "FIRE",
-          weapon: action.fire.weapon,
-          aim: action.fire.aim,
-        } as any;
-        this.handleFire(aiId, fireMsg);
+        this.aiAim.set(aiId, action.fire.aim);
+        this.fireWeapon(tank, cd, action.fire.weapon as ProjectileKind, action.fire.aim);
       }
-
-      if (action.useItem) {
-        const useItemMsg = {
-          type: "USE_ITEM",
-          item: action.useItem,
-        } as any;
-        this.handleUseItem(aiId, useItemMsg);
-      }
-
-      if (action.placeMine) {
-        const placeMineMsg = {
-          type: "PLACE_MINE",
-        } as any;
-        this.handlePlaceMine(aiId, placeMineMsg);
-      }
-
-      if (action.teleport) {
-        const teleportMsg = {
-          type: "TELEPORT",
-          x: action.teleport.x,
-          y: action.teleport.y,
-        } as any;
-        this.handleTeleport(aiId, teleportMsg);
-      }
+      if (action.useItem) this.useItemFor(tank, action.useItem as ItemType);
+      if (action.placeMine) this.placeMineFor(tank, cd);
+      if (action.teleport) this.teleportFor(tank, action.teleport.x, action.teleport.y);
     }
   }
 }

@@ -16,9 +16,12 @@ primary_region = 'iad'
 [http_service]
   internal_port = 3001
   force_https = true
-  auto_stop_machines = 'stop'
+  # Single global in-memory arena: the room lives in one process, so the app
+  # runs as exactly ONE always-warm machine (see `flyctl scale count 1`).
+  # Keeping it warm also removes the cold-start delay on first connect.
+  auto_stop_machines = 'off'
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
 [[vm]]
   size = 'shared-cpu-1x'
