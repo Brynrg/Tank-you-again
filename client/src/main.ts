@@ -8,7 +8,21 @@ const canvas: HTMLCanvasElement = maybeCanvas;
 // Make the canvas fill the viewport for a real game feel; keep an internal
 // resolution for crisp rendering on hi-DPI screens.
 fitCanvasToViewport(canvas);
-window.addEventListener("resize", () => fitCanvasToViewport(canvas));
+const refit = (): void => fitCanvasToViewport(canvas);
+window.addEventListener("resize", refit);
+window.addEventListener("orientationchange", () => {
+  // iOS reports stale dimensions on the orientationchange tick itself; refit
+  // again on the next frame and shortly after once the rotation settles.
+  refit();
+  requestAnimationFrame(refit);
+  setTimeout(refit, 300);
+});
+// visualViewport tracks the *actually visible* area as the iOS URL bar shows /
+// hides and as on-screen keyboards open — the most reliable mobile signal.
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", refit);
+  window.visualViewport.addEventListener("scroll", refit);
+}
 
 const app = canvas.parentElement ?? document.body;
 
@@ -34,12 +48,18 @@ function resolveWsUrl(): string {
 
 function fitCanvasToViewport(c: HTMLCanvasElement): void {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  // Internal pixel buffer
-  c.width = Math.floor(window.innerWidth * dpr);
-  c.height = Math.floor(window.innerHeight * dpr);
+  // Prefer visualViewport — on iOS Safari `innerHeight` includes the area behind
+  // the URL bar, so the canvas would otherwise be slightly too tall and the
+  // bottom HUD would sit under the toolbar. Fall back to innerWidth/Height.
+  const vv = window.visualViewport;
+  const cssW = Math.round(vv?.width ?? window.innerWidth);
+  const cssH = Math.round(vv?.height ?? window.innerHeight);
+  // Internal pixel buffer (device pixels, capped DPR for perf on hi-DPI phones).
+  c.width = Math.floor(cssW * dpr);
+  c.height = Math.floor(cssH * dpr);
   // CSS size
-  c.style.width = `${window.innerWidth}px`;
-  c.style.height = `${window.innerHeight}px`;
+  c.style.width = `${cssW}px`;
+  c.style.height = `${cssH}px`;
   // Reset transform; we don't need DPR scaling because all rendering uses
   // canvas-internal pixels directly.
   const ctx = c.getContext("2d");

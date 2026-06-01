@@ -1166,27 +1166,35 @@ export function renderHud(
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
 
+  // Compact HUD on small / touch viewports: drop the developer debug lines and
+  // the long keyboard hint, which only clutter a phone screen and collide with
+  // the minimap. cssW = device-pixel width / DPR ≈ CSS px.
+  const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2);
+  const compact = W / dpr < 560 || isTouchDevice();
+
   ctx.save();
   ctx.font = "12px 'Courier New', monospace";
   ctx.textAlign = "left";
   ctx.fillStyle = RA.amber + "cc";
 
-  // Top-left: status / tick / rtt (raw debug info)
-  ctx.fillText(`srv tick=${state.serverTick}  rtt=${state.rttMs}ms  ws=${state.status}`, 8, 16);
+  if (!compact) {
+    // Top-left: status / tick / rtt (raw debug info)
+    ctx.fillText(`srv tick=${state.serverTick}  rtt=${state.rttMs}ms  ws=${state.status}`, 8, 16);
 
-  // Raw debug info area - show more detailed information
-  if (state.snap) {
-    ctx.fillStyle = RA.amber + "aa";
-    ctx.fillText(
-      `Tanks: ${state.snap.tanks.length} | Pickups: ${state.snap.pickups.length} | Mines: ${state.snap.visibleMines.length}`,
-      8,
-      34,
-    );
-    ctx.fillText(
-      `Projectiles: ${state.snap.projectiles.length} | Teams: ${new Set(state.snap.tanks.map((t) => t.team)).size}`,
-      8,
-      52,
-    );
+    // Raw debug info area - show more detailed information
+    if (state.snap) {
+      ctx.fillStyle = RA.amber + "aa";
+      ctx.fillText(
+        `Tanks: ${state.snap.tanks.length} | Pickups: ${state.snap.pickups.length} | Mines: ${state.snap.visibleMines.length}`,
+        8,
+        34,
+      );
+      ctx.fillText(
+        `Projectiles: ${state.snap.projectiles.length} | Teams: ${new Set(state.snap.tanks.map((t) => t.team)).size}`,
+        8,
+        52,
+      );
+    }
   }
 
   ctx.fillStyle = RA.amber + "dd";
@@ -1274,17 +1282,20 @@ export function renderHud(
   }
 
   ctx.restore();
-  // Controls help line - no boundary warning
-  ctx.save();
-  ctx.font = "11px system-ui, sans-serif";
-  ctx.fillStyle = "#facc1599";
-  ctx.textAlign = "right";
-  ctx.fillText(
-    "LMB enemy=fire / ground=move · Space fire · RMB/K missile · M mine · R radar · T teleport · F deposit fuel · Shift shield · X stop",
-    W - 8,
-    16,
-  );
-  ctx.restore();
+  // Controls help line — desktop only. On touch/compact the on-screen buttons
+  // are self-explanatory and the long keyboard hint would overlap the minimap.
+  if (!compact) {
+    ctx.save();
+    ctx.font = "11px system-ui, sans-serif";
+    ctx.fillStyle = "#facc1599";
+    ctx.textAlign = "right";
+    ctx.fillText(
+      "LMB enemy=fire / ground=move · Space fire · RMB/K missile · M mine · R radar · T teleport · F deposit fuel · Shift shield · X stop",
+      W - 8,
+      16,
+    );
+    ctx.restore();
+  }
 }
 
 function addKillFeed(text: string): void {
@@ -1454,28 +1465,229 @@ if (deathOverlay.isDead) {
 
 function drawDeathOverlay(ctx: CanvasRenderingContext2D, W: number, H: number): void {
   ctx.save();
-
-  // Semi-transparent dark overlay
   ctx.globalAlpha = deathOverlay.opacity;
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, W, H);
-
-  // "YOU DIED" text
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#c0392b";
+  ctx.font = "bold 42px 'Courier New', monospace";
+  ctx.fillText("DEACTIVATED", W / 2, H / 2 - 10);
   if (deathOverlay.respawnTimer > 0) {
-    ctx.fillStyle = "#fff";
-    ctx.font = "24px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("YOU DIED", W / 2, H / 2 - 30);
-
-    // Respawn countdown
-    ctx.font = "18px system-ui, sans-serif";
+    ctx.fillStyle = "#e8b923";
+    ctx.font = "18px 'Courier New', monospace";
     ctx.fillText(
-      `Respawning in ${Math.ceil(deathOverlay.respawnTimer / 20)}...`,
+      `Respawning in ${Math.ceil(deathOverlay.respawnTimer / SERVER_TICK_RATE)}…`,
       W / 2,
-      H / 2 + 10,
+      H / 2 + 28,
     );
   }
+  ctx.restore();
+}
 
+// ─────────────────────────────────────────────────────────────────────────
+// Touch controls (mobile). Geometry is in canvas-buffer (device-pixel) space,
+// matching the coordinates input.ts derives from pointer events, so the same
+// numbers drive both hit-testing and drawing.
+// ─────────────────────────────────────────────────────────────────────────
+
+export type TouchAction =
+  | "fire"
+  | "missile"
+  | "mine"
+  | "radar"
+  | "shield"
+  | "teleport"
+  | "deposit"
+  | "stop";
+
+export interface TouchButton {
+  id: TouchAction;
+  label: string;
+  count: number | null;
+  enabled: boolean;
+  cx: number;
+  cy: number;
+  r: number;
+}
+
+/** True when the device is touch-first (phone/tablet). `?touch=1` forces it on
+ *  (handy for previewing touch controls on a desktop); `?touch=0` forces off. */
+export function isTouchDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  const q = window.location?.search ?? "";
+  if (q.indexOf("touch=1") >= 0) return true;
+  if (q.indexOf("touch=0") >= 0) return false;
+  return (
+    "ontouchstart" in window ||
+    (navigator.maxTouchPoints ?? 0) > 0 ||
+    window.matchMedia?.("(pointer: coarse)").matches === true
+  );
+}
+
+let safeAreaProbe: HTMLDivElement | null = null;
+/** Read CSS safe-area insets (notch / home indicator) in CSS pixels. */
+function safeAreaInsets(): { top: number; right: number; bottom: number; left: number } {
+  if (typeof document === "undefined") return { top: 0, right: 0, bottom: 0, left: 0 };
+  if (!safeAreaProbe) {
+    safeAreaProbe = document.createElement("div");
+    safeAreaProbe.style.cssText =
+      "position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;" +
+      "padding:env(safe-area-inset-top) env(safe-area-inset-right) " +
+      "env(safe-area-inset-bottom) env(safe-area-inset-left);";
+    document.body.appendChild(safeAreaProbe);
+  }
+  const s = getComputedStyle(safeAreaProbe);
+  return {
+    top: parseFloat(s.paddingTop) || 0,
+    right: parseFloat(s.paddingRight) || 0,
+    bottom: parseFloat(s.paddingBottom) || 0,
+    left: parseFloat(s.paddingLeft) || 0,
+  };
+}
+
+/** Effective device-pixel ratio used to size touch UI (matches main.ts cap). */
+function uiDpr(): number {
+  return Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2);
+}
+
+const TOUCH_ORDER: Array<{ id: TouchAction; label: string }> = [
+  { id: "fire", label: "FIRE" },
+  { id: "missile", label: "MIS" },
+  { id: "mine", label: "MINE" },
+  { id: "radar", label: "RAD" },
+  { id: "shield", label: "SHLD" },
+  { id: "teleport", label: "TP" },
+  { id: "deposit", label: "FUEL" },
+  { id: "stop", label: "STOP" },
+];
+
+/**
+ * Lay out the touch button cluster in the bottom-right (right-thumb reach),
+ * 2 columns x 4 rows, index 0 nearest the corner. Positions/sizes are in
+ * canvas-buffer pixels. `tank` (may be null) drives ammo counts + enabled state.
+ */
+export function layoutTouchButtons(W: number, H: number, tank: TankState | null): TouchButton[] {
+  const dpr = uiDpr();
+  const sa = safeAreaInsets();
+  const r = 26 * dpr;
+  const gap = 12 * dpr;
+  const step = r * 2 + gap;
+  const marginX = 14 * dpr + sa.right * dpr;
+  const marginY = 14 * dpr + sa.bottom * dpr;
+  const startX = W - marginX - r;
+  const startY = H - marginY - r;
+
+  return TOUCH_ORDER.map((b, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const cx = startX - col * step;
+    const cy = startY - row * step;
+    let count: number | null = null;
+    let enabled = true;
+    if (tank) {
+      switch (b.id) {
+        case "missile":
+          count = tank.ammo.missiles;
+          enabled = count > 0;
+          break;
+        case "mine":
+          count = tank.ammo.mines;
+          enabled = count > 0;
+          break;
+        case "radar":
+          count = tank.ammo.radar;
+          enabled = count > 0;
+          break;
+        case "shield":
+          count = tank.ammo.shields;
+          enabled = count > 0 && !tank.hasShield;
+          break;
+        case "teleport":
+          count = tank.ammo.teleports;
+          enabled = count > 0;
+          break;
+        case "deposit":
+          enabled = tank.fuel > 100;
+          break;
+        default:
+          enabled = true;
+      }
+      if (tank.isDead) enabled = false;
+    }
+    return { id: b.id, label: b.label, count, enabled, cx, cy, r };
+  });
+}
+
+/** Draw the touch button cluster + teleport-pending hint, RA-styled. */
+export function drawTouchControls(
+  ctx: CanvasRenderingContext2D,
+  buttons: TouchButton[],
+  opts: { pendingTeleport: boolean },
+): void {
+  const W = ctx.canvas.width;
+  const dpr = uiDpr();
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  for (const b of buttons) {
+    ctx.beginPath();
+    ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = b.enabled ? RA.steel + "e0" : "#11140caa";
+    ctx.fill();
+    ctx.lineWidth = 2 * dpr;
+    ctx.strokeStyle = b.id === "fire" ? RA.amber : RA.steelEdge;
+    ctx.stroke();
+    if (b.id === "teleport" && opts.pendingTeleport) {
+      ctx.lineWidth = 3 * dpr;
+      ctx.strokeStyle = "#5fa83a";
+      ctx.beginPath();
+      ctx.arc(b.cx, b.cy, b.r + 3 * dpr, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = b.enabled ? RA.amber : RA.amber + "55";
+    ctx.font = `bold ${11 * dpr}px 'Courier New', monospace`;
+    ctx.fillText(b.label, b.cx, b.cy + (b.count !== null ? -4 * dpr : 0));
+    if (b.count !== null) {
+      ctx.font = `${10 * dpr}px 'Courier New', monospace`;
+      ctx.fillStyle = b.count > 0 ? "#ffffffcc" : "#c0392b";
+      ctx.fillText(`x${b.count}`, b.cx, b.cy + 9 * dpr);
+    }
+  }
+
+  if (opts.pendingTeleport) {
+    ctx.fillStyle = "#5fa83a";
+    ctx.font = `bold ${13 * dpr}px 'Courier New', monospace`;
+    ctx.textAlign = "center";
+    ctx.fillText("TAP A DESTINATION TO TELEPORT", W / 2, 22 * dpr);
+  }
+  ctx.restore();
+}
+
+/** Small persistent toggle (top-left) to show/hide the touch cluster. */
+export function layoutTouchToggle(): { cx: number; cy: number; r: number } {
+  const dpr = uiDpr();
+  const sa = safeAreaInsets();
+  const r = 18 * dpr;
+  return { cx: 14 * dpr + sa.left * dpr + r, cy: 70 * dpr + sa.top * dpr, r };
+}
+
+export function drawTouchToggle(ctx: CanvasRenderingContext2D, on: boolean): void {
+  const dpr = uiDpr();
+  const t = layoutTouchToggle();
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(t.cx, t.cy, t.r, 0, Math.PI * 2);
+  ctx.fillStyle = RA.steel + "cc";
+  ctx.fill();
+  ctx.lineWidth = 1.5 * dpr;
+  ctx.strokeStyle = RA.steelEdge;
+  ctx.stroke();
+  ctx.fillStyle = on ? RA.amber : RA.amber + "66";
+  ctx.font = `bold ${14 * dpr}px 'Courier New', monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(on ? "[#]" : "[ ]", t.cx, t.cy);
   ctx.restore();
 }

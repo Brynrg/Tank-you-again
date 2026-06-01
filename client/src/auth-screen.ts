@@ -16,6 +16,9 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
       "z-index:1000",
       "color:#e8b923",
       "font-family:'Courier New',monospace",
+      // Keep the card clear of notches / home indicator on phones.
+      "padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))",
+      "box-sizing:border-box",
     ].join(";");
 
     const card = document.createElement("form");
@@ -23,7 +26,9 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
       "background:linear-gradient(160deg,#23271b,#15170f)",
       "padding:24px 28px",
       "border-radius:4px",
-      "min-width:320px",
+      // Responsive: fill small screens, cap on large ones.
+      "width:min(360px,100%)",
+      "box-sizing:border-box",
       "box-shadow:0 8px 40px rgba(0,0,0,.7), inset 0 1px 0 #5c634755",
       "border:2px solid #5c6347",
     ].join(";");
@@ -49,15 +54,18 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
     input.required = true;
     input.pattern = "[A-Za-z0-9_\\-]{3,16}";
     input.autocomplete = "off";
+    input.autocapitalize = "off";
+    input.spellcheck = false;
     input.value = suggestName();
     input.style.cssText = [
       "width:100%",
-      "padding:8px 10px",
+      // ≥44px tall target; 16px font stops iOS Safari from auto-zooming on focus.
+      "padding:11px 12px",
       "background:#0d0f08",
       "border:1px solid #5c6347",
       "border-radius:3px",
       "color:#e8b923",
-      "font:14px 'Courier New',monospace",
+      "font:16px 'Courier New',monospace",
       "box-sizing:border-box",
     ].join(";");
 
@@ -71,15 +79,17 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
     btn.style.cssText = [
       "margin-top:16px",
       "width:100%",
-      "padding:11px",
+      // ≥44px tall touch target.
+      "padding:14px",
       "background:linear-gradient(180deg,#5fa83a,#3c6b22)",
       "color:#0d0f08",
       "border:1px solid #2c3320",
       "border-radius:3px",
-      "font:700 14px 'Courier New',monospace",
+      "font:700 16px 'Courier New',monospace",
       "letter-spacing:2px",
       "text-transform:uppercase",
       "cursor:pointer",
+      "touch-action:manipulation",
     ].join(";");
 
     card.appendChild(title);

@@ -2,7 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Tank You Again</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <style>
@@ -20,6 +26,14 @@
           Roboto,
           sans-serif;
         overflow: hidden;
+        /* Mobile: kill pinch-zoom, double-tap-zoom, scroll bounce, and the grey
+           tap-flash so the canvas behaves like a native game surface. */
+        touch-action: none;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
       }
       #app {
         position: fixed;
@@ -29,8 +43,13 @@
         display: block;
         background: #0b0b14;
         image-rendering: pixelated;
+        /* dvh tracks the *visible* viewport (handles the iOS URL bar); vh is the
+           fallback. main.ts does authoritative sizing via visualViewport. */
         width: 100vw;
         height: 100vh;
+        width: 100dvw;
+        height: 100dvh;
+        touch-action: none;
         cursor: crosshair;
       }
     </style>

@@ -137,6 +137,9 @@ export function run(opts: RunOptions): RunHandle {
       serverTick: net.getServerTick(),
     });
 
+    // On-screen touch controls (drawn on top of the HUD; no-op on desktop).
+    input.drawTouch(ctx);
+
     rafHandle = requestAnimationFrame(frame);
   }
   rafHandle = requestAnimationFrame(frame);
