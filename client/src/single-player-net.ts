@@ -60,10 +60,64 @@ export type NetStatus = "connected" | "connecting" | "closed";
 
 /** dt for a single fixed simulation step, in seconds. */
 const DT = 1 / SERVER_TICK_RATE;
-/** Distance at which AI tanks open fire on a target. */
+/** Distance at which computer players open fire on a target. */
 const AI_ENGAGE_RANGE = 620;
-/** Distance the AI prefers to keep from its target (kite radius). */
+/** Distance computer players prefer to keep from their target (kite radius). */
 const AI_PREFERRED_RANGE = 260;
+
+/** Skill tiers for the computer-controlled players. */
+type BotDifficulty = "easy" | "medium" | "hard";
+
+/** Per-tier behavior tuning. Higher tiers aim truer, lead their shots, use
+ *  missiles/shield/mines, and look after their fuel sooner. */
+const BOT_TUNING: Record<
+  BotDifficulty,
+  {
+    /** Per-tick chance to attempt a bullet while a target is in range (the fire
+     *  cooldown still caps the actual rate). */
+    fireChance: number;
+    /** Random aim error in radians (smaller = more accurate). */
+    aimJitter: number;
+    /** How much to lead a moving target (0 = aim at current position). */
+    lead: number;
+    /** Per-tick chance to launch a missile when one is worthwhile. */
+    missileChance: number;
+    /** Raise the shield when an enemy is closer than this (0 = never). */
+    shieldDist: number;
+    /** Per-tick chance to drop a mine while kiting a close chaser. */
+    mineChance: number;
+    /** Go refuel when fuel drops below this. */
+    lowFuel: number;
+  }
+> = {
+  easy: {
+    fireChance: 0.5,
+    aimJitter: 0.32,
+    lead: 0,
+    missileChance: 0,
+    shieldDist: 0,
+    mineChance: 0.002,
+    lowFuel: 140,
+  },
+  medium: {
+    fireChance: 0.85,
+    aimJitter: 0.13,
+    lead: 0.55,
+    missileChance: 0.06,
+    shieldDist: 170,
+    mineChance: 0.01,
+    lowFuel: 260,
+  },
+  hard: {
+    fireChance: 1,
+    aimJitter: 0.05,
+    lead: 1,
+    missileChance: 0.14,
+    shieldDist: 240,
+    mineChance: 0.02,
+    lowFuel: 340,
+  },
+};
 
 /** Per-tank runtime state that lives outside the wire-format `TankState`. */
 interface TankBrain {
@@ -82,6 +136,8 @@ interface TankBrain {
   /** Accumulated experience; drives rank promotion. */
   xp: number;
   isBot: boolean;
+  /** Skill tier (bots only; ignored for the player). */
+  difficulty: BotDifficulty;
   /** AI wander heading, re-rolled periodically. */
   wanderUntilTick: number;
   wanderAngle: number;
@@ -231,23 +287,44 @@ export class SinglePlayerNetClient {
     // whole map, keeping a safe gap from the player's central spawn so you
     // aren't dogpiled the instant you deploy.
     const botCount = 9;
+    // A spread of skill so the field has fodder, regulars, and a couple of
+    // genuine threats rather than nine identical bots.
+    const ladder: BotDifficulty[] = [
+      "easy",
+      "easy",
+      "easy",
+      "medium",
+      "medium",
+      "medium",
+      "medium",
+      "hard",
+      "hard",
+    ];
     for (let i = 0; i < botCount; i++) {
       const name = BOT_NAMES[i % BOT_NAMES.length]!;
       const team = BOT_TEAMS[i % BOT_TEAMS.length]!;
+      const difficulty = ladder[i] ?? "medium";
       let x = 0;
       let y = 0;
       do {
         x = TANK_RADIUS + Math.random() * (MAP_WIDTH - TANK_RADIUS * 2);
         y = TANK_RADIUS + Math.random() * (MAP_HEIGHT - TANK_RADIUS * 2);
       } while (Math.hypot(x - MAP_WIDTH / 2, y - MAP_HEIGHT / 2) < 650);
-      this.tanks.push(this.makeTank(name, team, true, x, y));
+      this.tanks.push(this.makeTank(name, team, true, x, y, difficulty));
     }
 
     // Seed pickups across the larger field so it isn't barren on frame one.
     for (let i = 0; i < 18; i++) this.spawnPickup();
   }
 
-  private makeTank(name: string, team: TeamColor, isBot: boolean, x: number, y: number): TankState {
+  private makeTank(
+    name: string,
+    team: TeamColor,
+    isBot: boolean,
+    x: number,
+    y: number,
+    difficulty: BotDifficulty = "medium",
+  ): TankState {
     const id = `t${this.nextId++}`;
     const tank: TankState = {
       id,
@@ -288,6 +365,7 @@ export class SinglePlayerNetClient {
       kills: 0,
       xp: 0,
       isBot,
+      difficulty,
       wanderUntilTick: 0,
       wanderAngle: Math.random() * Math.PI * 2,
     });
@@ -314,43 +392,154 @@ export class SinglePlayerNetClient {
     for (const bot of this.tanks) {
       const brain = this.brains.get(bot.id)!;
       if (!brain.isBot || bot.isDead) continue;
+      const tune = BOT_TUNING[brain.difficulty];
+
+      // 1) Survival first: when fuel is low, break off and refuel. Fuel is
+      //    health here, so a bot that ignores it just bleeds out.
+      if (bot.fuel < tune.lowFuel) {
+        const crate = this.nearestPickup(bot, true) ?? this.nearestPickup(bot, false);
+        if (crate) {
+          brain.moveTarget = { x: crate.x, y: crate.y };
+          // Still shoot back / shield if an enemy is right on top of us.
+          const threat = this.nearestEnemy(bot);
+          if (threat) {
+            const td = Math.hypot(threat.x - bot.x, threat.y - bot.y) || 1;
+            const aim = Math.atan2(threat.y - bot.y, threat.x - bot.x);
+            brain.aim = aim;
+            bot.turretAngle = aim;
+            if (td < AI_ENGAGE_RANGE && !bot.isSpawnProtected && Math.random() < tune.fireChance) {
+              this.tryFireBullet(bot, brain, aim + this.aimError(tune));
+            }
+            this.maybeShield(bot, brain, tune, td);
+          }
+          continue;
+        }
+      }
 
       const target = this.nearestEnemy(bot);
       if (target) {
         const dx = target.x - bot.x;
         const dy = target.y - bot.y;
         const dist = Math.hypot(dx, dy) || 1;
-        const aim = Math.atan2(dy, dx);
+        // Lead the target so shots connect at range (tier-scaled).
+        const aim = this.leadAim(bot, target, BULLET_SPEED, tune.lead);
         brain.aim = aim;
         bot.turretAngle = aim;
 
-        // Kite: close in when far, back off when too close.
-        if (dist > AI_PREFERRED_RANGE) {
-          brain.moveTarget = { x: bot.x + (dx / dist) * 120, y: bot.y + (dy / dist) * 120 };
+        // Kite: close when far, retreat when too close, strafe in the band so
+        // the bot is a moving target instead of standing still.
+        if (dist > AI_PREFERRED_RANGE + 40) {
+          brain.moveTarget = { x: bot.x + (dx / dist) * 140, y: bot.y + (dy / dist) * 140 };
+        } else if (dist < AI_PREFERRED_RANGE - 40) {
+          brain.moveTarget = { x: bot.x - (dx / dist) * 140, y: bot.y - (dy / dist) * 140 };
         } else {
-          brain.moveTarget = { x: bot.x - (dx / dist) * 120, y: bot.y - (dy / dist) * 120 };
+          const side = bot.id.charCodeAt(bot.id.length - 1) % 2 === 0 ? 1 : -1;
+          brain.moveTarget = {
+            x: bot.x - (dy / dist) * 120 * side,
+            y: bot.y + (dx / dist) * 120 * side,
+          };
         }
 
         if (dist < AI_ENGAGE_RANGE && !bot.isSpawnProtected) {
-          this.tryFireBullet(bot, brain, aim);
-          if (dist < AI_PREFERRED_RANGE && bot.ammo.mines > 0 && Math.random() < 0.01) {
+          // Bullets — cooldown caps the rate; fireChance gates uptime by tier.
+          if (Math.random() < tune.fireChance) {
+            this.tryFireBullet(bot, brain, aim + this.aimError(tune));
+          }
+          // Missiles — occasional burst when one is worth spending.
+          if (bot.ammo.missiles > 0 && dist > 120 && Math.random() < tune.missileChance) {
+            const maim = this.leadAim(bot, target, MISSILE_SPEED, tune.lead);
+            this.tryFireMissile(bot, brain, maim + this.aimError(tune) * 0.5);
+          }
+          // Drop a mine for a close chaser.
+          if (dist < AI_PREFERRED_RANGE && bot.ammo.mines > 0 && Math.random() < tune.mineChance) {
             this.tryPlaceMine(bot, brain);
           }
+          // Raise shield when an enemy is in the danger band.
+          this.maybeShield(bot, brain, tune, dist);
         }
       } else if (this.tick >= brain.wanderUntilTick) {
-        // No target in sight — wander.
-        brain.wanderAngle = Math.random() * Math.PI * 2;
-        brain.wanderUntilTick = this.tick + SERVER_TICK_RATE * (2 + Math.random() * 3);
-        brain.moveTarget = {
-          x: clamp(bot.x + Math.cos(brain.wanderAngle) * 300, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS),
-          y: clamp(
-            bot.y + Math.sin(brain.wanderAngle) * 300,
-            TANK_RADIUS,
-            MAP_HEIGHT - TANK_RADIUS,
-          ),
-        };
+        // No enemy in sight — grab nearby loot if any, else wander.
+        const loot = this.nearestPickup(bot, false);
+        if (loot && Math.hypot(loot.x - bot.x, loot.y - bot.y) < 700) {
+          brain.moveTarget = { x: loot.x, y: loot.y };
+          brain.wanderUntilTick = this.tick + SERVER_TICK_RATE * 2;
+        } else {
+          brain.wanderAngle = Math.random() * Math.PI * 2;
+          brain.wanderUntilTick = this.tick + SERVER_TICK_RATE * (2 + Math.random() * 3);
+          brain.moveTarget = {
+            x: clamp(
+              bot.x + Math.cos(brain.wanderAngle) * 300,
+              TANK_RADIUS,
+              MAP_WIDTH - TANK_RADIUS,
+            ),
+            y: clamp(
+              bot.y + Math.sin(brain.wanderAngle) * 300,
+              TANK_RADIUS,
+              MAP_HEIGHT - TANK_RADIUS,
+            ),
+          };
+        }
       }
     }
+  }
+
+  /** Random aim error in radians for a tier (lower tiers miss more). */
+  private aimError(tune: { aimJitter: number }): number {
+    return (Math.random() - 0.5) * 2 * tune.aimJitter;
+  }
+
+  /** Raise the shield when an enemy is inside the tier's danger band and we can
+   *  afford it. */
+  private maybeShield(
+    bot: TankState,
+    brain: TankBrain,
+    tune: { shieldDist: number; lowFuel: number },
+    dist: number,
+  ): void {
+    if (tune.shieldDist <= 0) return;
+    if (
+      dist < tune.shieldDist &&
+      !bot.hasShield &&
+      bot.ammo.shields > 0 &&
+      bot.fuel > tune.lowFuel
+    ) {
+      this.useItem(bot, brain, ItemType.SHIELD);
+    }
+  }
+
+  /** Aim that leads a moving target so projectiles connect at range. Estimates
+   *  target velocity from its current move command (bots always have one). */
+  private leadAim(self: TankState, target: TankState, projSpeed: number, lead: number): number {
+    let tx = target.x;
+    let ty = target.y;
+    if (lead > 0) {
+      const tb = this.brains.get(target.id);
+      if (tb?.moveTarget) {
+        const vdx = tb.moveTarget.x - target.x;
+        const vdy = tb.moveTarget.y - target.y;
+        const vlen = Math.hypot(vdx, vdy) || 1;
+        const dist = Math.hypot(target.x - self.x, target.y - self.y);
+        const tHit = (dist / projSpeed) * lead;
+        tx += (vdx / vlen) * TANK_SPEED * tHit;
+        ty += (vdy / vlen) * TANK_SPEED * tHit;
+      }
+    }
+    return Math.atan2(ty - self.y, tx - self.x);
+  }
+
+  /** Nearest pickup to a tank, optionally restricted to fuel crates. */
+  private nearestPickup(self: TankState, fuelOnly: boolean): PickupState | null {
+    let best: PickupState | null = null;
+    let bestD = Infinity;
+    for (const p of this.pickups) {
+      if (fuelOnly && p.type !== ItemType.FUEL_CRATE) continue;
+      const d = Math.hypot(p.x - self.x, p.y - self.y);
+      if (d < bestD) {
+        bestD = d;
+        best = p;
+      }
+    }
+    return best;
   }
 
   private moveTanks(): void {
