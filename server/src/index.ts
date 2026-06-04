@@ -30,7 +30,7 @@ import {
 import { handleAuth } from "./auth.js";
 import { send, type Connection } from "./connection.js";
 import { RoomLoop } from "./loop.js";
-import { applyXpDelta } from "./sim/rank.js";
+import { applyXpDelta } from "@shared/sim/rank.js";
 
 const PRISMA_REQUIRED =
   process.env.NODE_ENV !== "test" &&

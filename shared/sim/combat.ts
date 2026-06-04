@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomId } from "./id.js";
 
 import {
   BULLET_COOLDOWN_TICKS,
@@ -109,7 +109,7 @@ function makeProjectile(
   const vx = Math.cos(aim) * speed;
   const vy = Math.sin(aim) * speed;
   return {
-    id: randomUUID(),
+    id: randomId(),
     ownerId: tank.id,
     kind,
     x,

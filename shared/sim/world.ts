@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomId } from "./id.js";
 
 import {
   INITIAL_MINES,
@@ -139,7 +139,7 @@ export function maybeSpawnPickup(
   const type = types[Math.floor(Math.random() * types.length)] ?? ItemType.FUEL_CRATE;
   const margin = TANK_RADIUS * 4;
   const pickup: PickupState = {
-    id: randomUUID(),
+    id: randomId(),
     type,
     x: margin + Math.random() * (MAP_WIDTH - margin * 2),
     y: margin + Math.random() * (MAP_HEIGHT - margin * 2),

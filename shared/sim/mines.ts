@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomId } from "./id.js";
 
 import { FUEL_MINE, MINE_DAMAGE, MINE_RADIUS, type MineState, type TankState } from "@shared/types";
 
@@ -18,7 +18,7 @@ export function placeMine(tank: TankState, currentTick: number): PlaceMineResult
   if (!debitFuel(tank, FUEL_MINE, "MINE")) return { ok: false, reason: "fuel" };
   tank.ammo.mines -= 1;
   const mine: MineState = {
-    id: randomUUID(),
+    id: randomId(),
     ownerId: tank.id,
     ownerTeam: tank.team,
     // Offset the mine slightly behind the tank along its hull direction so it

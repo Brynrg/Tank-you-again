@@ -8,7 +8,7 @@ import {
   type TankState,
 } from "@shared/types";
 
-import type { PlayerInputState } from "../loop-types.js";
+import type { PlayerInputState } from "./loop-types.js";
 import { debitFuel } from "./economy.js";
 
 /**

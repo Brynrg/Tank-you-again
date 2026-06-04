@@ -39,7 +39,11 @@ import {
 
 import type { Connection } from "./connection.js";
 import { send } from "./connection.js";
-import { EMPTY_INPUT, type PlayerCommandState, type PlayerInputState } from "./loop-types.js";
+import {
+  EMPTY_INPUT,
+  type PlayerCommandState,
+  type PlayerInputState,
+} from "@shared/sim/loop-types.js";
 
 /**
  * Per-actor fire/mine cooldown ticks. A human's `Connection` already carries
@@ -51,21 +55,21 @@ interface FireCooldowns {
   lastMissileTick: number;
   lastMineTick: number;
 }
-import type { AIChallengeLevel } from "./sim/ai-enemy.js";
-import { AIEnemy } from "./sim/ai-enemy.js";
-import { findHit, stepProjectile, tryFire } from "./sim/combat.js";
-import { applyDamage } from "./sim/damage.js";
-import { creditFuel, debitFuel } from "./sim/economy.js";
-import { applyMineDamage, placeMine, stepMineDetonations } from "./sim/mines.js";
-import { stepMoveCommand, stepMovement } from "./sim/movement.js";
-import { computeVisionSet, scanRadar } from "./sim/vision.js";
+import type { AIChallengeLevel } from "@shared/sim/ai-enemy.js";
+import { AIEnemy } from "@shared/sim/ai-enemy.js";
+import { findHit, stepProjectile, tryFire } from "@shared/sim/combat.js";
+import { applyDamage } from "@shared/sim/damage.js";
+import { creditFuel, debitFuel } from "@shared/sim/economy.js";
+import { applyMineDamage, placeMine, stepMineDetonations } from "@shared/sim/mines.js";
+import { stepMoveCommand, stepMovement } from "@shared/sim/movement.js";
+import { computeVisionSet, scanRadar } from "@shared/sim/vision.js";
 import {
   makeTank,
   maybeSpawnPickup,
   pickTeam,
   respawnTank,
   tickSpawnProtection,
-} from "./sim/world.js";
+} from "@shared/sim/world.js";
 
 /**
  * Authoritative room. Single hot loop at SERVER_TICK_RATE Hz. All state
