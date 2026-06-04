@@ -625,6 +625,67 @@ function drawCrtOverlay(ctx: CanvasRenderingContext2D, W: number, H: number): vo
   ctx.restore();
 }
 
+/** Desktop cursor reticle. Color encodes what a left-click will do:
+ *  red = fire, yellow = roll over equipment, green = move. Drawn in screen-buffer
+ *  coords (x/y already account for DPR). */
+export function drawCursorReticle(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  kind: "fire" | "equipment" | "move",
+): void {
+  const color = kind === "fire" ? "#ef4444" : kind === "equipment" ? "#facc15" : "#4ade80";
+  const r = 13;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.95;
+
+  if (kind === "fire") {
+    // Targeting brackets + center dot — reads as "weapons hot".
+    const s = r;
+    const corners: ReadonlyArray<{ sx: number; sy: number }> = [
+      { sx: -1, sy: -1 },
+      { sx: 1, sy: -1 },
+      { sx: -1, sy: 1 },
+      { sx: 1, sy: 1 },
+    ];
+    for (const { sx, sy } of corners) {
+      ctx.beginPath();
+      ctx.moveTo(sx * s, sy * s - sy * 6);
+      ctx.lineTo(sx * s, sy * s);
+      ctx.lineTo(sx * s - sx * 6, sy * s);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (kind === "equipment") {
+    // Diamond — "loot here".
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.lineTo(r, 0);
+    ctx.lineTo(0, r);
+    ctx.lineTo(-r, 0);
+    ctx.closePath();
+    ctx.stroke();
+  } else {
+    // Move: ring + small plus.
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-5, 0);
+    ctx.lineTo(5, 0);
+    ctx.moveTo(0, -5);
+    ctx.lineTo(0, 5);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawCommandTarget(
   ctx: CanvasRenderingContext2D,
   cam: Camera,
@@ -1317,7 +1378,7 @@ export function renderHud(
     ctx.fillStyle = "#facc1599";
     ctx.textAlign = "right";
     ctx.fillText(
-      "LMB enemy=fire / ground=move · Space fire · RMB/K missile · M mine · R radar · T teleport · F deposit fuel · Shift shield · X stop",
+      "LMB enemy=fire / ground=move (Alt=force move · Ctrl=force fire) · Space fire · RMB/K missile · M mine · R radar · T teleport · F deposit fuel · Shift shield · X stop",
       W - 8,
       16,
     );

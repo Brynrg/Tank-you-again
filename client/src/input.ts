@@ -2,6 +2,7 @@ import {
   ClientMessageType,
   ItemType,
   MINE_RADIUS,
+  PICKUP_RADIUS,
   ProjectileKind,
   TANK_RADIUS,
   type ClientDepositFuelMessage,
@@ -58,9 +59,17 @@ export interface InputLayer {
   consumeDepositQueue(): ClientDepositFuelMessage[];
   consumeTeleportQueue(): ClientTeleportMessage[];
   getCommandTarget(): { x: number; y: number } | null;
+  /** Current desktop cursor reticle (screen-buffer coords + intent), or null on
+   *  touch devices where there is no hover cursor. */
+  getCursor(): { x: number; y: number; kind: CursorKind } | null;
   /** Draw the on-screen touch controls (no-op when touch UI is hidden). */
   drawTouch(ctx: CanvasRenderingContext2D): void;
 }
+
+/** What a left-click at the current cursor will do — drives the reticle color.
+ *  `fire` = a bullet (enemy/mine under cursor, or force-fire); `equipment` =
+ *  loot you'll roll over to collect; `move` = relocate to empty ground. */
+export type CursorKind = "fire" | "equipment" | "move";
 
 export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
   const keys = new Set<string>();
@@ -126,6 +135,26 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
       }
     }
     return best;
+  }
+
+  /** Is there a (proximity-revealed) pickup under this world point? */
+  function pickupAt(world: { x: number; y: number }): boolean {
+    if (!snapshot) return false;
+    for (const p of snapshot.pickups) {
+      if (Math.hypot(p.x - world.x, p.y - world.y) <= PICKUP_RADIUS * 2) return true;
+    }
+    return false;
+  }
+
+  /** Classify what a left-click would do right now, for the reticle color.
+   *  Honors the force-move (Alt) / force-fire (Ctrl/Meta) modifiers. */
+  function cursorKind(): CursorKind {
+    if (keys.has("Alt")) return "move";
+    if (keys.has("Control") || keys.has("Meta")) return "fire";
+    const world = screenToWorld();
+    if (targetAt(world)) return "fire";
+    if (pickupAt(world)) return "equipment";
+    return "move";
   }
 
   function onKeyDown(e: KeyboardEvent): void {
@@ -203,13 +232,22 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
       return;
     }
 
-    // 4) Primary tap/click: fire if it landed on an enemy/mine, otherwise move.
+    // 4) Primary tap/click. Modifiers force the intent so a missed target
+    //    click never repositions you at the wrong moment:
+    //      Alt        → always move
+    //      Ctrl/Meta  → always fire (toward the cursor / locked target)
+    //    Otherwise: fire if the click landed on an enemy/mine, else move.
     const target = targetAt(world);
-    if (target) {
+    const forceMove = e.altKey;
+    const forceFire = e.ctrlKey || e.metaKey;
+    if (forceMove) {
+      commandTarget = world;
+      commandQueue.push({ type: ClientMessageType.MOVE_TO, x: world.x, y: world.y });
+    } else if (forceFire || target) {
       fireQueue.push({
         type: ClientMessageType.FIRE,
         weapon: ProjectileKind.BULLET,
-        aim: aimAt(target),
+        aim: aimAt(target ?? world),
       });
     } else {
       commandTarget = world;
@@ -403,6 +441,10 @@ export function attach(canvas: HTMLCanvasElement, camera: Camera): InputLayer {
     },
     getCommandTarget() {
       return commandTarget;
+    },
+    getCursor() {
+      if (isTouch) return null;
+      return { x: mouseX, y: mouseY, kind: cursorKind() };
     },
     drawTouch(ctx: CanvasRenderingContext2D) {
       if (!isTouch) return; // desktop: no touch overlay

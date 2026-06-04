@@ -13,7 +13,14 @@ import {
   type NetStatus as SinglePlayerNetStatus,
 } from "./single-player-net.js";
 import { NetClient, type NetStatus } from "./net.js";
-import { followTank, makeCamera, renderFrame, renderHud, type Camera } from "./render.js";
+import {
+  drawCursorReticle,
+  followTank,
+  makeCamera,
+  renderFrame,
+  renderHud,
+  type Camera,
+} from "./render.js";
 
 type UnifiedNetClient = SinglePlayerNetClient | NetClient;
 type UnifiedNetStatus = NetStatus | SinglePlayerNetStatus;
@@ -147,6 +154,13 @@ export function run(opts: RunOptions): RunHandle {
 
     // On-screen touch controls (drawn on top of the HUD; no-op on desktop).
     input.drawTouch(ctx);
+
+    // Desktop cursor reticle — shows whether a click will fire / loot / move.
+    // Hidden while dead (no actionable click) and on touch (getCursor → null).
+    const cursor = input.getCursor();
+    if (cursor && !(yourTank?.isDead ?? false)) {
+      drawCursorReticle(ctx, cursor.x, cursor.y, cursor.kind);
+    }
 
     rafHandle = requestAnimationFrame(frame);
   }
