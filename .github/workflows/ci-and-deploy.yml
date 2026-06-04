@@ -51,12 +51,11 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate --schema=server/prisma/schema.prisma
 
-      # Backend only. The client is built + shipped via its own
-      # .github/workflows/deploy.yml (Vite/esbuild, no tsc), so the backend
-      # deploy gate must not hang on the client's separate pre-existing
-      # type-debt. Run `npm run typecheck:client` to see/fix that debt.
-      - name: "Typecheck (backend: shared + server + scripts)"
-        run: npm run typecheck:backend
+      # Full typecheck: shared + server + scripts + client. The client ships via
+      # Vite/esbuild (no tsc), so type errors there would otherwise ship silently;
+      # gating on the client typecheck keeps that surface honest too.
+      - name: "Typecheck (shared + server + client + scripts)"
+        run: npm run typecheck
 
       - name: Unit tests
         run: npm test

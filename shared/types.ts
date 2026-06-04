@@ -70,6 +70,9 @@ export interface TankState {
   isDead: boolean;
   /** Tick at which a dead tank will respawn. */
   respawnAtTick: number;
+  /** Lifetime kills, surfaced to the scoreboard. Optional on the wire so older
+   *  producers remain compatible. */
+  kills?: number;
   /** Armor integrity: front, side, rear (0-100). Armor degrades independently based on projectile impact angle. */
   armor: {
     front: number;

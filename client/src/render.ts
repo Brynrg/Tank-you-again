@@ -4,6 +4,7 @@ import {
   MAP_WIDTH,
   MAX_FUEL,
   ProjectileKind,
+  SERVER_TICK_RATE,
   TANK_RADIUS,
   TeamColor,
   type GameStateSnapshot,
@@ -393,8 +394,10 @@ export function addHitEffect(x: number, y: number, type: HitEffectType): void {
 // Update hit effects
 export function updateHitEffects(): void {
   for (let i = hitEffects.length - 1; i >= 0; i--) {
-    hitEffects[i].frame++;
-    if (hitEffects[i].frame >= hitEffects[i].maxFrames) {
+    const fx = hitEffects[i];
+    if (!fx) continue;
+    fx.frame++;
+    if (fx.frame >= fx.maxFrames) {
       hitEffects.splice(i, 1);
     }
   }
@@ -536,6 +539,17 @@ export function renderFrame(
   drawMinimap(ctx, cam, W, H, snap, yourTankId);
   drawScoreboard(ctx, W, H);
   drawKillFeed(ctx, W, H);
+
+  // Death overlay for the local tank, driven straight from the snapshot so it
+  // renders without depending on an external call site.
+  const localTank = snap.tanks.find((t) => t.id === yourTankId);
+  setDeathOverlay(
+    !!localTank?.isDead,
+    localTank?.isDead ? Math.max(0, localTank.respawnAtTick - snap.tick) : 0,
+  );
+  if (deathOverlay.isDead) {
+    drawDeathOverlay(ctx, W, H);
+  }
 
   // CRT war-room overlay (vignette + scanlines) — drawn last.
   drawCrtOverlay(ctx, W, H);
@@ -1325,7 +1339,8 @@ function updateKillFeed(): void {
   const now = Date.now();
   // Remove items older than 3 seconds
   for (let i = killFeed.length - 1; i >= 0; i--) {
-    if (now - killFeed[i].time > 3000) {
+    const entry = killFeed[i];
+    if (entry && now - entry.time > 3000) {
       killFeed.splice(i, 1);
     }
   }
@@ -1345,6 +1360,7 @@ function drawKillFeed(ctx: CanvasRenderingContext2D, W: number, H: number): void
   // Draw from bottom to top (newest at bottom)
   for (let i = 0; i < killFeed.length; i++) {
     const item = killFeed[i];
+    if (!item) continue;
     const alpha = Math.min(1, (Date.now() - item.time) / 1000); // Fade in
     const y = startY + i * lineHeight;
 
@@ -1469,11 +1485,6 @@ function drawCooldownIndicators(
   }
 
   ctx.restore();
-}
-
-// Draw death overlay
-if (deathOverlay.isDead) {
-  drawDeathOverlay(ctx, W, H);
 }
 
 function drawDeathOverlay(ctx: CanvasRenderingContext2D, W: number, H: number): void {

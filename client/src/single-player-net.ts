@@ -271,6 +271,7 @@ export class SinglePlayerNetClient {
       spawnProtectedUntilTick: this.tick + SPAWN_PROTECTION_TICKS,
       isDead: false,
       respawnAtTick: 0,
+      kills: 0,
       armor: { front: 100, side: 100, rear: 100 },
     };
     this.brains.set(id, {
@@ -680,6 +681,7 @@ export class SinglePlayerNetClient {
         killer.kills++;
         killer.xp += XP_PER_KILL;
         if (killerTank) {
+          killerTank.kills = killer.kills;
           const promoted = rankForXp(killer.xp);
           if (promoted !== killerTank.rank) {
             killerTank.rank = promoted;

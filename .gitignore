@@ -21,3 +21,6 @@ server/prisma/migrations/
 npm-debug.log*
 .tsbuildinfo
 *.tsbuildinfo
+
+# Local Claude Code dev helpers
+.claude/

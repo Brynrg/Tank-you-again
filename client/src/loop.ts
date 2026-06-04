@@ -27,7 +27,7 @@ export interface RunOptions {
 
 export interface RunHandle {
   stop(): void;
-  getStatus(): NetStatus;
+  getStatus(): UnifiedNetStatus;
 }
 
 /**

@@ -40,22 +40,26 @@ export class SnapshotInterpolator {
   }
 
   latest(): GameStateSnapshot | null {
-    return this.buf.length ? this.buf[this.buf.length - 1].snap : null;
+    const last = this.buf[this.buf.length - 1];
+    return last ? last.snap : null;
   }
 
   /** A snapshot to render at `nowMs`, with remote entities interpolated. */
   sample(nowMs: number, localTankId: string): GameStateSnapshot | null {
-    if (this.buf.length === 0) return null;
-    const newest = this.buf[this.buf.length - 1].snap;
+    const newestStamped = this.buf[this.buf.length - 1];
+    if (!newestStamped) return null;
+    const newest = newestStamped.snap;
     if (this.buf.length === 1) return newest;
 
     const renderT = nowMs - this.delayMs;
     let a: Stamped | null = null;
     let b: Stamped | null = null;
     for (let i = 0; i < this.buf.length - 1; i++) {
-      if (this.buf[i].t <= renderT && this.buf[i + 1].t >= renderT) {
-        a = this.buf[i];
-        b = this.buf[i + 1];
+      const cur = this.buf[i];
+      const next = this.buf[i + 1];
+      if (cur && next && cur.t <= renderT && next.t >= renderT) {
+        a = cur;
+        b = next;
         break;
       }
     }
