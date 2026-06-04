@@ -1,4 +1,9 @@
 import {
+  FUEL_FIRE_MISSILE,
+  FUEL_MINE,
+  FUEL_RADAR_SCAN,
+  FUEL_SHIELD_PER_SEC,
+  FUEL_TELEPORT,
   ItemType,
   MAP_HEIGHT,
   MAP_WIDTH,
@@ -191,9 +196,18 @@ function processSnapshotEvents(snap: GameStateSnapshot): void {
     }
   }
   for (const ev of snap.events ?? []) {
-    if (ev.kind !== "death" && ev.kind !== "mine_detonate") continue;
-    const subject = snap.tanks.find((t) => t.id === ev.subjectId);
-    if (subject) spawnExplosion(subject.x, subject.y, ev.kind === "death" ? 1.4 : 1);
+    if (ev.kind === "death" || ev.kind === "mine_detonate") {
+      const subject = snap.tanks.find((t) => t.id === ev.subjectId);
+      if (subject) spawnExplosion(subject.x, subject.y, ev.kind === "death" ? 1.4 : 1);
+    } else if (ev.kind === "kill") {
+      const killer = snap.tanks.find((t) => t.id === ev.subjectId);
+      const victim = snap.tanks.find((t) => t.id === ev.objectId);
+      if (killer && victim) addKillFeed(`${killer.name} ▸ ${victim.name}`);
+      else if (victim) addKillFeed(`${victim.name} destroyed`);
+    } else if (ev.kind === "rank_up") {
+      const who = snap.tanks.find((t) => t.id === ev.subjectId);
+      if (who) addKillFeed(`${who.name} promoted to ${who.rank}`);
+    }
   }
 }
 
@@ -268,6 +282,26 @@ function drawShadow(
 
 // Death overlay state
 let deathOverlay: DeathOverlay = { isDead: false, respawnTimer: 0, opacity: 0 };
+
+// First-run coachmark: a short, dismissible teaching panel shown once per
+// browser. Gated by localStorage so returning players never see it again.
+const COACH_DURATION_MS = 14000;
+let coachStartMs: number | null = null;
+let coachSeen: boolean = (() => {
+  try {
+    return typeof localStorage !== "undefined" && localStorage.getItem("tya_coach_seen") === "1";
+  } catch {
+    return false;
+  }
+})();
+function markCoachSeen(): void {
+  coachSeen = true;
+  try {
+    localStorage.setItem("tya_coach_seen", "1");
+  } catch {
+    /* private mode / blocked storage — fine, it just shows again next session */
+  }
+}
 
 // Minimap state
 const MINIMAP_SIZE = 160;
@@ -477,9 +511,15 @@ export function renderFrame(
   drawGrid(ctx, cam, W, H);
   drawMapBounds(ctx, cam, W, H);
 
-  // Turn this tick's death/mine events into explosions, then advance them.
+  // Turn this tick's death/mine events into explosions + kill-feed lines, then
+  // advance time-based HUD systems (effects expire, scoreboard reflects live
+  // team counts + kills). These were previously defined but never called.
   processSnapshotEvents(snap);
   updateExplosions(1 / 60);
+  updateHitEffects();
+  updateKillFeed();
+  updateTeamScores(snap);
+  updateKillCounts(snap);
 
   // Pickups (drawn below tanks) as beveled supply crates.
   for (const pk of snap.pickups) {
@@ -1352,6 +1392,19 @@ export function renderHud(
       );
     }
 
+    // Centered low-fuel warning (alive only). Fuel is health, so make scarcity
+    // loud — the most common new-player death is bleeding out unaware.
+    if (!t.isDead && pct > 0 && pct <= 0.3) {
+      const pulse = 0.55 + 0.45 * Math.abs(Math.sin(Date.now() / 300));
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.font = `bold ${Math.round(W / 42)}px 'Courier New', monospace`;
+      ctx.fillStyle = pct <= 0.15 ? "#ef4444" : "#facc15";
+      ctx.globalAlpha = pulse;
+      ctx.fillText("⚠ LOW FUEL — drive over a gold crate", W / 2, H * 0.16);
+      ctx.restore();
+    }
+
     // Right-aligned visible tanks count
     if (state.snap) {
       const visible = state.snap.tanks.length;
@@ -1378,12 +1431,68 @@ export function renderHud(
     ctx.fillStyle = "#facc1599";
     ctx.textAlign = "right";
     ctx.fillText(
-      "LMB enemy=fire / ground=move (Alt=force move · Ctrl=force fire) · Space fire · RMB/K missile · M mine · R radar · T teleport · F deposit fuel · Shift shield · X stop",
+      `LMB enemy=fire / ground=move (Alt=force move · Ctrl=force fire) · Space fire · RMB/K missile −${FUEL_FIRE_MISSILE} · M mine −${FUEL_MINE} · R radar −${FUEL_RADAR_SCAN} · T teleport −${FUEL_TELEPORT} · F deposit fuel · Shift shield −${FUEL_SHIELD_PER_SEC}/s · X stop`,
       W - 8,
       16,
     );
     ctx.restore();
   }
+
+  // First-run coachmark — shows once per browser for the first few seconds of
+  // play, then self-dismisses and never returns.
+  if (state.yourTank && !coachSeen) {
+    if (coachStartMs === null) coachStartMs = Date.now();
+    const elapsed = Date.now() - coachStartMs;
+    if (elapsed >= COACH_DURATION_MS) {
+      markCoachSeen();
+    } else {
+      drawCoachmark(ctx, W, H, elapsed);
+    }
+  }
+}
+
+/** Bottom-center teaching panel for first-time players. */
+function drawCoachmark(ctx: CanvasRenderingContext2D, W: number, H: number, elapsed: number): void {
+  const fadeIn = Math.min(1, elapsed / 400);
+  const fadeOut = Math.min(1, (COACH_DURATION_MS - elapsed) / 1500);
+  const alpha = Math.max(0, Math.min(fadeIn, fadeOut));
+  if (alpha <= 0) return;
+
+  const lines = [
+    "NEW HERE?  Fuel is your health.",
+    "• Click empty ground to MOVE — click an enemy to FIRE",
+    "• Hold Alt = force move   ·   hold Ctrl = force fire",
+    "• Drive over gold crates to refuel · grab loot for ammo",
+    "(this tip won't show again)",
+  ];
+  const fs = Math.max(12, Math.round(W / 70));
+  const pad = fs;
+  const lineH = fs * 1.5;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `${fs}px 'Courier New', monospace`;
+  ctx.textAlign = "left";
+  let wmax = 0;
+  for (const line of lines) wmax = Math.max(wmax, ctx.measureText(line).width);
+  const boxW = wmax + pad * 2;
+  const boxH = lineH * lines.length + pad;
+  const x = (W - boxW) / 2;
+  const y = H - boxH - Math.round(H * 0.17);
+
+  ctx.fillStyle = "#0b0b14e6";
+  ctx.fillRect(x, y, boxW, boxH);
+  ctx.strokeStyle = "#facc15";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, boxW, boxH);
+
+  let ty = y + pad + fs * 0.4;
+  lines.forEach((line, i) => {
+    ctx.fillStyle = i === 0 ? "#facc15" : i === lines.length - 1 ? "#888" : "#e6e6e6";
+    ctx.fillText(line, x + pad, ty);
+    ty += lineH;
+  });
+  ctx.restore();
 }
 
 function addKillFeed(text: string): void {
