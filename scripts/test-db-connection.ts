@@ -14,7 +14,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 
 const logger = {
   info: (msg: string) => console.info(msg),
-  error: (msg: string, err?: any) => err ? console.error(msg, err) : console.error(msg),
+  error: (msg: string, err?: any) => (err ? console.error(msg, err) : console.error(msg)),
 };
 
 if (!DATABASE_URL || DATABASE_URL.includes("USER:PASSWORD")) {
