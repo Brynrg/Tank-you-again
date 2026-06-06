@@ -1,4 +1,4 @@
-import { TankState, ProjectileState, TeamColor, TANK_RADIUS } from "@shared/types";
+import { TankState, ProjectileState } from "@shared/types";
 
 import { debitFuel } from "./economy.js";
 
