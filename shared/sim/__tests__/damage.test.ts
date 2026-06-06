@@ -19,6 +19,7 @@ function createMockTank(x: number, y: number, angle: number): TankState {
       missiles: 0,
       mines: 0,
       shields: 0,
+      teleports: 0,
     },
     isSpawnProtected: false,
     spawnProtectedUntilTick: 0,
