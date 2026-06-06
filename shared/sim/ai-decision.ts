@@ -1,4 +1,3 @@
-import { ProjectileKind } from "@shared/types";
 import type { TankState } from "@shared/types";
 import type { SensoryData, AIAction } from "./ai-enemy.js";
 
