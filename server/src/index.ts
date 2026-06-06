@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import { randomUUID } from "node:crypto";
 
+import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
 import { PrismaClient } from "@prisma/client";
 import Fastify from "fastify";
@@ -42,6 +43,9 @@ const prisma: PrismaClient | null = PRISMA_REQUIRED ? new PrismaClient() : null;
 
 const app = Fastify({ logger: true });
 
+await app.register(cors, {
+  origin: process.env.CORS_ORIGIN || "*",
+});
 await app.register(websocket);
 
 app.get("/health", async () => ({

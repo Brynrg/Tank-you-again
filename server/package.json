@@ -13,6 +13,7 @@
     "postinstall": "node -e \"const fs=require('fs');if(!fs.existsSync('.env')&&fs.existsSync('.env.example'))fs.copyFileSync('.env.example','.env')\""
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "@fastify/websocket": "^11.0.1",
     "@prisma/client": "^6.0.1",
     "bcryptjs": "^2.4.3",
