@@ -12,8 +12,13 @@ import { PrismaClient } from "@prisma/client";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
+const logger = {
+  info: (msg: string) => console.info(msg),
+  error: (msg: string, err?: any) => err ? console.error(msg, err) : console.error(msg),
+};
+
 if (!DATABASE_URL || DATABASE_URL.includes("USER:PASSWORD")) {
-  console.error("✗ DATABASE_URL is unset or still has the placeholder. Edit .env first.");
+  logger.error("✗ DATABASE_URL is unset or still has the placeholder. Edit .env first.");
   process.exit(1);
 }
 
@@ -44,11 +49,11 @@ async function tcpReachable(host: string, port: number, timeoutMs = 5000): Promi
 
 async function main(): Promise<void> {
   const { host, port } = parseHostPort(DATABASE_URL!);
-  console.log(`▶ TCP ${host}:${port} …`);
+  logger.info(`▶ TCP ${host}:${port} …`);
   const tcpMs = await tcpReachable(host, port);
-  console.log(`✓ TCP reachable in ${tcpMs.toFixed(0)} ms`);
+  logger.info(`✓ TCP reachable in ${tcpMs.toFixed(0)} ms`);
 
-  console.log(`▶ Prisma $connect …`);
+  logger.info(`▶ Prisma $connect …`);
   const prisma = new PrismaClient();
   try {
     const started = performance.now();
@@ -56,14 +61,14 @@ async function main(): Promise<void> {
     const rows = await prisma.$queryRaw<Array<{ ok: number }>>`SELECT 1 AS ok`;
     const ms = performance.now() - started;
     if (rows[0]?.ok !== 1) throw new Error("unexpected SELECT 1 result");
-    console.log(`✓ Prisma round-trip in ${ms.toFixed(0)} ms`);
+    logger.info(`✓ Prisma round-trip in ${ms.toFixed(0)} ms`);
   } finally {
     await prisma.$disconnect();
   }
-  console.log("✓ All checks passed.");
+  logger.info("✓ All checks passed.");
 }
 
 main().catch((err) => {
-  console.error("✗ Failed:", err instanceof Error ? err.message : err);
+  logger.error("✗ Failed:", err instanceof Error ? err.message : err);
   process.exit(1);
 });
