@@ -9,7 +9,6 @@ import {
   INITIAL_RADAR,
   SPAWN_FUEL,
   SPAWN_PROTECTION_TICKS,
-  MAX_FUEL,
 } from "@shared/types";
 
 export function createTank(
