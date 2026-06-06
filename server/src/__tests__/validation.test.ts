@@ -12,7 +12,10 @@ describe("validatePassword", () => {
   it("rejects passwords shorter than 8 characters", () => {
     expect(validatePassword("")).toEqual({ ok: false, reason: "password must be >= 8 chars" });
     expect(validatePassword("short")).toEqual({ ok: false, reason: "password must be >= 8 chars" });
-    expect(validatePassword("1234567")).toEqual({ ok: false, reason: "password must be >= 8 chars" });
+    expect(validatePassword("1234567")).toEqual({
+      ok: false,
+      reason: "password must be >= 8 chars",
+    });
   });
 
   it("accepts valid passwords within length limits", () => {
@@ -28,7 +31,10 @@ describe("validatePassword", () => {
 
     // 73 ASCII characters = 73 bytes
     const overLimitAscii = "a".repeat(73);
-    expect(validatePassword(overLimitAscii)).toEqual({ ok: false, reason: "password exceeds bcrypt 72-byte limit" });
+    expect(validatePassword(overLimitAscii)).toEqual({
+      ok: false,
+      reason: "password exceeds bcrypt 72-byte limit",
+    });
 
     // A single emoji (e.g., 🦄) is 4 bytes.
     // 18 emojis * 4 bytes/emoji = 72 bytes. String length is 36.
@@ -37,6 +43,9 @@ describe("validatePassword", () => {
 
     // 19 emojis * 4 bytes/emoji = 76 bytes. String length is 38.
     const overLimitEmoji = "🦄".repeat(19);
-    expect(validatePassword(overLimitEmoji)).toEqual({ ok: false, reason: "password exceeds bcrypt 72-byte limit" });
+    expect(validatePassword(overLimitEmoji)).toEqual({
+      ok: false,
+      reason: "password exceeds bcrypt 72-byte limit",
+    });
   });
 });
