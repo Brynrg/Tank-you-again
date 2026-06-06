@@ -18,21 +18,33 @@ export class PerceptionSystem {
     const visionSet = this.computeVisionSet(ai, world);
 
     // Extract relevant data
-    const visibleTanks = (Array.from(world.tanks || []) as TankState[]).filter(
-      (t) => visionSet.visibleTankIds?.has(t.id) && t.id !== ai.id,
-    );
+    const visibleTanks: TankState[] = [];
+    for (const t of world.tanks || []) {
+      if (visionSet.visibleTankIds?.has(t.id) && t.id !== ai.id) {
+        visibleTanks.push(t as TankState);
+      }
+    }
 
-    const visibleProjectiles = (Array.from(world.projectiles || []) as any[]).filter((p) =>
-      visionSet.visibleProjectileIds?.has(p.id),
-    );
+    const visibleProjectiles: any[] = [];
+    for (const p of world.projectiles || []) {
+      if (visionSet.visibleProjectileIds?.has(p.id)) {
+        visibleProjectiles.push(p);
+      }
+    }
 
-    const visibleMines = (Array.from(world.mines || []) as any[]).filter((m) =>
-      visionSet.visibleMineIds?.has(m.id),
-    );
+    const visibleMines: any[] = [];
+    for (const m of world.mines || []) {
+      if (visionSet.visibleMineIds?.has(m.id)) {
+        visibleMines.push(m);
+      }
+    }
 
-    const visiblePickups = (Array.from(world.pickups || []) as any[]).filter((p) =>
-      visionSet.visiblePickupIds?.has(p.id),
-    );
+    const visiblePickups: any[] = [];
+    for (const p of world.pickups || []) {
+      if (visionSet.visiblePickupIds?.has(p.id)) {
+        visiblePickups.push(p);
+      }
+    }
 
     // Find nearest enemy and pickup
     const nearestEnemy = this.findNearestEntity(ai, visibleTanks);
