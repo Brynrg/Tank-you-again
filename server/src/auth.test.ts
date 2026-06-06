@@ -21,7 +21,13 @@ describe("handleAuth", () => {
 
   it("creates a user and tank for a valid guestName", async () => {
     const mockUser = { id: 123, isGuest: true };
-    const mockTank = { id: 456, userId: 123, name: "ValidName", rank: MilitaryRank.RECRUIT, highestRank: MilitaryRank.RECRUIT };
+    const mockTank = {
+      id: 456,
+      userId: 123,
+      name: "ValidName",
+      rank: MilitaryRank.RECRUIT,
+      highestRank: MilitaryRank.RECRUIT,
+    };
 
     const prisma = {
       user: {
