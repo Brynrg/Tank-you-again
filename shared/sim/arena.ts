@@ -366,43 +366,47 @@ export class Arena {
       this.addAIEnemy(tier);
     }
 
-    for (const [aiId, ai] of this.aiEnemies) {
-      const tank = this.tanks.get(aiId);
-      if (!tank || tank.isDead) continue;
-      const cd = this.cooldowns.get(aiId);
-      if (!cd) continue;
-
-      const action = ai.update(t, {
+    if (this.aiEnemies.size > 0) {
+      const cachedWorldState = {
         tanks: Array.from(this.tanks.values()),
         projectiles: Array.from(this.projectiles.values()),
         mines: Array.from(this.mines.values()),
         pickups: Array.from(this.pickups.values()),
         radarReveals: this.radarReveals,
         currentTick: t,
-      });
+      };
 
-      let moveTarget = action.moveTarget;
-      if (!moveTarget && !this.commands.has(aiId)) {
-        moveTarget = {
-          x: TANK_RADIUS + Math.random() * (MAP_WIDTH - 2 * TANK_RADIUS),
-          y: TANK_RADIUS + Math.random() * (MAP_HEIGHT - 2 * TANK_RADIUS),
-        };
+      for (const [aiId, ai] of this.aiEnemies) {
+        const tank = this.tanks.get(aiId);
+        if (!tank || tank.isDead) continue;
+        const cd = this.cooldowns.get(aiId);
+        if (!cd) continue;
+
+        const action = ai.update(t, cachedWorldState);
+
+        let moveTarget = action.moveTarget;
+        if (!moveTarget && !this.commands.has(aiId)) {
+          moveTarget = {
+            x: TANK_RADIUS + Math.random() * (MAP_WIDTH - 2 * TANK_RADIUS),
+            y: TANK_RADIUS + Math.random() * (MAP_HEIGHT - 2 * TANK_RADIUS),
+          };
+        }
+        if (moveTarget) {
+          this.commands.set(aiId, {
+            kind: "MOVE_TO",
+            x: clamp(moveTarget.x, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS),
+            y: clamp(moveTarget.y, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS),
+            clientTick: t,
+          });
+        }
+        if (action.fire) {
+          this.aiAim.set(aiId, action.fire.aim);
+          this.fireWeapon(tank, cd, action.fire.weapon as ProjectileKind, action.fire.aim);
+        }
+        if (action.useItem) this.useItemFor(tank, action.useItem as ItemType);
+        if (action.placeMine) this.placeMineFor(tank, cd);
+        if (action.teleport) this.teleportFor(tank, action.teleport.x, action.teleport.y);
       }
-      if (moveTarget) {
-        this.commands.set(aiId, {
-          kind: "MOVE_TO",
-          x: clamp(moveTarget.x, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS),
-          y: clamp(moveTarget.y, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS),
-          clientTick: t,
-        });
-      }
-      if (action.fire) {
-        this.aiAim.set(aiId, action.fire.aim);
-        this.fireWeapon(tank, cd, action.fire.weapon as ProjectileKind, action.fire.aim);
-      }
-      if (action.useItem) this.useItemFor(tank, action.useItem as ItemType);
-      if (action.placeMine) this.placeMineFor(tank, cd);
-      if (action.teleport) this.teleportFor(tank, action.teleport.x, action.teleport.y);
     }
   }
 
