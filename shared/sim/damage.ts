@@ -15,9 +15,12 @@ export function calculateArmorPenetration(
   // Determine which armor face was hit (front, side, rear)
   let hitSide: "front" | "side" | "rear" = "front";
 
-  if (relativeAngle > Math.PI * 0.75 && relativeAngle < Math.PI * 1.25) {
+  if (
+    (relativeAngle > Math.PI * 0.25 && relativeAngle < Math.PI * 0.75) ||
+    (relativeAngle > Math.PI * 1.25 && relativeAngle < Math.PI * 1.75)
+  ) {
     hitSide = "side";
-  } else if (relativeAngle > Math.PI * 1.25 || relativeAngle < Math.PI * 0.75) {
+  } else if (relativeAngle >= Math.PI * 0.75 && relativeAngle <= Math.PI * 1.25) {
     hitSide = "rear";
   }
 
