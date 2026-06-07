@@ -1,0 +1,2 @@
+
+## 2026-06-07 - Array Allocation Hoisting in Bot Loop\n**Learning:** In the core game loop, repeating O(N) array allocations inside a loop iterating over every AI enemy (like `Array.from(this.tanks.values())`) creates significant GC pressure and overhead each tick. \n**Action:** Always hoist map-to-array conversions outside the main entity-iteration loop, and verify downstream perception systems use `Array.isArray()` to avoid re-cloning already converted arrays.
