@@ -23,7 +23,9 @@ export class PerceptionSystem {
     ).filter((t) => visionSet.visibleTankIds?.has(t.id) && t.id !== ai.id);
 
     const visibleProjectiles = (
-      (Array.isArray(world.projectiles) ? world.projectiles : Array.from(world.projectiles || [])) as any[]
+      (Array.isArray(world.projectiles)
+        ? world.projectiles
+        : Array.from(world.projectiles || [])) as any[]
     ).filter((p) => visionSet.visibleProjectileIds?.has(p.id));
 
     const visibleMines = (
