@@ -366,6 +366,12 @@ export class Arena {
       this.addAIEnemy(tier);
     }
 
+    // Cache expensive map-to-array conversions outside the bot loop
+    const tanksArray = Array.from(this.tanks.values());
+    const projectilesArray = Array.from(this.projectiles.values());
+    const minesArray = Array.from(this.mines.values());
+    const pickupsArray = Array.from(this.pickups.values());
+
     for (const [aiId, ai] of this.aiEnemies) {
       const tank = this.tanks.get(aiId);
       if (!tank || tank.isDead) continue;
@@ -373,10 +379,10 @@ export class Arena {
       if (!cd) continue;
 
       const action = ai.update(t, {
-        tanks: Array.from(this.tanks.values()),
-        projectiles: Array.from(this.projectiles.values()),
-        mines: Array.from(this.mines.values()),
-        pickups: Array.from(this.pickups.values()),
+        tanks: tanksArray,
+        projectiles: projectilesArray,
+        mines: minesArray,
+        pickups: pickupsArray,
         radarReveals: this.radarReveals,
         currentTick: t,
       });
