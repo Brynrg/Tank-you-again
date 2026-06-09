@@ -18,19 +18,19 @@ export class PerceptionSystem {
     const visionSet = this.computeVisionSet(ai, world);
 
     // Extract relevant data
-    const visibleTanks = (Array.from(world.tanks || []) as TankState[]).filter(
-      (t) => visionSet.visibleTankIds?.has(t.id) && t.id !== ai.id,
-    );
+    const visibleTanks = (world.tanks || []).filter(
+      (t: TankState) => visionSet.visibleTankIds?.has(t.id) && t.id !== ai.id,
+    ) as TankState[];
 
-    const visibleProjectiles = (Array.from(world.projectiles || []) as any[]).filter((p) =>
+    const visibleProjectiles = (world.projectiles || []).filter((p: any) =>
       visionSet.visibleProjectileIds?.has(p.id),
     );
 
-    const visibleMines = (Array.from(world.mines || []) as any[]).filter((m) =>
+    const visibleMines = (world.mines || []).filter((m: any) =>
       visionSet.visibleMineIds?.has(m.id),
     );
 
-    const visiblePickups = (Array.from(world.pickups || []) as any[]).filter((p) =>
+    const visiblePickups = (world.pickups || []).filter((p: any) =>
       visionSet.visiblePickupIds?.has(p.id),
     );
 
