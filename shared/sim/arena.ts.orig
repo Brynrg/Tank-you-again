@@ -366,24 +366,20 @@ export class Arena {
       this.addAIEnemy(tier);
     }
 
-    // Bolt Optimization: Cache Array.from() conversions outside the bot loop
-    // to prevent O(Bots × Entities) allocations per tick.
-    const worldStateCache = {
-      tanks: Array.from(this.tanks.values()),
-      projectiles: Array.from(this.projectiles.values()),
-      mines: Array.from(this.mines.values()),
-      pickups: Array.from(this.pickups.values()),
-      radarReveals: this.radarReveals,
-      currentTick: t,
-    };
-
     for (const [aiId, ai] of this.aiEnemies) {
       const tank = this.tanks.get(aiId);
       if (!tank || tank.isDead) continue;
       const cd = this.cooldowns.get(aiId);
       if (!cd) continue;
 
-      const action = ai.update(t, worldStateCache);
+      const action = ai.update(t, {
+        tanks: Array.from(this.tanks.values()),
+        projectiles: Array.from(this.projectiles.values()),
+        mines: Array.from(this.mines.values()),
+        pickups: Array.from(this.pickups.values()),
+        radarReveals: this.radarReveals,
+        currentTick: t,
+      });
 
       let moveTarget = action.moveTarget;
       if (!moveTarget && !this.commands.has(aiId)) {
