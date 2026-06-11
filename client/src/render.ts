@@ -1280,6 +1280,41 @@ function drawProjectile(
   ctx.restore();
 }
 
+function countUniqueTeams(tanks: TankState[]): number {
+  let uniqueTeams = 0;
+  let seenRed = false;
+  let seenBlue = false;
+  let seenOrange = false;
+  let seenPurple = false;
+
+  for (let i = 0; i < tanks.length; i++) {
+    const team = tanks[i]?.team;
+    if (team === TeamColor.RED) {
+      if (!seenRed) {
+        seenRed = true;
+        uniqueTeams++;
+      }
+    } else if (team === TeamColor.BLUE) {
+      if (!seenBlue) {
+        seenBlue = true;
+        uniqueTeams++;
+      }
+    } else if (team === TeamColor.ORANGE) {
+      if (!seenOrange) {
+        seenOrange = true;
+        uniqueTeams++;
+      }
+    } else if (team === TeamColor.PURPLE) {
+      if (!seenPurple) {
+        seenPurple = true;
+        uniqueTeams++;
+      }
+    }
+    if (uniqueTeams === 4) break;
+  }
+  return uniqueTeams;
+}
+
 /** HUD overlay: fuel bar, ammo, rank, RTT, score line. */
 export function renderHud(
   ctx: CanvasRenderingContext2D,
@@ -1318,7 +1353,7 @@ export function renderHud(
         34,
       );
       ctx.fillText(
-        `Projectiles: ${state.snap.projectiles.length} | Teams: ${new Set(state.snap.tanks.map((t) => t.team)).size}`,
+        `Projectiles: ${state.snap.projectiles.length} | Teams: ${countUniqueTeams(state.snap.tanks)}`,
         8,
         52,
       );
