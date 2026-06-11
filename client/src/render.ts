@@ -15,6 +15,7 @@ import {
   type GameStateSnapshot,
   type PickupState,
   type ProjectileState,
+  type SurvivalHudState,
   type TankState,
 } from "@shared/types";
 
@@ -1484,6 +1485,72 @@ export function renderHud(
       drawCoachmark(ctx, W, H, elapsed);
     }
   }
+
+  // Survival mode: wave status strip + end-of-run panel (drawn last = on top).
+  if (state.snap?.survival) {
+    drawSurvivalHud(ctx, state.snap.survival, W, H);
+  }
+}
+
+/** Survival wave strip (top-center) and the game-over panel. */
+function drawSurvivalHud(
+  ctx: CanvasRenderingContext2D,
+  sv: SurvivalHudState,
+  W: number,
+  H: number,
+): void {
+  ctx.save();
+  ctx.textAlign = "center";
+
+  if (sv.phase !== "over") {
+    const fs = Math.max(14, Math.round(W / 56));
+    ctx.font = `bold ${fs}px 'Courier New', monospace`;
+    let text: string;
+    if (sv.phase === "active") {
+      text = `WAVE ${sv.wave} — ${sv.enemiesLeft} HOSTILE${sv.enemiesLeft === 1 ? "" : "S"}`;
+      ctx.fillStyle = RA.amber;
+    } else {
+      const secs = Math.ceil(sv.nextWaveInTicks / SERVER_TICK_RATE);
+      text = sv.wave === 0 ? `FIRST WAVE IN ${secs}` : `WAVE ${sv.wave} CLEAR — NEXT IN ${secs}`;
+      // Pulse while the clock runs so the lull reads as "get ready", not idle.
+      ctx.fillStyle = RA.amber;
+      ctx.globalAlpha = 0.6 + 0.4 * Math.abs(Math.sin(Date.now() / 350));
+    }
+    const y = Math.round(H * 0.08);
+    const w = ctx.measureText(text).width;
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = RA.steel;
+    ctx.fillRect(W / 2 - w / 2 - 14, y - fs - 6, w + 28, fs + 16);
+    ctx.strokeStyle = RA.steelEdge;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(W / 2 - w / 2 - 14, y - fs - 6, w + 28, fs + 16);
+    ctx.restore();
+    ctx.fillText(text, W / 2, y);
+    ctx.restore();
+    return;
+  }
+
+  // Game over: full-screen RA-style debrief.
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "#000000b8";
+  ctx.fillRect(0, 0, W, H);
+  const big = Math.max(26, Math.round(W / 24));
+  ctx.font = `bold ${big}px 'Courier New', monospace`;
+  ctx.fillStyle = "#ef4444";
+  ctx.fillText("TANK DESTROYED", W / 2, H * 0.4);
+  ctx.font = `bold ${Math.round(big * 0.55)}px 'Courier New', monospace`;
+  ctx.fillStyle = RA.amber;
+  ctx.fillText(
+    `You survived ${sv.waveReached} wave${sv.waveReached === 1 ? "" : "s"}`,
+    W / 2,
+    H * 0.4 + big * 1.1,
+  );
+  ctx.font = `${Math.round(big * 0.4)}px 'Courier New', monospace`;
+  ctx.fillStyle = RA.amberDim;
+  const blink = Math.floor(Date.now() / 600) % 2 === 0;
+  if (blink) ctx.fillText("press R or tap to redeploy", W / 2, H * 0.4 + big * 2.0);
+  ctx.restore();
 }
 
 /** Bottom-center teaching panel for first-time players. */

@@ -7,6 +7,7 @@ import {
 } from "@shared/types";
 
 import { attach as attachInput, type InputLayer } from "./input.js";
+import type { GameMode } from "./auth-screen.js";
 import { SnapshotInterpolator } from "./interpolate.js";
 import {
   SinglePlayerNetClient,
@@ -30,6 +31,8 @@ export interface RunOptions {
   wsUrl?: string;
   guestName: string;
   singlePlayer?: boolean;
+  /** Single-player flavor: classic FFA skirmish or endless-wave survival. */
+  mode?: GameMode;
 }
 
 export interface RunHandle {
@@ -57,10 +60,12 @@ export function run(opts: RunOptions): RunHandle {
   let status: UnifiedNetStatus = "connecting";
   let clientTick = 0;
   let lastFrameMs = performance.now();
+  let redeployArmed = false;
 
   const net: UnifiedNetClient =
     (opts.singlePlayer ?? false)
       ? new SinglePlayerNetClient({
+          mode: opts.mode,
           onMessage: (msg: ServerMessage) => {
             if (msg.type === ServerMessageType.WELCOME) {
               yourTankId = msg.yourTankId;
@@ -73,6 +78,20 @@ export function run(opts: RunOptions): RunHandle {
                 const dx = target.x - yourTank.x;
                 const dy = target.y - yourTank.y;
                 if (Math.hypot(dx, dy) <= COMMAND_ARRIVAL_RADIUS * 2) input.clearCommandTarget();
+              }
+              // Survival run ended: arm a one-shot redeploy (R / tap reloads).
+              // Grace period so a shot fired at the moment of death doesn't
+              // dismiss the debrief before it can be read.
+              if (msg.snapshot.survival?.phase === "over" && !redeployArmed) {
+                redeployArmed = true;
+                const armedAt = performance.now();
+                const redeploy = (ev: Event): void => {
+                  if (performance.now() - armedAt < 1200) return;
+                  if (ev instanceof KeyboardEvent && ev.key.toLowerCase() !== "r") return;
+                  window.location.reload();
+                };
+                window.addEventListener("keydown", redeploy);
+                window.addEventListener("pointerdown", redeploy);
               }
             } else if (msg.type === ServerMessageType.EVENT) {
               // Inline event handling could trigger sound/particles. Stubbed for now.

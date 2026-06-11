@@ -133,6 +133,19 @@ export interface GameEvent {
   payload?: string;
 }
 
+/** Survival-mode HUD state. Single-player only — the server never sets it. */
+export interface SurvivalHudState {
+  /** Current wave number (0 before the first wave spawns). */
+  wave: number;
+  phase: "intermission" | "active" | "over";
+  /** Wave enemies still alive (0 during intermission). */
+  enemiesLeft: number;
+  /** Ticks until the next wave spawns (0 unless in intermission). */
+  nextWaveInTicks: number;
+  /** Highest wave started — the run result shown on game over. */
+  waveReached: number;
+}
+
 /**
  * A single tick of authoritative world state. Mines are filtered server-side
  * to only those visible to the recipient (their own, allies', or detected via radar).
@@ -148,6 +161,8 @@ export interface GameStateSnapshot {
   visibleMines: MineState[];
   /** Events emitted on this tick (kill feed, etc.). */
   events: GameEvent[];
+  /** Present only in single-player survival mode. */
+  survival?: SurvivalHudState;
 }
 
 // ---------- Network protocol (top-level message shapes) ----------
