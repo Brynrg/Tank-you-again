@@ -524,9 +524,17 @@ export class RoomLoop {
 
   private collectPickups(): void {
     const r2 = (PICKUP_RADIUS + TANK_RADIUS) * (PICKUP_RADIUS + TANK_RADIUS);
+
+    const activeTanks: TankState[] = [];
+    for (const t of this.tanks.values()) {
+      if (!t.isDead) activeTanks.push(t);
+    }
+
+    if (activeTanks.length === 0) return;
+
     for (const [id, pk] of this.pickups) {
-      for (const t of this.tanks.values()) {
-        if (t.isDead) continue;
+      for (let i = 0; i < activeTanks.length; i++) {
+        const t = activeTanks[i]!;
         const dx = pk.x - t.x;
         const dy = pk.y - t.y;
         if (dx * dx + dy * dy <= r2) {
