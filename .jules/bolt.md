@@ -1,0 +1,3 @@
+## 2025-02-12 - Reusing Arrays in Hot Game Loops via Custom Map
+**Learning:** Frequent `Array.from(map.values())` calls inside a fast-running loop (like the 60fps game loop `updateAIEnemies` function) cause significant unnecessary object allocations and trigger constant garbage collection, dragging down performance over time. While iterators are an alternative, they still involve allocation or repeat traversal.
+**Action:** Replace standard `Map` instances with a custom `EntityMap` that extends `Map` to explicitly cache the generated array from `.values()`. The array is only regenerated (using `isDirty` flag) when keys are inserted, deleted, or cleared from the map, ensuring hot loops retrieve the cached array directly.
