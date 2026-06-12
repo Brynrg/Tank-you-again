@@ -8,6 +8,8 @@ import {
   MAP_HEIGHT,
   MAP_WIDTH,
   MAX_FUEL,
+  POWER_TIER_LABELS,
+  POWER_TIER_THRESHOLDS,
   ProjectileKind,
   SERVER_TICK_RATE,
   TANK_RADIUS,
@@ -202,11 +204,25 @@ function processSnapshotEvents(snap: GameStateSnapshot): void {
     } else if (ev.kind === "kill") {
       const killer = snap.tanks.find((t) => t.id === ev.subjectId);
       const victim = snap.tanks.find((t) => t.id === ev.objectId);
-      if (killer && victim) addKillFeed(`${killer.name} ▸ ${victim.name}`);
+      const streak = Number(ev.payload) || 1;
+      const streakSuffix =
+        streak >= 7 ? " ★ UNSTOPPABLE!" :
+        streak >= 5 ? " ★ RAMPAGE!" :
+        streak >= 4 ? " ★ ULTRA KILL" :
+        streak >= 3 ? " ★ TRIPLE KILL" :
+        streak >= 2 ? " ★ DOUBLE KILL" : "";
+      if (killer && victim) addKillFeed(`${killer.name} ▸ ${victim.name}${streakSuffix}`);
       else if (victim) addKillFeed(`${victim.name} destroyed`);
     } else if (ev.kind === "rank_up") {
       const who = snap.tanks.find((t) => t.id === ev.subjectId);
       if (who) addKillFeed(`${who.name} promoted to ${who.rank}`);
+    } else if (ev.kind === "tier_up") {
+      const who = snap.tanks.find((t) => t.id === ev.subjectId);
+      const tier = Number(ev.payload);
+      const label = POWER_TIER_LABELS[tier] ?? "";
+      const nextKills = POWER_TIER_THRESHOLDS[tier + 1];
+      const suffix = nextKills != null ? ` (next tier: ${nextKills} kills)` : " — MAX POWER";
+      if (who) addKillFeed(`⚡ ${who.name} reached TIER ${tier}: ${label}${suffix}`);
     }
   }
 }
@@ -925,6 +941,33 @@ function drawTank(
 
   ctx.save();
 
+  // Power-tier glow — pulsing aura that intensifies with tier.
+  const tier = t.powerTier ?? 0;
+  if (tier > 0 && !t.isDead) {
+    const tierColors = ["", "#facc15", "#f97316", "#ef4444", "#a855f7", "#ec4899"];
+    const tierColor = tierColors[tier] ?? "#facc15";
+    const pulse = 0.5 + 0.5 * Math.abs(Math.sin(Date.now() / 500 + t.x * 0.005));
+    const glowR = r + 14 + tier * 3;
+    ctx.save();
+    ctx.globalAlpha = 0.2 + tier * 0.06 + pulse * 0.15;
+    ctx.strokeStyle = tierColor;
+    ctx.lineWidth = 1.5 + tier * 0.5;
+    ctx.shadowColor = tierColor;
+    ctx.shadowBlur = 8 * tier;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+    ctx.stroke();
+    // Second inner ring for higher tiers
+    if (tier >= 3) {
+      ctx.globalAlpha = 0.12 + pulse * 0.1;
+      ctx.lineWidth = tier;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, glowR - 6, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // Spawn-protection ring
   if (t.isSpawnProtected) {
     ctx.strokeStyle = "#facc15";
@@ -1372,7 +1415,7 @@ export function renderHud(
     const panelX = bx - 8;
     const panelY = by - 22;
     const panelW = barW + 16;
-    const panelH = 74;
+    const panelH = (t.powerTier ?? 0) > 0 ? 90 : 88;
     ctx.fillStyle = RA.steel + "e6";
     ctx.fillRect(panelX, panelY, panelW, panelH);
     ctx.strokeStyle = RA.steelEdge;
@@ -1410,7 +1453,7 @@ export function renderHud(
 
     // Bottom-left: ammo with cooldown feedback
     ctx.fillStyle = RA.amber;
-    let ammoText = `MIS ${t.ammo.missiles}   MINE ${t.ammo.mines}   TP ${t.ammo.teleports}   SH ${t.ammo.shields}   RAD ${t.ammo.radar}   RANK ${t.rank}`;
+    let ammoText = `MIS ${t.ammo.missiles}  MINE ${t.ammo.mines}  TP ${t.ammo.teleports}  SH ${t.ammo.shields}  RAD ${t.ammo.radar}  RANK ${t.rank}`;
 
     // Add cooldown indicators
     if (t.ammo.missiles === 0) ammoText += " [⏳]";
@@ -1419,11 +1462,40 @@ export function renderHud(
 
     ctx.fillText(ammoText, bx, by + barH + 14);
 
-    if (state.snap) {
+    // Power tier display
+    const playerTier = t.powerTier ?? 0;
+    if (playerTier > 0) {
+      const tierLabel = POWER_TIER_LABELS[playerTier] ?? "";
+      const tierColors = ["", "#facc15", "#f97316", "#ef4444", "#a855f7", "#ec4899"];
+      const tierColor = tierColors[playerTier] ?? "#facc15";
+      const nextThreshold = POWER_TIER_THRESHOLDS[playerTier + 1];
+      const kills = t.kills ?? 0;
+      const progress = nextThreshold != null ? `  [${kills}/${nextThreshold} kills]` : "  [MAX]";
+      const stars = "★".repeat(playerTier) + "☆".repeat(Math.max(0, 5 - playerTier));
+      ctx.fillStyle = tierColor;
+      ctx.font = "bold 12px 'Courier New', monospace";
+      ctx.fillText(`⚡ TIER ${playerTier}: ${tierLabel}  ${stars}${progress}`, bx, by + barH + 28);
+      ctx.font = "12px 'Courier New', monospace";
+    } else {
+      const kills = t.kills ?? 0;
+      ctx.fillStyle = RA.amberDim;
+      ctx.fillText(`kills: ${kills}  (3 kills → TIER 1: COMBAT+)`, bx, by + barH + 28);
+    }
+
+    if (state.snap && playerTier === 0) {
+      // no extra line when tier label already occupies that space
+    } else if (state.snap && playerTier > 0) {
+      ctx.fillStyle = RA.amber + "99";
+      ctx.fillText(
+        `radar: ${state.snap.pickups.length} items  mines: ${state.snap.visibleMines.length}`,
+        bx,
+        by + barH + 42,
+      );
+    } else if (state.snap) {
       ctx.fillText(
         `RADAR sees fuel/equipment:${state.snap.pickups.length} mines:${state.snap.visibleMines.length}`,
         bx,
-        by + barH + 28,
+        by + barH + 42,
       );
     }
 

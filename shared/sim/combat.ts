@@ -43,6 +43,7 @@ export function tryFire(
   aimOverride: number | undefined,
   currentTick: number,
   cooldownLastTick: number,
+  damageMult = 1.0,
 ): FireResult {
   if (tank.isDead) return { ok: false, reason: "dead" };
 
@@ -62,7 +63,7 @@ export function tryFire(
         ProjectileKind.BULLET,
         aim,
         BULLET_SPEED,
-        BULLET_DAMAGE,
+        BULLET_DAMAGE * damageMult,
         currentTick,
         currentTick + BULLET_TTL_TICKS,
       ),
@@ -85,7 +86,7 @@ export function tryFire(
       ProjectileKind.MISSILE,
       aim,
       MISSILE_SPEED,
-      MISSILE_DAMAGE,
+      MISSILE_DAMAGE * damageMult,
       currentTick,
       currentTick + MISSILE_TTL_TICKS,
     ),

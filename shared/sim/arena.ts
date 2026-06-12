@@ -7,10 +7,15 @@ import {
   ItemType,
   MAP_HEIGHT,
   MAP_WIDTH,
+  MAX_FUEL,
   MINE_PICKUP_AMOUNT,
   MISSILE_PICKUP_AMOUNT,
   MilitaryRank,
+  PASSIVE_FUEL_REGEN_PER_SEC,
   PICKUP_RADIUS,
+  POWER_TIER_DAMAGE_MULT,
+  POWER_TIER_FUEL_REWARD,
+  POWER_TIER_THRESHOLDS,
   ProjectileKind,
   RADAR_PICKUP_AMOUNT,
   RESPAWN_DELAY_TICKS,
@@ -40,7 +45,7 @@ import { applyMineDamage, placeMine, stepMineDetonations } from "./mines.js";
 import { stepMoveCommand, stepMovement } from "./movement.js";
 import { rankForXp } from "./rank.js";
 import { computeVisionSet, scanRadar } from "./vision.js";
-import { makeTank, maybeSpawnPickup, pickTeam, respawnTank, tickSpawnProtection } from "./world.js";
+import { computePowerTier, makeTank, maybeSpawnPickup, pickTeam, respawnTank, tickSpawnProtection } from "./world.js";
 
 interface FireCooldowns {
   lastBulletTick: number;
@@ -339,6 +344,10 @@ export class Arena {
       if (t >= tank.respawnAtTick) respawnTank(tank, t);
       return;
     }
+    // Passive fuel regeneration — slows death spiral, rewards survival.
+    if (tank.fuel < MAX_FUEL) {
+      tank.fuel = Math.min(MAX_FUEL, tank.fuel + PASSIVE_FUEL_REGEN_PER_SEC * dt);
+    }
     if (tank.hasShield) {
       if (!debitFuel(tank, FUEL_SHIELD_PER_SEC * dt, "SHIELD")) tank.hasShield = false;
     }
@@ -417,7 +426,9 @@ export class Arena {
     aim: number | undefined,
   ): void {
     const lastTick = weapon === ProjectileKind.MISSILE ? cd.lastMissileTick : cd.lastBulletTick;
-    const r = tryFire(tank, weapon, aim, this.tickIndex, lastTick);
+    const tier = tank.powerTier ?? 0;
+    const damageMult = POWER_TIER_DAMAGE_MULT[tier] ?? 1.0;
+    const r = tryFire(tank, weapon, aim, this.tickIndex, lastTick, damageMult);
     if (!r.ok || !r.projectile) return;
     this.projectiles.set(r.projectile.id, r.projectile);
     if (weapon === ProjectileKind.MISSILE) cd.lastMissileTick = this.tickIndex;
@@ -529,16 +540,36 @@ export class Arena {
       objectId: killerId ?? undefined,
     });
 
+    victim.killStreak = 0;
+
     if (killerId && killerId !== victim.id) {
       const killer = this.tanks.get(killerId);
       if (killer) {
         killer.kills = (killer.kills ?? 0) + 1;
+        killer.killStreak = (killer.killStreak ?? 0) + 1;
+
         this.pendingEvents.push({
           tick: this.tickIndex,
           kind: "kill",
           subjectId: killerId,
           objectId: victim.id,
+          payload: String(killer.killStreak),
         });
+
+        // Power-tier advancement
+        const newTier = computePowerTier(killer.kills);
+        if (newTier > (killer.powerTier ?? 0)) {
+          killer.powerTier = newTier;
+          const reward = POWER_TIER_FUEL_REWARD[newTier] ?? 0;
+          killer.fuel = Math.min(MAX_FUEL, killer.fuel + reward);
+          this.pendingEvents.push({
+            tick: this.tickIndex,
+            kind: "tier_up",
+            subjectId: killerId,
+            payload: String(newTier),
+          });
+        }
+
         this.awardXp(killerId, XP_PER_KILL);
         this.onXpDelta?.(killerId, XP_PER_KILL, "kill");
       }

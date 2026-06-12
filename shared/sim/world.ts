@@ -21,6 +21,15 @@ import {
   type TankState,
 } from "@shared/types";
 
+/** Compute power tier from total session kills. */
+export function computePowerTier(sessionKills: number): number {
+  const thresholds = [0, 3, 7, 12, 18, 25];
+  for (let i = thresholds.length - 1; i >= 0; i--) {
+    if (sessionKills >= (thresholds[i] ?? 0)) return i;
+  }
+  return 0;
+}
+
 const TEAMS: TeamColor[] = [TeamColor.BLUE, TeamColor.RED, TeamColor.ORANGE, TeamColor.PURPLE];
 
 /** Round-robin team picker, balanced by current census. */
@@ -78,6 +87,8 @@ export function makeTank(args: {
     isDead: false,
     respawnAtTick: 0,
     armor: { front: 100, side: 100, rear: 100 },
+    killStreak: 0,
+    powerTier: 0,
   };
 }
 
@@ -91,19 +102,34 @@ export function respawnTank(t: TankState, currentTick: number): void {
   t.y = spawn.y;
   t.angle = 0;
   t.turretAngle = 0;
-  t.fuel = SPAWN_FUEL * 0.6;
   t.hasShield = false;
-  t.ammo = {
-    missiles: Math.max(2, Math.floor(INITIAL_MISSILES / 2)),
-    mines: Math.max(2, Math.floor(INITIAL_MINES / 2)),
-    teleports: 0,
-    shields: 1,
-    radar: 1,
-  };
   t.isSpawnProtected = true;
   t.spawnProtectedUntilTick = currentTick + SPAWN_PROTECTION_TICKS;
   t.isDead = false;
   t.respawnAtTick = 0;
+  t.killStreak = 0; // streak resets on death
+
+  // Higher power tiers respawn with better fuel and loadout.
+  const tier = t.powerTier ?? 0;
+  t.fuel = SPAWN_FUEL * (tier >= 4 ? 0.8 : 0.6);
+  if (tier >= 4) {
+    // Tier 4+ respawn with full starter ammo — rewards high-kill players.
+    t.ammo = {
+      missiles: INITIAL_MISSILES,
+      mines: INITIAL_MINES,
+      teleports: INITIAL_TELEPORTS,
+      shields: INITIAL_SHIELDS,
+      radar: INITIAL_RADAR,
+    };
+  } else {
+    t.ammo = {
+      missiles: Math.max(2, Math.floor(INITIAL_MISSILES / 2)),
+      mines: Math.max(2, Math.floor(INITIAL_MINES / 2)),
+      teleports: 0,
+      shields: 1,
+      radar: 1,
+    };
+  }
 }
 
 /** Lift spawn protection if the tick has passed. Returns true if newly expired. */

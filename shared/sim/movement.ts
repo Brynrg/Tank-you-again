@@ -3,6 +3,8 @@ import {
   FUEL_MOVE_PER_SEC,
   MAP_HEIGHT,
   MAP_WIDTH,
+  POWER_TIER_FUEL_MULT,
+  POWER_TIER_SPEED_MULT,
   TANK_RADIUS,
   TANK_SPEED,
   type TankState,
@@ -39,14 +41,18 @@ export function stepMovement(tank: TankState, input: PlayerInputState, dt: numbe
     const nx = dx / len;
     const ny = dy / len;
 
-    const stepX = nx * TANK_SPEED * dt;
-    const stepY = ny * TANK_SPEED * dt;
+    const tier = tank.powerTier ?? 0;
+    const speed = TANK_SPEED * (POWER_TIER_SPEED_MULT[tier] ?? 1.0);
+    const fuelMult = POWER_TIER_FUEL_MULT[tier] ?? 1.0;
+
+    const stepX = nx * speed * dt;
+    const stepY = ny * speed * dt;
 
     tank.x = clamp(tank.x + stepX, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS);
     tank.y = clamp(tank.y + stepY, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS);
 
     // Fuel drain proportional to dt — but only if the tank actually moved.
-    debitFuel(tank, FUEL_MOVE_PER_SEC * dt, "MOVE");
+    debitFuel(tank, FUEL_MOVE_PER_SEC * fuelMult * dt, "MOVE");
   }
 
   // Turret tracks the latest aim regardless of movement.
@@ -76,9 +82,12 @@ export function stepMoveCommand(
   tank.turretAngle = aim;
 
   if (dist <= COMMAND_ARRIVAL_RADIUS) return true;
-  if (!debitFuel(tank, FUEL_MOVE_PER_SEC * dt, "MOVE")) return true;
+  const tier = tank.powerTier ?? 0;
+  const fuelMult = POWER_TIER_FUEL_MULT[tier] ?? 1.0;
+  if (!debitFuel(tank, FUEL_MOVE_PER_SEC * fuelMult * dt, "MOVE")) return true;
 
-  const maxStep = TANK_SPEED * dt;
+  const speed = TANK_SPEED * (POWER_TIER_SPEED_MULT[tier] ?? 1.0);
+  const maxStep = speed * dt;
   const step = Math.min(maxStep, dist);
   const nx = dx / dist;
   const ny = dy / dist;

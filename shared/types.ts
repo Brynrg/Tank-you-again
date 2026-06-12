@@ -79,6 +79,10 @@ export interface TankState {
     side: number;
     rear: number;
   };
+  /** Current-life kill streak (reset to 0 on death). Drives streak announcements. */
+  killStreak?: number;
+  /** Persistent power tier 0–5 based on total session kills. Carries through respawn. */
+  powerTier?: number;
 }
 
 export interface ProjectileState {
@@ -123,6 +127,7 @@ export interface GameEvent {
     | "radar_scan"
     | "mine_detonate"
     | "rank_up"
+    | "tier_up"
     | "chat"
     | "spawn_protected_end";
   /** Subject (the actor or victim depending on kind). */
@@ -413,3 +418,19 @@ export const XP_PER_DEATH = -15;
 // Anti-cheat rate limits
 export const MAX_INPUT_HZ = 60;
 export const MAX_CHAT_PER_SEC = 1;
+
+// Power-tier progression (kill-based in-match upgrades)
+/** Passive fuel regen per second while alive — prevents death spiral. */
+export const PASSIVE_FUEL_REGEN_PER_SEC = 2.5;
+/** Session-kill count needed to reach each tier (index = tier 0–5). */
+export const POWER_TIER_THRESHOLDS = [0, 3, 7, 12, 18, 25];
+/** Weapon damage multiplier at each tier. */
+export const POWER_TIER_DAMAGE_MULT = [1.0, 1.1, 1.2, 1.35, 1.5, 1.7];
+/** Movement speed multiplier at each tier. */
+export const POWER_TIER_SPEED_MULT = [1.0, 1.0, 1.05, 1.1, 1.15, 1.2];
+/** Movement fuel-cost multiplier at each tier (< 1 = cheaper). */
+export const POWER_TIER_FUEL_MULT = [1.0, 1.0, 1.0, 1.0, 0.85, 0.7];
+/** Instant fuel reward granted on reaching each tier. */
+export const POWER_TIER_FUEL_REWARD = [0, 150, 150, 200, 200, 250];
+/** Display label for each tier shown in the HUD. */
+export const POWER_TIER_LABELS = ["", "COMBAT+", "VETERAN", "ELITE", "ACE", "LEGENDARY"];
