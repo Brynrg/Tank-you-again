@@ -38,6 +38,7 @@ import {
 } from "@shared/types";
 
 import type { Connection } from "./connection.js";
+import { EntityMap } from "@shared/sim/entity-map.js";
 import { send } from "./connection.js";
 import {
   EMPTY_INPUT,
@@ -91,10 +92,10 @@ export class RoomLoop {
   private readonly connections = new Map<string, Connection>();
   private readonly inputs = new Map<string, PlayerInputState>();
   private readonly commands = new Map<string, PlayerCommandState>();
-  private readonly tanks = new Map<string, TankState>();
-  private readonly projectiles = new Map<string, ProjectileState>();
-  private readonly mines = new Map<string, MineState>();
-  private readonly pickups = new Map<string, PickupState>();
+  private readonly tanks = new EntityMap<string, TankState>();
+  private readonly projectiles = new EntityMap<string, ProjectileState>();
+  private readonly mines = new EntityMap<string, MineState>();
+  private readonly pickups = new EntityMap<string, PickupState>();
   /** tankId -> entityId -> last active radar scan tick. */
   private readonly radarReveals = new Map<string, Map<string, number>>();
   /** Pending events for the current tick. Drained into snapshots and EVENT msgs. */
@@ -675,10 +676,10 @@ export class RoomLoop {
       // Cache world state arrays once per tick to avoid repeated allocations
       // for each bot (which otherwise causes O(bots * entities) memory thrashing)
       const cachedWorldState = {
-        tanks: Array.from(this.tanks.values()),
-        projectiles: Array.from(this.projectiles.values()),
-        mines: Array.from(this.mines.values()),
-        pickups: Array.from(this.pickups.values()),
+        tanks: this.tanks.valuesArray(),
+        projectiles: this.projectiles.valuesArray(),
+        mines: this.mines.valuesArray(),
+        pickups: this.pickups.valuesArray(),
         radarReveals: this.radarReveals,
         currentTick: t,
       };
