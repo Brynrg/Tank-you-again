@@ -1,3 +1,4 @@
 ## 2025-02-28 - Optimizing Hot Loops with EntityMap
+
 **Learning:** Hot loops like the game loop ticks (`server/src/loop.ts` and `shared/sim/arena.ts`) frequently call `Array.from(map.values())` which creates an expensive $O(N)$ allocation on every iteration. This causes memory thrashing and unnecessary garbage collection overhead when the underlying map hasn't mutated.
 **Action:** Use the custom `EntityMap` implementation (`shared/sim/entity-map.ts`) which extends `Map` and provides a `.valuesArray()` method. This method lazily caches the array of values and invalidates the cache only upon map mutation (set, delete, clear). This strategy drastically reduces object allocations during hot simulation loops, replacing O(N) allocation with O(1) cache access when the map state is stable.
