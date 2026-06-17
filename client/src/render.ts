@@ -206,11 +206,17 @@ function processSnapshotEvents(snap: GameStateSnapshot): void {
       const victim = snap.tanks.find((t) => t.id === ev.objectId);
       const streak = Number(ev.payload) || 1;
       const streakSuffix =
-        streak >= 7 ? " ★ UNSTOPPABLE!" :
-        streak >= 5 ? " ★ RAMPAGE!" :
-        streak >= 4 ? " ★ ULTRA KILL" :
-        streak >= 3 ? " ★ TRIPLE KILL" :
-        streak >= 2 ? " ★ DOUBLE KILL" : "";
+        streak >= 7
+          ? " ★ UNSTOPPABLE!"
+          : streak >= 5
+            ? " ★ RAMPAGE!"
+            : streak >= 4
+              ? " ★ ULTRA KILL"
+              : streak >= 3
+                ? " ★ TRIPLE KILL"
+                : streak >= 2
+                  ? " ★ DOUBLE KILL"
+                  : "";
       if (killer && victim) addKillFeed(`${killer.name} ▸ ${victim.name}${streakSuffix}`);
       else if (victim) addKillFeed(`${victim.name} destroyed`);
     } else if (ev.kind === "rank_up") {
