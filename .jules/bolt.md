@@ -1,0 +1,4 @@
+## 2024-05-18 - Caching Entity Collections for AI Optimization
+
+**Learning:** The game simulation loop (`shared/sim/arena.ts` and `server/src/loop.ts`) suffers from O(N * E) allocations where N is the number of bots and E is the total number of entities (tanks, projectiles, mines, pickups). Specifically, `Array.from(this.tanks.values())` is called every tick *inside* a check that just creates an array. While the original comment mentioned caching it "once per tick", recreating these arrays completely via `Array.from` *every\* tick still incurs significant garbage collection overhead, especially when entity counts rise.
+**Action:** Created `EntityMap` which subclasses `Map` and lazily maintains a cached values array `valuesArray()`. The cache is only invalidated when mutations occur (`set`, `delete`, `clear`). We then replaced the Maps in `Arena` and `RoomLoop` with `EntityMap` to achieve true caching across ticks until the next modification.
