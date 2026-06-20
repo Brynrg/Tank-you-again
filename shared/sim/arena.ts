@@ -45,7 +45,14 @@ import { applyMineDamage, placeMine, stepMineDetonations } from "./mines.js";
 import { stepMoveCommand, stepMovement } from "./movement.js";
 import { rankForXp } from "./rank.js";
 import { computeVisionSet, scanRadar } from "./vision.js";
-import { computePowerTier, makeTank, maybeSpawnPickup, pickTeam, respawnTank, tickSpawnProtection } from "./world.js";
+import {
+  computePowerTier,
+  makeTank,
+  maybeSpawnPickup,
+  pickTeam,
+  respawnTank,
+  tickSpawnProtection,
+} from "./world.js";
 
 interface FireCooldowns {
   lastBulletTick: number;

@@ -1,3 +1,4 @@
+import { EntityMap } from "@shared/sim/entity-map.js";
 import {
   FUEL_CRATE_RESTORE,
   FUEL_RADAR_SCAN,
@@ -88,24 +89,24 @@ export class RoomLoop {
   private timer: NodeJS.Timeout | null = null;
   public tickIndex = 0;
 
-  private readonly connections = new Map<string, Connection>();
-  private readonly inputs = new Map<string, PlayerInputState>();
-  private readonly commands = new Map<string, PlayerCommandState>();
-  private readonly tanks = new Map<string, TankState>();
-  private readonly projectiles = new Map<string, ProjectileState>();
-  private readonly mines = new Map<string, MineState>();
-  private readonly pickups = new Map<string, PickupState>();
+  private readonly connections = new EntityMap<string, Connection>();
+  private readonly inputs = new EntityMap<string, PlayerInputState>();
+  private readonly commands = new EntityMap<string, PlayerCommandState>();
+  private readonly tanks = new EntityMap<string, TankState>();
+  private readonly projectiles = new EntityMap<string, ProjectileState>();
+  private readonly mines = new EntityMap<string, MineState>();
+  private readonly pickups = new EntityMap<string, PickupState>();
   /** tankId -> entityId -> last active radar scan tick. */
-  private readonly radarReveals = new Map<string, Map<string, number>>();
+  private readonly radarReveals = new EntityMap<string, Map<string, number>>();
   /** Pending events for the current tick. Drained into snapshots and EVENT msgs. */
   private pendingEvents: GameEvent[] = [];
 
   private readonly pickupSpawnRef = { value: 0 };
-  private readonly teamCensus = new Map<TeamColor, number>();
+  private readonly teamCensus = new EntityMap<TeamColor, number>();
 
   /** AI (NPC bot) enemies — full simulation participants driven by the behavior
    * tree instead of a WebSocket: they move, fire, take damage, and respawn. */
-  private readonly aiEnemies = new Map<string, AIEnemy>();
+  private readonly aiEnemies = new EntityMap<string, AIEnemy>();
   private aiDifficulty: AIChallengeLevel = "medium";
   /** Live bot population to maintain. Dead bots respawn in place, so the
    * population is bounded — no unbounded spawn leak. Set to 0 to disable bots
@@ -113,9 +114,9 @@ export class RoomLoop {
   private readonly aiTargetCount: number;
   private aiCount = 0;
   /** Per-bot fire/mine cooldown state (bots have no Connection). */
-  private readonly aiCooldowns = new Map<string, FireCooldowns>();
+  private readonly aiCooldowns = new EntityMap<string, FireCooldowns>();
   /** Per-bot desired turret aim, applied during the movement step. */
-  private readonly aiAim = new Map<string, number>();
+  private readonly aiAim = new EntityMap<string, number>();
 
   /** Hook: called with the room's tank state after a kill resolves. */
   public onXpDelta:
@@ -489,7 +490,7 @@ export class RoomLoop {
         projectiles: this.projectiles.values(),
         mines: this.mines.values(),
         pickups: this.pickups.values(),
-        radarReveals: this.radarReveals.get(viewer.id) ?? new Map<string, number>(),
+        radarReveals: this.radarReveals.get(viewer.id) ?? new EntityMap<string, number>(),
       },
       this.tickIndex,
     );
@@ -627,7 +628,7 @@ export class RoomLoop {
   private getRadarReveals(tankId: string): Map<string, number> {
     let reveals = this.radarReveals.get(tankId);
     if (!reveals) {
-      reveals = new Map<string, number>();
+      reveals = new EntityMap<string, number>();
       this.radarReveals.set(tankId, reveals);
     }
     return reveals;
@@ -675,10 +676,10 @@ export class RoomLoop {
       // Cache world state arrays once per tick to avoid repeated allocations
       // for each bot (which otherwise causes O(bots * entities) memory thrashing)
       const cachedWorldState = {
-        tanks: Array.from(this.tanks.values()),
-        projectiles: Array.from(this.projectiles.values()),
-        mines: Array.from(this.mines.values()),
-        pickups: Array.from(this.pickups.values()),
+        tanks: this.tanks.valuesArray(),
+        projectiles: this.projectiles.valuesArray(),
+        mines: this.mines.valuesArray(),
+        pickups: this.pickups.valuesArray(),
         radarReveals: this.radarReveals,
         currentTick: t,
       };
