@@ -1541,11 +1541,7 @@ function drawSurvivalHud(
   ctx.fillText("TANK DESTROYED", W / 2, H * 0.4);
   ctx.font = `bold ${Math.round(big * 0.55)}px 'Courier New', monospace`;
   ctx.fillStyle = RA.amber;
-  ctx.fillText(
-    `You survived ${sv.waveReached} wave${sv.waveReached === 1 ? "" : "s"}`,
-    W / 2,
-    H * 0.4 + big * 1.1,
-  );
+  ctx.fillText(`Reached wave ${sv.waveReached}`, W / 2, H * 0.4 + big * 1.1);
   ctx.font = `${Math.round(big * 0.4)}px 'Courier New', monospace`;
   ctx.fillStyle = RA.amberDim;
   const blink = Math.floor(Date.now() / 600) % 2 === 0;

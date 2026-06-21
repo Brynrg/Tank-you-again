@@ -167,13 +167,17 @@ export class SurvivalDirector {
       const edge = Math.floor(this.random() * 4);
       const along = this.random();
       const x =
-        edge === 0 ? EDGE_INSET
-        : edge === 1 ? MAP_WIDTH - EDGE_INSET
-        : EDGE_INSET + along * (MAP_WIDTH - 2 * EDGE_INSET);
+        edge === 0
+          ? EDGE_INSET
+          : edge === 1
+            ? MAP_WIDTH - EDGE_INSET
+            : EDGE_INSET + along * (MAP_WIDTH - 2 * EDGE_INSET);
       const y =
-        edge === 2 ? EDGE_INSET
-        : edge === 3 ? MAP_HEIGHT - EDGE_INSET
-        : EDGE_INSET + along * (MAP_HEIGHT - 2 * EDGE_INSET);
+        edge === 2
+          ? EDGE_INSET
+          : edge === 3
+            ? MAP_HEIGHT - EDGE_INSET
+            : EDGE_INSET + along * (MAP_HEIGHT - 2 * EDGE_INSET);
       if (!player || Math.hypot(x - player.x, y - player.y) >= MIN_SPAWN_DISTANCE) {
         return { x, y };
       }
@@ -209,9 +213,7 @@ export class SurvivalDirector {
       phase: this.phase,
       enemiesLeft,
       nextWaveInTicks:
-        this.phase === "intermission"
-          ? Math.max(0, this.nextWaveAtTick - this.arena.tickIndex)
-          : 0,
+        this.phase === "intermission" ? Math.max(0, this.nextWaveAtTick - this.arena.tickIndex) : 0,
       waveReached: this.wave,
     };
   }
