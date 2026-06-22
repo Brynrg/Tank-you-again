@@ -1,3 +1,4 @@
+import { EntityMap } from "@shared/sim/entity-map.js";
 import {
   FUEL_CRATE_RESTORE,
   FUEL_RADAR_SCAN,
@@ -91,10 +92,10 @@ export class RoomLoop {
   private readonly connections = new Map<string, Connection>();
   private readonly inputs = new Map<string, PlayerInputState>();
   private readonly commands = new Map<string, PlayerCommandState>();
-  private readonly tanks = new Map<string, TankState>();
-  private readonly projectiles = new Map<string, ProjectileState>();
-  private readonly mines = new Map<string, MineState>();
-  private readonly pickups = new Map<string, PickupState>();
+  private readonly tanks = new EntityMap<string, TankState>();
+  private readonly projectiles = new EntityMap<string, ProjectileState>();
+  private readonly mines = new EntityMap<string, MineState>();
+  private readonly pickups = new EntityMap<string, PickupState>();
   /** tankId -> entityId -> last active radar scan tick. */
   private readonly radarReveals = new Map<string, Map<string, number>>();
   /** Pending events for the current tick. Drained into snapshots and EVENT msgs. */
@@ -317,8 +318,8 @@ export class RoomLoop {
       const result = scanRadar(
         tank,
         {
-          mines: this.mines.values(),
-          pickups: this.pickups.values(),
+          mines: this.mines.valuesArray(),
+          pickups: this.pickups.valuesArray(),
         },
         reveals,
         this.tickIndex,
@@ -440,7 +441,7 @@ export class RoomLoop {
         this.projectiles.delete(id);
         continue;
       }
-      const hit = findHit(p, this.tanks.values());
+      const hit = findHit(p, this.tanks.valuesArray());
       if (hit) {
         const result = applyDamage(hit, p.damage, p.ownerId);
         this.projectiles.delete(id);
@@ -449,7 +450,7 @@ export class RoomLoop {
     }
 
     // 3. Mine detonations.
-    const dets = stepMineDetonations(this.mines.values(), this.tanks.values());
+    const dets = stepMineDetonations(this.mines.valuesArray(), this.tanks.valuesArray());
     for (const det of dets) {
       this.mines.delete(det.mine.id);
       this.forgetRadarEntity(det.mine.id);
@@ -485,29 +486,29 @@ export class RoomLoop {
     const vis = computeVisionSet(
       viewer,
       {
-        tanks: this.tanks.values(),
-        projectiles: this.projectiles.values(),
-        mines: this.mines.values(),
-        pickups: this.pickups.values(),
+        tanks: this.tanks.valuesArray(),
+        projectiles: this.projectiles.valuesArray(),
+        mines: this.mines.valuesArray(),
+        pickups: this.pickups.valuesArray(),
         radarReveals: this.radarReveals.get(viewer.id) ?? new Map<string, number>(),
       },
       this.tickIndex,
     );
 
     const tanks: TankState[] = [];
-    for (const t of this.tanks.values()) {
+    for (const t of this.tanks.valuesArray()) {
       if (vis.visibleTankIds.has(t.id)) tanks.push(t);
     }
     const projectiles: ProjectileState[] = [];
-    for (const p of this.projectiles.values()) {
+    for (const p of this.projectiles.valuesArray()) {
       if (vis.visibleProjectileIds.has(p.id)) projectiles.push(p);
     }
     const visibleMines: MineState[] = [];
-    for (const m of this.mines.values()) {
+    for (const m of this.mines.valuesArray()) {
       if (vis.visibleMineIds.has(m.id)) visibleMines.push(m);
     }
     const pickups: PickupState[] = [];
-    for (const pk of this.pickups.values()) {
+    for (const pk of this.pickups.valuesArray()) {
       if (vis.visiblePickupIds.has(pk.id)) pickups.push(pk);
     }
 
@@ -526,7 +527,7 @@ export class RoomLoop {
     const r2 = (PICKUP_RADIUS + TANK_RADIUS) * (PICKUP_RADIUS + TANK_RADIUS);
 
     const activeTanks: TankState[] = [];
-    for (const t of this.tanks.values()) {
+    for (const t of this.tanks.valuesArray()) {
       if (!t.isDead) activeTanks.push(t);
     }
 
@@ -675,10 +676,10 @@ export class RoomLoop {
       // Cache world state arrays once per tick to avoid repeated allocations
       // for each bot (which otherwise causes O(bots * entities) memory thrashing)
       const cachedWorldState = {
-        tanks: Array.from(this.tanks.values()),
-        projectiles: Array.from(this.projectiles.values()),
-        mines: Array.from(this.mines.values()),
-        pickups: Array.from(this.pickups.values()),
+        tanks: this.tanks.valuesArray(),
+        projectiles: this.projectiles.valuesArray(),
+        mines: this.mines.valuesArray(),
+        pickups: this.pickups.valuesArray(),
         radarReveals: this.radarReveals,
         currentTick: t,
       };

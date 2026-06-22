@@ -1,3 +1,4 @@
+import { EntityMap } from "./entity-map.js";
 import {
   FUEL_CRATE_RESTORE,
   FUEL_DEPOSIT_AMOUNT,
@@ -45,7 +46,14 @@ import { applyMineDamage, placeMine, stepMineDetonations } from "./mines.js";
 import { stepMoveCommand, stepMovement } from "./movement.js";
 import { rankForXp } from "./rank.js";
 import { computeVisionSet, scanRadar } from "./vision.js";
-import { computePowerTier, makeTank, maybeSpawnPickup, pickTeam, respawnTank, tickSpawnProtection } from "./world.js";
+import {
+  computePowerTier,
+  makeTank,
+  maybeSpawnPickup,
+  pickTeam,
+  respawnTank,
+  tickSpawnProtection,
+} from "./world.js";
 
 interface FireCooldowns {
   lastBulletTick: number;
@@ -87,10 +95,10 @@ export interface ArenaOptions {
 export class Arena {
   public tickIndex = 0;
 
-  private readonly tanks = new Map<string, TankState>();
-  private readonly projectiles = new Map<string, ProjectileState>();
-  private readonly mines = new Map<string, MineState>();
-  private readonly pickups = new Map<string, PickupState>();
+  private readonly tanks = new EntityMap<string, TankState>();
+  private readonly projectiles = new EntityMap<string, ProjectileState>();
+  private readonly mines = new EntityMap<string, MineState>();
+  private readonly pickups = new EntityMap<string, PickupState>();
   private readonly radarReveals = new Map<string, Map<string, number>>();
 
   private readonly inputs = new Map<string, PlayerInputState>();
@@ -302,7 +310,7 @@ export class Arena {
         this.projectiles.delete(id);
         continue;
       }
-      const hit = findHit(p, this.tanks.values());
+      const hit = findHit(p, this.tanks.valuesArray());
       if (hit) {
         const result = applyDamage(hit, p.damage, p.ownerId);
         this.projectiles.delete(id);
@@ -311,7 +319,7 @@ export class Arena {
     }
 
     // Mines.
-    const dets = stepMineDetonations(this.mines.values(), this.tanks.values());
+    const dets = stepMineDetonations(this.mines.valuesArray(), this.tanks.valuesArray());
     for (const det of dets) {
       this.mines.delete(det.mine.id);
       this.forgetRadarEntity(det.mine.id);
@@ -377,10 +385,10 @@ export class Arena {
 
     if (this.aiEnemies.size > 0) {
       const cachedWorldState = {
-        tanks: Array.from(this.tanks.values()),
-        projectiles: Array.from(this.projectiles.values()),
-        mines: Array.from(this.mines.values()),
-        pickups: Array.from(this.pickups.values()),
+        tanks: this.tanks.valuesArray(),
+        projectiles: this.projectiles.valuesArray(),
+        mines: this.mines.valuesArray(),
+        pickups: this.pickups.valuesArray(),
         radarReveals: this.radarReveals,
         currentTick: t,
       };
@@ -458,7 +466,7 @@ export class Arena {
       tank.ammo.radar -= 1;
       const result = scanRadar(
         tank,
-        { mines: this.mines.values(), pickups: this.pickups.values() },
+        { mines: this.mines.valuesArray(), pickups: this.pickups.valuesArray() },
         this.getRadarReveals(tank.id),
         this.tickIndex,
       );
@@ -483,7 +491,7 @@ export class Arena {
   private collectPickups(): void {
     const r2 = (PICKUP_RADIUS + TANK_RADIUS) * (PICKUP_RADIUS + TANK_RADIUS);
     for (const [id, pk] of this.pickups) {
-      for (const t of this.tanks.values()) {
+      for (const t of this.tanks.valuesArray()) {
         if (t.isDead) continue;
         const dx = pk.x - t.x;
         const dy = pk.y - t.y;
@@ -619,10 +627,10 @@ export class Arena {
       ? computeVisionSet(
           viewer,
           {
-            tanks: this.tanks.values(),
-            projectiles: this.projectiles.values(),
-            mines: this.mines.values(),
-            pickups: this.pickups.values(),
+            tanks: this.tanks.valuesArray(),
+            projectiles: this.projectiles.valuesArray(),
+            mines: this.mines.valuesArray(),
+            pickups: this.pickups.valuesArray(),
             radarReveals: this.radarReveals.get(viewerId) ?? new Map<string, number>(),
           },
           this.tickIndex,
@@ -630,20 +638,20 @@ export class Arena {
       : null;
 
     const tanks: TankState[] = [];
-    for (const tnk of this.tanks.values()) {
+    for (const tnk of this.tanks.valuesArray()) {
       if (!maskVision || !vis || vis.visibleTankIds.has(tnk.id)) tanks.push(tnk);
     }
     const projectiles: ProjectileState[] = [];
-    for (const p of this.projectiles.values()) {
+    for (const p of this.projectiles.valuesArray()) {
       if (!maskVision || !vis || vis.visibleProjectileIds.has(p.id)) projectiles.push(p);
     }
     const pickups: PickupState[] = [];
-    for (const pk of this.pickups.values()) {
+    for (const pk of this.pickups.valuesArray()) {
       if (!maskVision || !vis || vis.visiblePickupIds.has(pk.id)) pickups.push(pk);
     }
     // Enemy mines are always masked (own/ally/radar only), even in single-player.
     const visibleMines: MineState[] = [];
-    for (const m of this.mines.values()) {
+    for (const m of this.mines.valuesArray()) {
       if (!vis || vis.visibleMineIds.has(m.id)) visibleMines.push(m);
     }
 
