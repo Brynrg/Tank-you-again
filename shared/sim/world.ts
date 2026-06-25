@@ -144,7 +144,7 @@ export function tickSpawnProtection(t: TankState, currentTick: number): boolean 
 
 /** Maybe spawn a new pickup if it's time and we're under the cap. */
 export function maybeSpawnPickup(
-  pickups: Map<string, PickupState>,
+  pickups: { set: (id: string, pk: PickupState) => void; size: number },
   currentTick: number,
   lastSpawnTickRef: { value: number },
 ): PickupState | null {
