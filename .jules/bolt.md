@@ -1,0 +1,4 @@
+## 2024-06-26 - Cached Array Extraction for Game Loop Iterations
+
+**Learning:** In highly iterated game loops (like the one in `shared/sim/arena.ts`), repeatedly converting standard JavaScript `Map` objects into arrays using `Array.from()` (e.g., `Array.from(this.tanks.values())`) in hot paths like `snapshotFor` causes excessive object allocation and garbage collection overhead, which degrades performance.
+**Action:** Created and utilized a custom `EntityMap` class wrapper that caches the `.values()` array projection. The array is only recomputed when the underlying Map undergoes mutations (such as `.set()`, `.delete()`, or `.clear()`), eliminating redundant O(N) array allocations in the hot path. Future optimizations targeting Maps traversed every tick should adopt this cached wrapper pattern.
