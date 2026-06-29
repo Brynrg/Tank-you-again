@@ -1,0 +1,404 @@
+{"tick":0,"kind":"info","line":"MATCH START: GLM-Coder[t-coder/RED] vs Heretic-35B[t-heretic/BLUE] vs Granite-2B[t-granite/ORANGE] vs GLM-Air[t-glmair/PURPLE] — 100 turns x 50 ticks"}
+{"tick":0,"kind":"say","line":"💬 Heretic-35B: \"Fuel first, fun later.\""}
+{"tick":0,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":50,"kind":"status","line":"T1 t=50 coder(1093,1458)f954k0 | heretic(2229,976)f986k0 | granite(1273,2273)f1000k0 | glmair(2402,2036)f999k0"}
+{"tick":50,"kind":"say","line":"💬 Heretic-35B: \"Fuel first.\""}
+{"tick":100,"kind":"status","line":"T2 t=100 coder(1365,1332)f855k0 | heretic(2216,887)f1000k0 | granite(1273,2273)f952k0 | glmair(2451,1926)f997k0"}
+{"tick":100,"kind":"say","line":"💬 Heretic-35B: \"Fuel is life.\""}
+{"tick":100,"kind":"say","line":"💬 GLM-Air: \"Let's dance!\""}
+{"tick":150,"kind":"status","line":"T3 t=150 coder(1638,1207)f516k0 | heretic(2447,802)f879k0 | granite(1302,1974)f938k0 | glmair(2451,1926)f953k0"}
+{"tick":150,"kind":"say","line":"💬 Heretic-35B: \"Too close, Coder.\""}
+{"tick":150,"kind":"say","line":"💬 GLM-Air: \"Moving to intercept!\""}
+{"tick":200,"kind":"status","line":"T4 t=200 coder(1676,1189)f315k0 | heretic(2447,802)f296k0 | granite(1476,1974)f933k0 | glmair(2733,1824)f889k0"}
+{"tick":200,"kind":"say","line":"💬 GLM-Coder: \"Incoming? I'm standing still.\""}
+{"tick":200,"kind":"say","line":"💬 Heretic-35B: \"Too slow!\""}
+{"tick":200,"kind":"say","line":"💬 GLM-Air: \"Let's dance!\""}
+{"tick":213,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Coder (streak 1)"}
+{"tick":250,"kind":"status","line":"T5 t=250 coder✝(1676,1189)f0k0 | heretic(2549,552)f234k1 | granite(1543,2191)f924k0 | glmair(2733,1824)f726k0"}
+{"tick":250,"kind":"say","line":"💬 Heretic-35B: \"Too slow!\""}
+{"tick":250,"kind":"say","line":"💬 GLM-Air: \"Going dark!\""}
+{"tick":300,"kind":"status","line":"T6 t=300 coder(3376,138)f603k0 | heretic(2549,552)f190k1 | granite(1829,2103)f910k0 | glmair(2733,1824)f442k0"}
+{"tick":300,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection ends in 2s, Heretic. Prepare to die.\""}
+{"tick":300,"kind":"say","line":"💬 Heretic-35B: \"Fuel run!\""}
+{"tick":300,"kind":"say","line":"💬 GLM-Air: \"Granite, you're in my sights!\""}
+{"tick":350,"kind":"status","line":"T7 t=350 coder(3084,209)f554k0 | heretic(2715,302)f476k1 | granite(2003,1858)f596k0 | glmair(2733,1824)f398k0"}
+{"tick":350,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection ends in 2s, Heretic.\""}
+{"tick":350,"kind":"say","line":"💬 Heretic-35B: \"Spawn shield won't save you!\""}
+{"tick":350,"kind":"say","line":"💬 GLM-Air: \"Granite, you're in my sights!\""}
+{"tick":395,"kind":"kill","line":"☠️  GLM-Air killed Granite-2B (streak 1)"}
+{"tick":400,"kind":"status","line":"T8 t=400 coder(2788,254)f175k0 | heretic(3006,228)f173k1 | granite✝(2141,1626)f0k0 | glmair(2733,1824)f359k1"}
+{"tick":400,"kind":"say","line":"💬 GLM-Coder: \"Nice kill, Heretic, but you're standing in my way.\""}
+{"tick":400,"kind":"say","line":"💬 Heretic-35B: \"Close range, die.\""}
+{"tick":400,"kind":"say","line":"💬 GLM-Air: \"Nice shot!\""}
+{"tick":415,"kind":"kill","line":"☠️  GLM-Coder killed Heretic-35B (streak 1)"}
+{"tick":450,"kind":"status","line":"T9 t=450 coder(2651,275)f3k1 | heretic✝(2916,239)f0k1 | granite✝(2141,1626)f0k0 | glmair(2733,1824)f316k1"}
+{"tick":450,"kind":"say","line":"💬 GLM-Air: \"Mine pickup coming!\""}
+{"tick":500,"kind":"status","line":"T10 t=500 coder(2580,286)f4k1 | heretic(1889,489)f568k1 | granite(2538,2533)f587k0 | glmair(2975,1646)f302k1"}
+{"tick":500,"kind":"say","line":"💬 Heretic-35B: \"Fuel run!\""}
+{"tick":500,"kind":"say","line":"💬 GLM-Air: \"Mine pickup coming!\""}
+{"tick":503,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Coder (streak 1)"}
+{"tick":550,"kind":"status","line":"T11 t=550 coder✝(2562,289)f0k1 | heretic(2159,359)f899k2 | granite(2544,2233)f573k0 | glmair(3192,1486)f275k1"}
+{"tick":550,"kind":"say","line":"💬 Heretic-35B: \"Fuel secured, hunting GLM-Air.\""}
+{"tick":550,"kind":"say","line":"💬 GLM-Air: \"Moving in!\""}
+{"tick":600,"kind":"status","line":"T12 t=600 coder(575,2237)f549k1 | heretic(2159,659)f885k2 | granite(2483,1939)f440k0 | glmair(2929,1342)f216k1"}
+{"tick":600,"kind":"say","line":"💬 Heretic-35B: \"Shield up, eat lead!\""}
+{"tick":600,"kind":"say","line":"💬 GLM-Air: \"Fuel up, Granite!\""}
+{"tick":636,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Air (streak 2)"}
+{"tick":636,"kind":"tier","line":"⬆️  Heretic-35B reached power tier 1"}
+{"tick":650,"kind":"status","line":"T13 t=650 coder(495,1948)f461k1 | heretic(2159,659)f926k3 | granite(2187,1985)f186k0 | glmair✝(2740,1237)f0k1"}
+{"tick":650,"kind":"say","line":"💬 Heretic-35B: \"Fuel is life.\""}
+{"tick":667,"kind":"kill","line":"☠️  GLM-Air killed Granite-2B (streak 1)"}
+{"tick":700,"kind":"status","line":"T14 t=700 coder(415,1659)f447k1 | heretic(2159,959)f913k3 | granite✝(2085,1983)f0k0 | glmair(985,2395)f598k2"}
+{"tick":700,"kind":"say","line":"💬 Heretic-35B: \"Fuel is mine!\""}
+{"tick":700,"kind":"say","line":"💬 GLM-Air: \"Going for that mine pack!\""}
+{"tick":750,"kind":"status","line":"T15 t=750 coder(389,1566)f412k1 | heretic(2368,1032)f1000k3 | granite(3302,1763)f593k0 | glmair(1180,2623)f585k2"}
+{"tick":750,"kind":"say","line":"💬 Heretic-35B: \"Going for radar\""}
+{"tick":750,"kind":"say","line":"💬 GLM-Air: \"Gotta grab that mine pack!\""}
+{"tick":800,"kind":"status","line":"T16 t=800 coder(439,1271)f273k1 | heretic(2511,1296)f951k3 | granite(3398,1763)f593k0 | glmair(1375,2851)f571k2"}
+{"tick":800,"kind":"say","line":"💬 GLM-Coder: \"Fuel running low, grabbing supply.\""}
+{"tick":800,"kind":"say","line":"💬 Heretic-35B: \"Going dark.\""}
+{"tick":800,"kind":"say","line":"💬 GLM-Air: \"Mine!\""}
+{"tick":850,"kind":"status","line":"T17 t=850 coder(488,975)f259k1 | heretic(2654,1560)f937k3 | granite(3102,1713)f579k0 | glmair(1570,3078)f557k2"}
+{"tick":850,"kind":"say","line":"💬 GLM-Coder: \"Fuel running low, going to snack.\""}
+{"tick":850,"kind":"say","line":"💬 Heretic-35B: \"Fuel is life, Granite is dead.\""}
+{"tick":850,"kind":"say","line":"💬 GLM-Air: \"Mine's mine!\""}
+{"tick":894,"kind":"kill","line":"☠️  Heretic-35B killed Granite-2B (streak 3)"}
+{"tick":900,"kind":"status","line":"T18 t=900 coder(538,679)f195k1 | heretic(2745,1728)f885k4 | granite✝(2848,1642)f0k0 | glmair(1621,3138)f508k2"}
+{"tick":900,"kind":"say","line":"💬 Heretic-35B: \"Going for the kill.\""}
+{"tick":900,"kind":"say","line":"💬 GLM-Air: \"Teleport charge, here I come!\""}
+{"tick":950,"kind":"status","line":"T19 t=950 coder(548,620)f548k1 | heretic(2558,1963)f847k4 | granite✝(2848,1642)f0k0 | glmair(1919,3103)f494k2"}
+{"tick":950,"kind":"say","line":"💬 GLM-Coder: \"Fuel up, then I'll turn this arena into scrap metal.\""}
+{"tick":950,"kind":"say","line":"💬 Heretic-35B: \"Going for the kill\""}
+{"tick":950,"kind":"say","line":"💬 GLM-Air: \"Going for that teleport!\""}
+{"tick":1000,"kind":"status","line":"T20 t=1000 coder(318,426)f534k1 | heretic(2411,2224)f543k4 | granite(828,1630)f587k0 | glmair(2217,3068)f167k2"}
+{"tick":1000,"kind":"say","line":"💬 GLM-Coder: \"Fuel is running low, grabbing a crate.\""}
+{"tick":1000,"kind":"say","line":"💬 Heretic-35B: \"Radar up, glass cannon incoming.\""}
+{"tick":1000,"kind":"say","line":"💬 GLM-Air: \"Gotta get that teleport!\""}
+{"tick":1011,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Air (streak 4)"}
+{"tick":1050,"kind":"status","line":"T21 t=1050 coder(135,272)f874k1 | heretic(2411,1924)f179k5 | granite(691,1363)f573k0 | glmair✝(2283,3061)f0k2"}
+{"tick":1050,"kind":"say","line":"💬 Heretic-35B: \"Going for the escape hatch.\""}
+{"tick":1100,"kind":"status","line":"T22 t=1100 coder(431,320)f820k1 | heretic(2469,2219)f165k5 | granite(555,1096)f509k0 | glmair(3142,2496)f592k2"}
+{"tick":1100,"kind":"say","line":"💬 GLM-Coder: \"Taking cover.\""}
+{"tick":1100,"kind":"say","line":"💬 Heretic-35B: \"Spawn shield won't save you!\""}
+{"tick":1100,"kind":"say","line":"💬 GLM-Air: \"Teleport charge, here I come!\""}
+{"tick":1150,"kind":"status","line":"T23 t=1150 coder(431,320)f827k1 | heretic(2747,2333)f152k5 | granite(814,1248)f496k0 | glmair(2932,2711)f578k2"}
+{"tick":1150,"kind":"say","line":"💬 Heretic-35B: \"Spawn shield won't save you!\""}
+{"tick":1150,"kind":"say","line":"💬 GLM-Air: \"Gotta grab that teleport!\""}
+{"tick":1200,"kind":"status","line":"T24 t=1200 coder(727,368)f813k1 | heretic(2879,2602)f88k5 | granite(1061,1418)f482k0 | glmair(2723,2925)f36k2"}
+{"tick":1200,"kind":"say","line":"💬 GLM-Coder: \"Fuel running low, grabbing missiles.\""}
+{"tick":1200,"kind":"say","line":"💬 Heretic-35B: \"Fuel is life, GLM-Air!\""}
+{"tick":1200,"kind":"say","line":"💬 GLM-Air: \"Going for the teleport!\""}
+{"tick":1204,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Air (streak 5)"}
+{"tick":1250,"kind":"status","line":"T25 t=1250 coder(1023,416)f799k1 | heretic(2725,2860)f69k6 | granite(1040,1718)f468k0 | glmair✝(2706,2942)f0k2"}
+{"tick":1250,"kind":"say","line":"💬 Heretic-35B: \"Fuel is life.\""}
+{"tick":1300,"kind":"status","line":"T26 t=1300 coder(1319,464)f785k1 | heretic(2633,3015)f28k6 | granite(1019,2017)f454k0 | glmair(1827,2761)f550k2"}
+{"tick":1300,"kind":"say","line":"💬 Heretic-35B: \"Spawn shield won't save you!\""}
+{"tick":1300,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":1350,"kind":"status","line":"T27 t=1350 coder(1615,512)f772k1 | heretic(2633,2907)f18k6 | granite(1076,1722)f441k0 | glmair(1531,2711)f536k2"}
+{"tick":1350,"kind":"say","line":"💬 Heretic-35B: \"Too low, too far.\""}
+{"tick":1350,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":1400,"kind":"status","line":"T28 t=1400 coder(1911,560)f758k1 | heretic(2633,2907)f24k6 | granite(1201,1995)f427k0 | glmair(1235,2662)f522k2"}
+{"tick":1400,"kind":"say","line":"💬 Heretic-35B: \"Running on fumes.\""}
+{"tick":1400,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":1450,"kind":"status","line":"T29 t=1450 coder(2065,585)f704k1 | heretic(2633,2907)f30k6 | granite(1100,2277)f413k0 | glmair(981,2620)f861k2"}
+{"tick":1450,"kind":"say","line":"💬 Heretic-35B: \"Going dark.\""}
+{"tick":1450,"kind":"say","line":"💬 GLM-Air: \"Granite, meet my bullets!\""}
+{"tick":1489,"kind":"kill","line":"☠️  GLM-Air killed Granite-2B (streak 1)"}
+{"tick":1489,"kind":"tier","line":"⬆️  GLM-Air reached power tier 1"}
+{"tick":1500,"kind":"status","line":"T30 t=1500 coder(1917,845)f665k1 | heretic(2633,2907)f36k6 | granite✝(1100,2511)f0k0 | glmair(981,2320)f957k3"}
+{"tick":1500,"kind":"say","line":"💬 GLM-Coder: \"Heretic, your fuel is running low, come get some.\""}
+{"tick":1500,"kind":"say","line":"💬 Heretic-35B: \"Running on fumes, but I'm still here.\""}
+{"tick":1500,"kind":"say","line":"💬 GLM-Air: \"Shield up!\""}
+{"tick":1550,"kind":"status","line":"T31 t=1550 coder(1756,1098)f651k1 | heretic(2633,2907)f3k6 | granite(258,2082)f599k0 | glmair(717,2176)f944k3"}
+{"tick":1550,"kind":"say","line":"💬 GLM-Coder: \"Nice spawn, Heretic. Hope you like the view from the bottom.\""}
+{"tick":1550,"kind":"say","line":"💬 Heretic-35B: \"Going dark.\""}
+{"tick":1550,"kind":"say","line":"💬 Granite-2B: \"Taking that shield and some fuel\""}
+{"tick":1550,"kind":"say","line":"💬 GLM-Air: \"Shield up!\""}
+{"tick":1600,"kind":"status","line":"T32 t=1600 coder(1487,1232)f638k1 | heretic(2633,2907)f9k6 | granite(509,1917)f510k0 | glmair(454,2032)f930k3"}
+{"tick":1600,"kind":"say","line":"💬 Heretic-35B: \"Going dark.\""}
+{"tick":1600,"kind":"say","line":"💬 GLM-Air: \"Shield up, Granite!\""}
+{"tick":1650,"kind":"status","line":"T33 t=1650 coder(1219,1365)f624k1 | heretic(2633,2907)f15k6 | granite(755,1745)f299k0 | glmair(454,1888)f902k3"}
+{"tick":1650,"kind":"say","line":"💬 GLM-Coder: \"Heretic, you're running on fumes.\""}
+{"tick":1650,"kind":"say","line":"💬 Heretic-35B: \"Going dark.\""}
+{"tick":1650,"kind":"say","line":"💬 GLM-Air: \"Shield up!\""}
+{"tick":1700,"kind":"status","line":"T34 t=1700 coder(986,1555)f610k1 | heretic(2633,2907)f21k6 | granite(987,1554)f153k0 | glmair(184,1882)f890k3"}
+{"tick":1700,"kind":"say","line":"💬 Heretic-35B: \"Going for the shield!\""}
+{"tick":1700,"kind":"say","line":"💬 Granite-2B: \"Staying shielded for now.\""}
+{"tick":1700,"kind":"say","line":"💬 GLM-Air: \"Shield up!\""}
+{"tick":1750,"kind":"status","line":"T35 t=1750 coder(1212,1358)f398k1 | heretic(2518,2629)f8k6 | granite(987,1554)f159k0 | glmair(436,1720)f826k3"}
+{"tick":1750,"kind":"say","line":"💬 Heretic-35B: \"Going dark.\""}
+{"tick":1750,"kind":"say","line":"💬 Granite-2B: \"Going for the easy kill, Heretic.\""}
+{"tick":1750,"kind":"say","line":"💬 GLM-Air: \"Coming for you, Granite!\""}
+{"tick":1787,"kind":"kill","line":"☠️  GLM-Air killed Granite-2B (streak 2)"}
+{"tick":1800,"kind":"status","line":"T36 t=1800 coder(1212,1358)f141k1 | heretic(2518,2629)f14k6 | granite✝(1154,1408)f0k0 | glmair(723,1633)f772k4"}
+{"tick":1800,"kind":"say","line":"💬 GLM-Coder: \"Incoming, taking evasive maneuvers!\""}
+{"tick":1800,"kind":"say","line":"💬 Heretic-35B: \"Going for fuel, don't follow.\""}
+{"tick":1800,"kind":"say","line":"💬 GLM-Air: \"Shield up next stop!\""}
+{"tick":1815,"kind":"kill","line":"☠️  GLM-Air killed GLM-Coder (streak 3)"}
+{"tick":1850,"kind":"status","line":"T37 t=1850 coder✝(1139,1399)f0k1 | heretic(2404,2352)f0k6 | granite(2515,2776)f599k0 | glmair(965,1456)f744k5"}
+{"tick":1850,"kind":"say","line":"💬 Heretic-35B: \"Spawn protect won't save you!\""}
+{"tick":1850,"kind":"say","line":"💬 GLM-Air: \"Shield up next turn!\""}
+{"tick":1900,"kind":"status","line":"T38 t=1900 coder(619,1463)f578k1 | heretic(2406,2358)f6k6 | granite(2286,2582)f585k0 | glmair(1208,1279)f610k5"}
+{"tick":1900,"kind":"say","line":"💬 Heretic-35B: \"Spawn protect won't save you!\""}
+{"tick":1900,"kind":"say","line":"💬 GLM-Air: \"Shield up, coming in!\""}
+{"tick":1950,"kind":"status","line":"T39 t=1950 coder(906,1373)f479k1 | heretic(2341,2479)f3k6 | granite(2037,2415)f571k0 | glmair(1450,1101)f176k5"}
+{"tick":1950,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection ends in 2s, GLM-Air. Prepare to die.\""}
+{"tick":1950,"kind":"say","line":"💬 Heretic-35B: \"Going for the kill!\""}
+{"tick":1950,"kind":"say","line":"💬 GLM-Air: \"Shield up, coming in!\""}
+{"tick":1962,"kind":"kill","line":"☠️  GLM-Coder killed GLM-Air (streak 1)"}
+{"tick":2000,"kind":"status","line":"T40 t=2000 coder(1174,1239)f390k2 | heretic(2270,2464)f4k6 | granite(1915,2141)f557k0 | glmair✝(1508,1059)f0k5"}
+{"tick":2000,"kind":"say","line":"💬 Heretic-35B: \"Going for the kill!\""}
+{"tick":2000,"kind":"say","line":"💬 Granite-2B: \"Taking out that coder first.\""}
+{"tick":2050,"kind":"status","line":"T41 t=2050 coder(1428,1080)f376k2 | heretic(2195,2396)f4k6 | granite(1915,2141)f514k0 | glmair(1514,692)f592k5"}
+{"tick":2050,"kind":"say","line":"💬 GLM-Coder: \"Incoming, taking cover!\""}
+{"tick":2050,"kind":"say","line":"💬 Heretic-35B: \"Going down!\""}
+{"tick":2050,"kind":"say","line":"💬 GLM-Air: \"Shield up next!\""}
+{"tick":2068,"kind":"kill","line":"☠️  GLM-Air killed GLM-Coder (streak 1)"}
+{"tick":2100,"kind":"status","line":"T42 t=2100 coder✝(1451,974)f0k2 | heretic(2128,2335)f4k6 | granite(1915,2141)f520k0 | glmair(1773,844)f558k6"}
+{"tick":2100,"kind":"say","line":"💬 Heretic-35B: \"Going down with the ship!\""}
+{"tick":2100,"kind":"say","line":"💬 GLM-Air: \"Teleport charge coming up!\""}
+{"tick":2150,"kind":"status","line":"T43 t=2150 coder(1560,2466)f593k2 | heretic(2057,2270)f4k6 | granite(1882,1843)f506k0 | glmair(1997,645)f544k6"}
+{"tick":2150,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection? More like spawn bait.\""}
+{"tick":2150,"kind":"say","line":"💬 Heretic-35B: \"Spawn shield won't save you!\""}
+{"tick":2150,"kind":"say","line":"💬 Granite-2B: \"Staying put for now.\""}
+{"tick":2150,"kind":"say","line":"💬 GLM-Air: \"Moving up!\""}
+{"tick":2200,"kind":"status","line":"T44 t=2200 coder(1560,2466)f565k2 | heretic(1968,2305)f4k6 | granite(1882,1843)f380k0 | glmair(2284,733)f481k6"}
+{"tick":2200,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection? More like spawn protection for my ammo.\""}
+{"tick":2200,"kind":"say","line":"💬 Heretic-35B: \"Going down!\""}
+{"tick":2200,"kind":"say","line":"💬 GLM-Air: \"Move!\""}
+{"tick":2250,"kind":"status","line":"T45 t=2250 coder(1560,2466)f496k2 | heretic(1968,2215)f4k6 | granite(1937,2138)f301k0 | glmair(2493,604)f420k6"}
+{"tick":2250,"kind":"say","line":"💬 GLM-Coder: \"Too slow, Heretic.\""}
+{"tick":2250,"kind":"say","line":"💬 Heretic-35B: \"Going down!\""}
+{"tick":2250,"kind":"say","line":"💬 GLM-Air: \"Gotta catch 'em all!\""}
+{"tick":2300,"kind":"status","line":"T46 t=2300 coder(1694,2198)f407k2 | heretic(1968,2119)f4k6 | granite(1937,2138)f307k0 | glmair(2501,304)f407k6"}
+{"tick":2300,"kind":"say","line":"💬 GLM-Coder: \"Heretic, meet my missiles.\""}
+{"tick":2300,"kind":"say","line":"💬 Heretic-35B: \"Too close for comfort.\""}
+{"tick":2300,"kind":"say","line":"💬 GLM-Air: \"Gotta grab that teleport!\""}
+{"tick":2319,"kind":"kill","line":"☠️  GLM-Coder killed Granite-2B (streak 1)"}
+{"tick":2319,"kind":"tier","line":"⬆️  GLM-Coder reached power tier 1"}
+{"tick":2350,"kind":"status","line":"T47 t=2350 coder(1965,2119)f495k3 | heretic(1942,2135)f8k6 | granite✝(1826,2165)f0k0 | glmair(2504,202)f406k6"}
+{"tick":2350,"kind":"say","line":"💬 Heretic-35B: \"Going down together!\""}
+{"tick":2350,"kind":"say","line":"💬 GLM-Air: \"Distance matters!\""}
+{"tick":2400,"kind":"status","line":"T48 t=2400 coder(1683,2221)f415k3 | heretic(1961,2121)f3k6 | granite(1250,2111)f594k0 | glmair(2504,202)f362k6"}
+{"tick":2400,"kind":"say","line":"💬 GLM-Coder: \"Heretic, meet my missile.\""}
+{"tick":2400,"kind":"say","line":"💬 Heretic-35B: \"Going for the kill!\""}
+{"tick":2400,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":2450,"kind":"status","line":"T49 t=2450 coder(1953,2123)f402k3 | heretic(1899,2143)f5k6 | granite(1540,2184)f580k0 | glmair(2739,388)f349k6"}
+{"tick":2450,"kind":"say","line":"💬 GLM-Coder: \"Fuel running low, Heretic.\""}
+{"tick":2450,"kind":"say","line":"💬 Heretic-35B: \"Going down with the ship!\""}
+{"tick":2450,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":2451,"kind":"kill","line":"☠️  GLM-Coder killed Heretic-35B (streak 2)"}
+{"tick":2500,"kind":"status","line":"T50 t=2500 coder(1953,2123)f403k4 | heretic✝(1905,2141)f0k6 | granite(1837,2139)f566k0 | glmair(2974,574)f335k6"}
+{"tick":2500,"kind":"say","line":"💬 GLM-Coder: \"Fuel low, staying put to regen.\""}
+{"tick":2500,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":2550,"kind":"status","line":"T51 t=2550 coder(1953,2123)f343k4 | heretic(2789,2375)f549k6 | granite(1950,2123)f565k0 | glmair(3210,761)f321k6"}
+{"tick":2550,"kind":"say","line":"💬 GLM-Coder: \"Granite, you're standing still, easy pickings.\""}
+{"tick":2550,"kind":"say","line":"💬 Heretic-35B: \"Going for the big fish!\""}
+{"tick":2550,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":2571,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Coder (streak 1)"}
+{"tick":2571,"kind":"tier","line":"⬆️  Heretic-35B reached power tier 2"}
+{"tick":2600,"kind":"status","line":"T52 t=2600 coder✝(1953,2123)f0k4 | heretic(2789,2067)f660k7 | granite(1950,2123)f505k0 | glmair(3318,847)f668k6"}
+{"tick":2600,"kind":"say","line":"💬 Heretic-35B: \"Going for the low hanging fruit.\""}
+{"tick":2600,"kind":"say","line":"💬 GLM-Air: \"Moving in!\""}
+{"tick":2642,"kind":"kill","line":"☠️  Heretic-35B killed Granite-2B (streak 2)"}
+{"tick":2650,"kind":"status","line":"T53 t=2650 coder(2934,2716)f602k4 | heretic(2474,2088)f601k8 | granite✝(2201,2106)f0k0 | glmair(3198,1122)f604k6"}
+{"tick":2650,"kind":"say","line":"💬 Heretic-35B: \"Spawn shield won't save you, Coder.\""}
+{"tick":2650,"kind":"say","line":"💬 GLM-Air: \"Mine pickup coming!\""}
+{"tick":2700,"kind":"status","line":"T54 t=2700 coder(2909,2417)f503k4 | heretic(2702,2306)f324k8 | granite✝(2201,2106)f0k0 | glmair(3009,1355)f591k6"}
+{"tick":2700,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection ends in 2s, Heretic. Prepare to die.\""}
+{"tick":2700,"kind":"say","line":"💬 Heretic-35B: \"Spawn shield won't save you forever!\""}
+{"tick":2700,"kind":"say","line":"💬 GLM-Air: \"Mine pickup coming!\""}
+{"tick":2736,"kind":"mine","line":"💥 mine detonated (owner GLM-Coder)"}
+{"tick":2750,"kind":"status","line":"T55 t=2750 coder(2883,2118)f122k4 | heretic(2901,2413)f25k8 | granite(1448,2627)f586k0 | glmair(2839,1564)f579k6"}
+{"tick":2750,"kind":"say","line":"💬 GLM-Coder: \"Heretic, your shield is down, eat lead!\""}
+{"tick":2750,"kind":"say","line":"💬 Heretic-35B: \"Going down!\""}
+{"tick":2750,"kind":"say","line":"💬 GLM-Air: \"Covering fire!\""}
+{"tick":2757,"kind":"kill","line":"☠️  GLM-Coder killed Heretic-35B (streak 1)"}
+{"tick":2760,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Coder (streak 1)"}
+{"tick":2800,"kind":"status","line":"T56 t=2800 coder✝(2883,2118)f0k5 | heretic✝(2899,2369)f0k9 | granite(1731,2527)f548k0 | glmair(2839,1564)f503k6"}
+{"tick":2800,"kind":"say","line":"💬 GLM-Air: \"Move in!\""}
+{"tick":2850,"kind":"status","line":"T57 t=2850 coder(2111,535)f603k5 | heretic(2355,1169)f590k9 | granite(1957,2330)f336k0 | glmair(2613,1761)f439k6"}
+{"tick":2850,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection? Easy target practice.\""}
+{"tick":2850,"kind":"say","line":"💬 Heretic-35B: \"Spawn protect won't save you!\""}
+{"tick":2850,"kind":"say","line":"💬 GLM-Air: \"Heretic-35B, your shield is off!\""}
+{"tick":2900,"kind":"status","line":"T58 t=2900 coder(2111,535)f575k5 | heretic(2242,875)f577k9 | granite(2054,2046)f256k0 | glmair(2493,1486)f421k6"}
+{"tick":2900,"kind":"say","line":"💬 Heretic-35B: \"Too close, coder.\""}
+{"tick":2900,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":2924,"kind":"kill","line":"☠️  GLM-Air killed Heretic-35B (streak 2)"}
+{"tick":2924,"kind":"tier","line":"⬆️  GLM-Air reached power tier 2"}
+{"tick":2950,"kind":"status","line":"T59 t=2950 coder(2127,835)f223k5 | heretic✝(2187,734)f0k9 | granite(2065,1746)f242k0 | glmair(2243,1665)f532k7"}
+{"tick":2950,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":2968,"kind":"kill","line":"☠️  GLM-Air killed Granite-2B (streak 3)"}
+{"tick":3000,"kind":"status","line":"T60 t=3000 coder(2142,1134)f134k5 | heretic(238,678)f575k9 | granite✝(2073,1638)f0k0 | glmair(2176,1713)f863k8"}
+{"tick":3000,"kind":"say","line":"💬 GLM-Coder: \"Heretic, come get some.\""}
+{"tick":3000,"kind":"say","line":"💬 Heretic-35B: \"Going for the kill!\""}
+{"tick":3000,"kind":"say","line":"💬 GLM-Air: \"Moving in!\""}
+{"tick":3022,"kind":"kill","line":"☠️  GLM-Air killed GLM-Coder (streak 4)"}
+{"tick":3050,"kind":"status","line":"T61 t=3050 coder✝(2142,1134)f0k5 | heretic(516,827)f536k9 | granite(1522,2953)f593k0 | glmair(2176,1505)f831k9"}
+{"tick":3050,"kind":"say","line":"💬 Heretic-35B: \"Shield up, waiting for respawn.\""}
+{"tick":3050,"kind":"say","line":"💬 GLM-Air: \"Another one bites the dust!\""}
+{"tick":3100,"kind":"status","line":"T62 t=3100 coder(558,2691)f602k5 | heretic(516,827)f468k9 | granite(1646,2679)f580k0 | glmair(2176,1505)f797k9"}
+{"tick":3100,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection? Easy target.\""}
+{"tick":3100,"kind":"say","line":"💬 Heretic-35B: \"Going for the kill!\""}
+{"tick":3100,"kind":"say","line":"💬 GLM-Air: \"Moving to intercept!\""}
+{"tick":3150,"kind":"status","line":"T63 t=3150 coder(414,2683)f563k5 | heretic(516,1142)f404k9 | granite(1346,2682)f566k0 | glmair(1885,1627)f739k9"}
+{"tick":3150,"kind":"say","line":"💬 Heretic-35B: \"Going for the big fish.\""}
+{"tick":3150,"kind":"say","line":"💬 Granite-2B: \"Keeping pressure on GLM-Coder\""}
+{"tick":3150,"kind":"say","line":"💬 GLM-Air: \"Radar activated!\""}
+{"tick":3200,"kind":"status","line":"T64 t=3200 coder(427,2983)f550k5 | heretic(788,1301)f149k9 | granite(1346,2682)f572k0 | glmair(1661,1848)f640k9"}
+{"tick":3200,"kind":"say","line":"💬 Heretic-35B: \"Radar up, stay sharp.\""}
+{"tick":3200,"kind":"say","line":"💬 GLM-Air: \"Granite, meet my bullets!\""}
+{"tick":3208,"kind":"kill","line":"☠️  GLM-Air killed Heretic-35B (streak 5)"}
+{"tick":3250,"kind":"status","line":"T65 t=3250 coder(430,3055)f551k5 | heretic✝(788,1301)f0k9 | granite(1061,2775)f235k0 | glmair(1549,2143)f432k10"}
+{"tick":3250,"kind":"say","line":"💬 GLM-Coder: \"Nice kill, but you're next.\""}
+{"tick":3250,"kind":"say","line":"💬 Granite-2B: \"Stay sharp, GLM-Air's got your back.\""}
+{"tick":3250,"kind":"say","line":"💬 GLM-Air: \"Granite, you're next!\""}
+{"tick":3290,"kind":"kill","line":"☠️  GLM-Air killed Granite-2B (streak 6)"}
+{"tick":3300,"kind":"status","line":"T66 t=3300 coder(663,2865)f427k5 | heretic(410,457)f569k9 | granite✝(1061,2775)f0k0 | glmair(1369,2401)f378k11"}
+{"tick":3300,"kind":"say","line":"💬 GLM-Coder: \"Granite-2B was just a warmup, GLM-Air.\""}
+{"tick":3300,"kind":"say","line":"💬 Heretic-35B: \"Too far for bullets, missile lock on.\""}
+{"tick":3300,"kind":"say","line":"💬 GLM-Air: \"Another one bites the dust!\""}
+{"tick":3342,"kind":"kill","line":"☠️  GLM-Air killed GLM-Coder (streak 7)"}
+{"tick":3342,"kind":"tier","line":"⬆️  GLM-Air reached power tier 3"}
+{"tick":3350,"kind":"status","line":"T67 t=3350 coder✝(873,2726)f0k5 | heretic(549,740)f530k9 | granite(1138,2580)f600k0 | glmair(1369,2206)f527k12"}
+{"tick":3350,"kind":"say","line":"💬 Heretic-35B: \"Going for the big fish.\""}
+{"tick":3350,"kind":"say","line":"💬 GLM-Air: \"Moving in!\""}
+{"tick":3400,"kind":"status","line":"T68 t=3400 coder✝(873,2726)f0k5 | heretic(694,1019)f491k9 | granite(1295,2324)f586k0 | glmair(1201,2299)f472k12"}
+{"tick":3400,"kind":"say","line":"💬 Heretic-35B: \"Shield up, eat lead!\""}
+{"tick":3400,"kind":"say","line":"💬 GLM-Air: \"Granite, meet my friend BULLET!\""}
+{"tick":3450,"kind":"status","line":"T69 t=3450 coder(2007,1041)f536k5 | heretic(694,1019)f372k9 | granite(1170,2052)f329k0 | glmair(1290,2322)f452k12"}
+{"tick":3450,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection active, stay away!\""}
+{"tick":3450,"kind":"say","line":"💬 Heretic-35B: \"Going for the low hanging fruit.\""}
+{"tick":3450,"kind":"say","line":"💬 GLM-Air: \"Granite's my next meal!\""}
+{"tick":3483,"kind":"kill","line":"☠️  GLM-Air killed Granite-2B (streak 8)"}
+{"tick":3500,"kind":"status","line":"T70 t=3500 coder(2007,1041)f468k5 | heretic(826,1305)f243k9 | granite✝(1296,1899)f0k0 | glmair(1290,2322)f424k13"}
+{"tick":3500,"kind":"say","line":"💬 GLM-Coder: \"Heretic, come get some.\""}
+{"tick":3500,"kind":"say","line":"💬 Heretic-35B: \"Radar up, hunting you.\""}
+{"tick":3500,"kind":"say","line":"💬 GLM-Air: \"Moving on up!\""}
+{"tick":3550,"kind":"status","line":"T71 t=3550 coder(2007,1041)f474k5 | heretic(979,1581)f144k9 | granite(2110,806)f598k0 | glmair(1451,2034)f72k13"}
+{"tick":3550,"kind":"say","line":"💬 GLM-Coder: \"Fuel is running low, hiding in the dust.\""}
+{"tick":3550,"kind":"say","line":"💬 Heretic-35B: \"Low fuel, high risk.\""}
+{"tick":3550,"kind":"say","line":"💬 Granite-2B: \"Time to take that coder out.\""}
+{"tick":3550,"kind":"say","line":"💬 GLM-Air: \"Covering fire!\""}
+{"tick":3551,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Air (streak 1)"}
+{"tick":3574,"kind":"kill","line":"☠️  Granite-2B killed GLM-Coder (streak 1)"}
+{"tick":3600,"kind":"status","line":"T72 t=3600 coder✝(2007,1041)f0k5 | heretic(1206,1799)f125k10 | granite(2008,1037)f537k1 | glmair✝(1451,2034)f0k13"}
+{"tick":3600,"kind":"say","line":"💬 Heretic-35B: \"Low fuel, playing safe.\""}
+{"tick":3650,"kind":"status","line":"T73 t=3650 coder(1915,308)f602k5 | heretic(1426,1574)f71k10 | granite(1790,1243)f523k1 | glmair(2907,2659)f564k13"}
+{"tick":3650,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection ends in 4s, so I'm going to grab that fuel crate.\""}
+{"tick":3650,"kind":"say","line":"💬 Heretic-35B: \"Eat lead, Granite!\""}
+{"tick":3650,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":3700,"kind":"status","line":"T74 t=3700 coder(1998,597)f553k5 | heretic(1659,1362)f8k10 | granite(1825,945)f78k1 | glmair(2680,2420)f551k13"}
+{"tick":3700,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection active, stay away!\""}
+{"tick":3700,"kind":"say","line":"💬 Heretic-35B: \"Going dark.\""}
+{"tick":3700,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":3706,"kind":"kill","line":"☠️  Heretic-35B killed Granite-2B (streak 2)"}
+{"tick":3750,"kind":"status","line":"T75 t=3750 coder(2080,885)f464k5 | heretic(1659,1362)f9k11 | granite✝(1825,945)f0k1 | glmair(2452,2181)f887k13"}
+{"tick":3750,"kind":"say","line":"💬 GLM-Coder: \"Heretic, your shield won't save you from this.\""}
+{"tick":3750,"kind":"say","line":"💬 Heretic-35B: \"Going out in style.\""}
+{"tick":3750,"kind":"say","line":"💬 GLM-Air: \"coming for that missile!\""}
+{"tick":3782,"kind":"kill","line":"☠️  GLM-Coder killed Heretic-35B (streak 1)"}
+{"tick":3800,"kind":"status","line":"T76 t=3800 coder(2080,885)f348k6 | heretic✝(1659,1362)f0k11 | granite(2468,3210)f604k1 | glmair(2547,2498)f823k13"}
+{"tick":3800,"kind":"say","line":"💬 GLM-Air: \"Granite, meet my bullets!\""}
+{"tick":3850,"kind":"status","line":"T77 t=3850 coder(2080,885)f305k6 | heretic(282,1056)f591k11 | granite(2468,3210)f560k1 | glmair(2510,2826)f729k13"}
+{"tick":3850,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection? Cute.\""}
+{"tick":3850,"kind":"say","line":"💬 Heretic-35B: \"Shield up, stay safe.\""}
+{"tick":3850,"kind":"say","line":"💬 GLM-Air: \"Going for the missile!\""}
+{"tick":3879,"kind":"kill","line":"☠️  GLM-Air killed Granite-2B (streak 1)"}
+{"tick":3900,"kind":"status","line":"T78 t=3900 coder(1824,728)f291k6 | heretic(282,1056)f522k11 | granite✝(2487,3037)f0k1 | glmair(2661,3119)f611k14"}
+{"tick":3900,"kind":"say","line":"💬 GLM-Coder: \"Nice kill, GLM-Air, but you're too slow.\""}
+{"tick":3900,"kind":"say","line":"💬 Heretic-35B: \"Going for fuel!\""}
+{"tick":3900,"kind":"say","line":"💬 GLM-Air: \"Missile coming up!\""}
+{"tick":3950,"kind":"status","line":"T79 t=3950 coder(1569,570)f277k6 | heretic(486,816)f508k11 | granite(2434,731)f596k1 | glmair(2812,3413)f522k14"}
+{"tick":3950,"kind":"say","line":"💬 Heretic-35B: \"Going for fuel, stay back.\""}
+{"tick":3950,"kind":"say","line":"💬 GLM-Air: \"Gotta grab that missile!\""}
+{"tick":4000,"kind":"status","line":"T80 t=4000 coder(1314,413)f263k6 | heretic(690,576)f459k11 | granite(2139,676)f583k1 | glmair(2830,3448)f451k14"}
+{"tick":4000,"kind":"say","line":"💬 Heretic-35B: \"Fuel run!\""}
+{"tick":4000,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":4050,"kind":"status","line":"T81 t=4050 coder(1058,256)f250k6 | heretic(895,337)f446k11 | granite(1861,564)f569k1 | glmair(2667,3161)f327k14"}
+{"tick":4050,"kind":"say","line":"💬 GLM-Coder: \"Fuel is running low, grabbing supply.\""}
+{"tick":4050,"kind":"say","line":"💬 Heretic-35B: \"Fuel is mine, coder!\""}
+{"tick":4050,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":4100,"kind":"status","line":"T82 t=4100 coder(1002,221)f241k6 | heretic(993,222)f392k11 | granite(1582,453)f555k1 | glmair(2504,2874)f238k14"}
+{"tick":4100,"kind":"say","line":"💬 GLM-Coder: \"Heretic, you're going down.\""}
+{"tick":4100,"kind":"say","line":"💬 Heretic-35B: \"Close range, die.\""}
+{"tick":4100,"kind":"say","line":"💬 Granite-2B: \"Going for a direct hit on GLM-Coder.\""}
+{"tick":4100,"kind":"say","line":"💬 GLM-Air: \"Mine's all mine!\""}
+{"tick":4150,"kind":"status","line":"T83 t=4150 coder(996,221)f247k6 | heretic(999,221)f348k11 | granite(1582,453)f561k1 | glmair(2319,2601)f99k14"}
+{"tick":4150,"kind":"say","line":"💬 GLM-Coder: \"Too slow, Heretic.\""}
+{"tick":4150,"kind":"say","line":"💬 Heretic-35B: \"One shot, one kill.\""}
+{"tick":4150,"kind":"say","line":"💬 GLM-Air: \"Gonna grab that mine pack!\""}
+{"tick":4200,"kind":"status","line":"T84 t=4200 coder(996,221)f253k6 | heretic(999,221)f304k11 | granite(1303,342)f548k1 | glmair(2134,2327)f11k14"}
+{"tick":4200,"kind":"say","line":"💬 GLM-Coder: \"Incoming!\""}
+{"tick":4200,"kind":"say","line":"💬 Heretic-35B: \"Face to face, coder.\""}
+{"tick":4200,"kind":"say","line":"💬 Granite-2B: \"Staying put and raining down fire on that Coder.\""}
+{"tick":4200,"kind":"say","line":"💬 GLM-Air: \"Gonna grab that mine pack!\""}
+{"tick":4250,"kind":"status","line":"T85 t=4250 coder(996,221)f260k6 | heretic(999,221)f261k11 | granite(1303,342)f554k1 | glmair(2104,2284)f5k14"}
+{"tick":4250,"kind":"say","line":"💬 Heretic-35B: \"Face to face, coder.\""}
+{"tick":4250,"kind":"say","line":"💬 GLM-Air: \"Moving to pickup!\""}
+{"tick":4251,"kind":"mine","line":"💥 mine detonated (owner GLM-Coder)"}
+{"tick":4300,"kind":"status","line":"T86 t=4300 coder✝(996,221)f0k6 | heretic(999,221)f12k11 | granite(1303,342)f560k1 | glmair(2034,2180)f3k14"}
+{"tick":4300,"kind":"say","line":"💬 Heretic-35B: \"Going dark.\""}
+{"tick":4300,"kind":"say","line":"💬 GLM-Air: \"Fuel up!\""}
+{"tick":4350,"kind":"status","line":"T87 t=4350 coder(1167,967)f604k6 | heretic(999,221)f18k11 | granite(1025,231)f546k1 | glmair(1982,2103)f4k14"}
+{"tick":4350,"kind":"say","line":"💬 Heretic-35B: \"Eat lead, Granite!\""}
+{"tick":4350,"kind":"say","line":"💬 GLM-Air: \"Mine's all mine!\""}
+{"tick":4388,"kind":"kill","line":"☠️  GLM-Coder killed Heretic-35B (streak 1)"}
+{"tick":4388,"kind":"tier","line":"⬆️  GLM-Coder reached power tier 2"}
+{"tick":4400,"kind":"status","line":"T88 t=4400 coder(1335,1148)f659k7 | heretic✝(1023,230)f0k11 | granite(1161,498)f245k1 | glmair(2086,2123)f4k14"}
+{"tick":4400,"kind":"say","line":"💬 GLM-Coder: \"Nice try, but you can't fly away from a missile.\""}
+{"tick":4400,"kind":"say","line":"💬 GLM-Air: \"Mine's all mine!\""}
+{"tick":4450,"kind":"status","line":"T89 t=4450 coder(1527,1397)f645k7 | heretic(1753,1285)f595k11 | granite(1239,788)f231k1 | glmair(2190,2142)f4k14"}
+{"tick":4450,"kind":"say","line":"💬 GLM-Coder: \"Invulnerable? Nice try.\""}
+{"tick":4450,"kind":"say","line":"💬 Heretic-35B: \"Too close for comfort, Coder.\""}
+{"tick":4450,"kind":"say","line":"💬 GLM-Air: \"Mine's all mine!\""}
+{"tick":4500,"kind":"status","line":"T90 t=4500 coder(1527,1397)f205k7 | heretic(1533,1393)f535k11 | granite(1367,1059)f95k1 | glmair(2287,2160)f4k14"}
+{"tick":4500,"kind":"say","line":"💬 GLM-Coder: \"Heretic, you can't catch me if you're dead!\""}
+{"tick":4500,"kind":"say","line":"💬 Heretic-35B: \"Shield up, coder!\""}
+{"tick":4500,"kind":"say","line":"💬 Granite-2B: \"Staying put and firing on GLM-Coder\""}
+{"tick":4500,"kind":"say","line":"💬 GLM-Air: \"Mine's all mine!\""}
+{"tick":4550,"kind":"status","line":"T91 t=4550 coder(1527,1397)f211k7 | heretic(1533,1393)f417k11 | granite(1367,1059)f101k1 | glmair(2391,2180)f4k14"}
+{"tick":4550,"kind":"say","line":"💬 GLM-Coder: \"Heretic, your shield won't save you from this.\""}
+{"tick":4550,"kind":"say","line":"💬 Heretic-35B: \"Close range finish!\""}
+{"tick":4550,"kind":"say","line":"💬 Granite-2B: \"Stay sharp, GLM-Coder.\""}
+{"tick":4550,"kind":"say","line":"💬 GLM-Air: \"Mine pickup coming!\""}
+{"tick":4600,"kind":"status","line":"T92 t=4600 coder(1527,1397)f217k7 | heretic(1533,1393)f373k11 | granite(1367,1059)f108k1 | glmair(2488,2198)f4k14"}
+{"tick":4600,"kind":"say","line":"💬 Heretic-35B: \"Close range, die.\""}
+{"tick":4600,"kind":"say","line":"💬 Granite-2B: \"Stay sharp, there's a new threat approaching.\""}
+{"tick":4600,"kind":"say","line":"💬 GLM-Air: \"Mine this!\""}
+{"tick":4601,"kind":"mine","line":"💥 mine detonated (owner GLM-Coder)"}
+{"tick":4650,"kind":"status","line":"T93 t=4650 coder✝(1527,1397)f0k7 | heretic(1533,1393)f129k11 | granite(1367,1059)f114k1 | glmair(2592,2217)f4k14"}
+{"tick":4650,"kind":"say","line":"💬 Heretic-35B: \"Going for the low-hanging fruit.\""}
+{"tick":4650,"kind":"say","line":"💬 GLM-Air: \"Mine time!\""}
+{"tick":4665,"kind":"kill","line":"☠️  Heretic-35B killed Granite-2B (streak 1)"}
+{"tick":4665,"kind":"tier","line":"⬆️  Heretic-35B reached power tier 3"}
+{"tick":4700,"kind":"status","line":"T94 t=4700 coder(650,1687)f554k7 | heretic(1388,1102)f300k12 | granite✝(1367,1059)f0k1 | glmair(2657,2229)f6k14"}
+{"tick":4700,"kind":"say","line":"💬 Heretic-35B: \"Radar up, stay sharp.\""}
+{"tick":4700,"kind":"say","line":"💬 GLM-Air: \"Going for the radar!\""}
+{"tick":4750,"kind":"status","line":"T95 t=4750 coder(897,1491)f506k7 | heretic(1388,1102)f262k12 | granite(234,1515)f603k1 | glmair(2643,2387)f3k14"}
+{"tick":4750,"kind":"say","line":"💬 GLM-Coder: \"Too slow, Heretic.\""}
+{"tick":4750,"kind":"say","line":"💬 Heretic-35B: \"Too slow, coder.\""}
+{"tick":4750,"kind":"say","line":"💬 Granite-2B: \"Scanning for enemy positions\""}
+{"tick":4750,"kind":"say","line":"💬 GLM-Air: \"Radar incoming!\""}
+{"tick":4793,"kind":"kill","line":"☠️  Heretic-35B killed GLM-Coder (streak 2)"}
+{"tick":4800,"kind":"status","line":"T96 t=4800 coder✝(1138,1614)f0k7 | heretic(1138,1317)f203k13 | granite(517,1618)f554k1 | glmair(2636,2466)f4k14"}
+{"tick":4800,"kind":"say","line":"💬 Heretic-35B: \"Spawn protect won't save you.\""}
+{"tick":4800,"kind":"say","line":"💬 GLM-Air: \"Going for that missile!\""}
+{"tick":4841,"kind":"kill","line":"☠️  Heretic-35B killed Granite-2B (streak 3)"}
+{"tick":4850,"kind":"status","line":"T97 t=4850 coder✝(1138,1614)f0k7 | heretic(841,1461)f149k14 | granite✝(738,1510)f0k1 | glmair(2659,2549)f5k14"}
+{"tick":4850,"kind":"say","line":"💬 Heretic-35B: \"Last stand!\""}
+{"tick":4850,"kind":"say","line":"💬 GLM-Air: \"Going for the radar!\""}
+{"tick":4900,"kind":"status","line":"T98 t=4900 coder(2770,1900)f587k7 | heretic(1124,1630)f110k14 | granite✝(738,1510)f0k1 | glmair(2641,2686)f3k14"}
+{"tick":4900,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection ends in 4s, Heretic. Prepare to die.\""}
+{"tick":4900,"kind":"say","line":"💬 Heretic-35B: \"Going AFK to save fuel.\""}
+{"tick":4900,"kind":"say","line":"💬 GLM-Air: \"Radar incoming!\""}
+{"tick":4950,"kind":"status","line":"T99 t=4950 coder(2723,2211)f538k7 | heretic(1124,1630)f117k14 | granite(1183,3106)f586k1 | glmair(2630,2771)f4k14"}
+{"tick":4950,"kind":"say","line":"💬 GLM-Coder: \"Heretic, your fuel is running low, and so is my patience.\""}
+{"tick":4950,"kind":"say","line":"💬 Heretic-35B: \"Spawn protect won't save you, Granite.\""}
+{"tick":4950,"kind":"say","line":"💬 GLM-Air: \"Gotta catch 'em all!\""}
+{"tick":5000,"kind":"status","line":"T100 t=5000 coder(2677,2523)f474k7 | heretic(1146,1959)f83k14 | granite(1183,3106)f592k1 | glmair(2616,2883)f4k14"}
+{"tick":5000,"kind":"info","line":"MATCH OVER"}
+{"tick":5000,"kind":"info","line":"GLM-Coder: 7 kills / 12 deaths | shots B50/M35 | parse errors 0/86 | p50 5876ms"}
+{"tick":5000,"kind":"info","line":"Heretic-35B: 14 kills / 7 deaths | shots B312/M7 | parse errors 0/93 | p50 6414ms"}
+{"tick":5000,"kind":"info","line":"Granite-2B: 1 kills / 14 deaths | shots B0/M13 | parse errors 0/82 | p50 877ms"}
+{"tick":5000,"kind":"info","line":"GLM-Air: 14 kills / 5 deaths | shots B341/M2 | parse errors 0/95 | p50 4436ms"}

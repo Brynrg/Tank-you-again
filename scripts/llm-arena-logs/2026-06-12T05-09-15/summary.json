@@ -1,0 +1,132 @@
+{
+  "rounds": 3,
+  "windowTicks": 30,
+  "gameSeconds": 4.5,
+  "pilots": [
+    {
+      "key": "coder",
+      "name": "GLM-Coder",
+      "team": "RED",
+      "kills": 0,
+      "deaths": 0,
+      "finalFuel": 1000,
+      "finalTier": 0,
+      "rounds": 3,
+      "skippedDead": 0,
+      "callErrors": 0,
+      "parseErrors": 0,
+      "softIssues": 0,
+      "latencyMs": {
+        "p50": 6080,
+        "p90": 7517,
+        "max": 7517
+      },
+      "shotsFired": {
+        "BULLET": 0,
+        "MISSILE": 1
+      },
+      "minesPlaced": 0,
+      "teleports": 0,
+      "shieldToggles": 0,
+      "radarScans": 3,
+      "fuelCratesGrabbed": 1,
+      "says": [
+        "Spawn protection ends in 2.5s, so I'm grabbing fuel first."
+      ]
+    },
+    {
+      "key": "heretic",
+      "name": "Heretic-35B",
+      "team": "BLUE",
+      "kills": 0,
+      "deaths": 0,
+      "finalFuel": 975,
+      "finalTier": 0,
+      "rounds": 3,
+      "skippedDead": 0,
+      "callErrors": 0,
+      "parseErrors": 0,
+      "softIssues": 0,
+      "latencyMs": {
+        "p50": 6109,
+        "p90": 8651,
+        "max": 8651
+      },
+      "shotsFired": {
+        "BULLET": 0,
+        "MISSILE": 0
+      },
+      "minesPlaced": 0,
+      "teleports": 0,
+      "shieldToggles": 0,
+      "radarScans": 0,
+      "fuelCratesGrabbed": 0,
+      "says": [
+        "Spawn protect is for cowards.",
+        "Going for the mines!",
+        "Going for the mines!"
+      ]
+    },
+    {
+      "key": "granite",
+      "name": "Granite-2B",
+      "team": "ORANGE",
+      "kills": 0,
+      "deaths": 0,
+      "finalFuel": 997,
+      "finalTier": 0,
+      "rounds": 3,
+      "skippedDead": 0,
+      "callErrors": 0,
+      "parseErrors": 0,
+      "softIssues": 0,
+      "latencyMs": {
+        "p50": 893,
+        "p90": 1721,
+        "max": 1721
+      },
+      "shotsFired": {
+        "BULLET": 0,
+        "MISSILE": 0
+      },
+      "minesPlaced": 0,
+      "teleports": 0,
+      "shieldToggles": 0,
+      "radarScans": 0,
+      "fuelCratesGrabbed": 0,
+      "says": []
+    },
+    {
+      "key": "glmair",
+      "name": "GLM-Air",
+      "team": "PURPLE",
+      "kills": 0,
+      "deaths": 0,
+      "finalFuel": 990,
+      "finalTier": 0,
+      "rounds": 3,
+      "skippedDead": 0,
+      "callErrors": 0,
+      "parseErrors": 0,
+      "softIssues": 0,
+      "latencyMs": {
+        "p50": 3988,
+        "p90": 4280,
+        "max": 4280
+      },
+      "shotsFired": {
+        "BULLET": 0,
+        "MISSILE": 0
+      },
+      "minesPlaced": 0,
+      "teleports": 0,
+      "shieldToggles": 0,
+      "radarScans": 0,
+      "fuelCratesGrabbed": 1,
+      "says": [
+        "Fuel up first!",
+        "Gotta catch 'em all!"
+      ]
+    }
+  ]
+}

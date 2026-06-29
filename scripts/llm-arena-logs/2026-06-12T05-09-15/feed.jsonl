@@ -1,0 +1,15 @@
+{"tick":0,"kind":"info","line":"MATCH START: GLM-Coder[t-coder/RED] vs Heretic-35B[t-heretic/BLUE] vs Granite-2B[t-granite/ORANGE] vs GLM-Air[t-glmair/PURPLE] — 3 turns x 30 ticks"}
+{"tick":0,"kind":"say","line":"💬 Heretic-35B: \"Spawn protect is for cowards.\""}
+{"tick":0,"kind":"say","line":"💬 GLM-Air: \"Fuel up first!\""}
+{"tick":30,"kind":"status","line":"T1 t=30 coder(1366,1119)f956k0 | heretic(2093,1273)f991k0 | granite(1442,2211)f991k0 | glmair(2401,2399)f991k0"}
+{"tick":30,"kind":"say","line":"💬 GLM-Coder: \"Spawn protection ends in 2.5s, so I'm grabbing fuel first.\""}
+{"tick":30,"kind":"say","line":"💬 Heretic-35B: \"Going for the mines!\""}
+{"tick":60,"kind":"status","line":"T2 t=60 coder(1206,1036)f913k0 | heretic(2015,1110)f983k0 | granite(1466,2211)f993k0 | glmair(2521,2517)f998k0"}
+{"tick":60,"kind":"say","line":"💬 Heretic-35B: \"Going for the mines!\""}
+{"tick":60,"kind":"say","line":"💬 GLM-Air: \"Gotta catch 'em all!\""}
+{"tick":90,"kind":"status","line":"T3 t=90 coder(1046,954)f1000k0 | heretic(1938,947)f975k0 | granite(1466,2211)f997k0 | glmair(2417,2664)f990k0"}
+{"tick":90,"kind":"info","line":"MATCH OVER"}
+{"tick":90,"kind":"info","line":"GLM-Coder: 0 kills / 0 deaths | shots B0/M1 | parse errors 0/3 | p50 6080ms"}
+{"tick":90,"kind":"info","line":"Heretic-35B: 0 kills / 0 deaths | shots B0/M0 | parse errors 0/3 | p50 6109ms"}
+{"tick":90,"kind":"info","line":"Granite-2B: 0 kills / 0 deaths | shots B0/M0 | parse errors 0/3 | p50 893ms"}
+{"tick":90,"kind":"info","line":"GLM-Air: 0 kills / 0 deaths | shots B0/M0 | parse errors 0/3 | p50 3988ms"}
