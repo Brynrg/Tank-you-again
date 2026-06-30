@@ -23,13 +23,14 @@ dataset: ~760 shots, 38 deaths, 36 kill credits, full positional replay
 ## A. Balance — evidence from the AI playtest
 
 ### A1. Missiles are strictly dominated by bullets (P1)
+
 Usage: 703 bullet shots vs 57 missiles. Both 14-kill players were ~98 % bullet
 users; the missile-heavy pilot went 7/12. The math agrees:
 
-| | Sustained DPS | Damage per fuel | Projectile speed | Ammo |
-|---|---|---|---|---|
-| Bullet | 240 | 12.0 | 600 u/s | infinite |
-| Missile | 267 | 9.6 | 380 u/s (easier to dodge) | 5, pickup-gated |
+|         | Sustained DPS | Damage per fuel | Projectile speed          | Ammo            |
+| ------- | ------------- | --------------- | ------------------------- | --------------- |
+| Bullet  | 240           | 12.0            | 600 u/s                   | infinite        |
+| Missile | 267           | 9.6             | 380 u/s (easier to dodge) | 5, pickup-gated |
 
 Burst alpha is the missile's only edge, and the slower projectile cancels it at
 range. **Options (pick one):** raise `MISSILE_SPEED` 380→480 so it lands at
@@ -38,6 +39,7 @@ mid-range; or nerf bullet sustain (`BULLET_COOLDOWN_TICKS` 5→7 and/or
 Re-run the AI match after tuning and watch the weapon mix shift (see D3).
 
 ### A2. Mines kill their owners (P1)
+
 ~10 mines placed, 3 detonations — **2 of the 3 lethal detonations killed the
 mine's own placer.** Root cause in `shared/sim/mines.ts`: the mine drops only
 `MINE_RADIUS*0.6` ≈ 14 u behind the tank — inside its own 24 u trigger/blast
@@ -49,6 +51,7 @@ ally fratricide. Also promote the old P3-5 mine TTL / per-player active cap
 (map clutter guard).
 
 ### A3. Shield economics punish exactly the players who need it (P2)
+
 The winner toggled shield once; the last-place pilot toggled it 29 times and
 bled out (30 fuel/s drain vs halved damage only pays off under sustained fire).
 A shield left on while not being shot is a death sentence the HUD never explains.
@@ -56,6 +59,7 @@ A shield left on while not being shot is a death sentence the HUD never explains
 bubble (fixed 4 s per charge, no drain). Either keeps the item, removes the trap.
 
 ### A4. The strong farm the weak — no comeback pressure (P2)
+
 The winning pilot took 8 of its 14 kills from the weakest player; power tiers
 (damage/speed multipliers) widen the gap each kill. Human lobbies will feel this
 as "new player gets hunted, quits." **Add:** kill bounty scaled by victim's power
@@ -63,6 +67,7 @@ tier (hunting the leader pays more than farming the rookie), and respawn
 placement biased away from the killer's position. Both are sim-side, few lines.
 
 ### A5. Kill credit leaks on fuel-drain deaths (P3)
+
 `killTank(tank, null)` when fuel hits 0 from movement/costs: if you shot someone
 to 20 fuel and they die driving away, nobody gets credit. Add a last-damager tag
 (~5 s window) and attribute the kill. Zero cases in the AI match but it's a
@@ -75,13 +80,14 @@ Quantified from the replay: with 4 active tanks on 3547², the nearest enemy was
 distance 863 u). Real players see fog — that's a mostly-empty screen for most of
 the match, on top of mean 4.7 projectiles in flight across the whole map.
 TankPit's magic was crowded chaos. **Options, cheapest first:**
+
 1. Scale the playable area with population (soft zone walls; 4 players ≈ 1800²,
    open up as the room fills).
 2. Spawn pickups in clusters ("supply drops") to create conflict magnets instead
    of uniform scatter.
 3. Bias respawn points toward the action centroid (also helps A4's
    away-from-killer rule — same placement function).
-The AI harness can A/B these: re-run with a zone and watch time-in-contact.
+   The AI harness can A/B these: re-run with a zone and watch time-in-contact.
 
 ## C. Modes & retention (carried forward — still the biggest gap)
 
@@ -125,21 +131,21 @@ The AI harness can A/B these: re-run with a zone and watch time-in-contact.
 
 ## Suggested sequence
 
-| # | Item | Size | Why now |
-|---|---|---|---|
-| 1 | A2 mine arming delay + offset | S | 2 of 3 mine kills are suicides; tiny fix |
-| 2 | A1 missile/bullet rebalance | S | One-constant changes; biggest combat-feel win |
-| 3 | B map density (zone or pickup clusters) | M | 60 %-empty-screen is the worst human experience risk |
-| 4 | C1 scoreable SP mode + leaderboard | M | Retention + portal fit; long overdue |
-| 5 | D1 seeded RNG | M | Unlocks replays, tests, honest A/Bs |
-| 6 | A3 shield rework + A4 bounty/respawn | S–M | Anti-frustration pass |
-| 7 | D3 playtest harness in CI | S | Locks in the balance loop for every future change |
-| 8 | D2 snapshot fail-closed, A5 kill credit, C2 match arc, C3 manifest, D5 docs | S each | Hygiene + polish batch |
+| #   | Item                                                                        | Size   | Why now                                              |
+| --- | --------------------------------------------------------------------------- | ------ | ---------------------------------------------------- |
+| 1   | A2 mine arming delay + offset                                               | S      | 2 of 3 mine kills are suicides; tiny fix             |
+| 2   | A1 missile/bullet rebalance                                                 | S      | One-constant changes; biggest combat-feel win        |
+| 3   | B map density (zone or pickup clusters)                                     | M      | 60 %-empty-screen is the worst human experience risk |
+| 4   | C1 scoreable SP mode + leaderboard                                          | M      | Retention + portal fit; long overdue                 |
+| 5   | D1 seeded RNG                                                               | M      | Unlocks replays, tests, honest A/Bs                  |
+| 6   | A3 shield rework + A4 bounty/respawn                                        | S–M    | Anti-frustration pass                                |
+| 7   | D3 playtest harness in CI                                                   | S      | Locks in the balance loop for every future change    |
+| 8   | D2 snapshot fail-closed, A5 kill credit, C2 match arc, C3 manifest, D5 docs | S each | Hygiene + polish batch                               |
 
 ## One-line summary
 
 The sim is unified, stable, and feedback-rich now — what the data says is wrong
-is the *game design layer*: bullets obsolete missiles, mines suicide their
+is the _game design layer_: bullets obsolete missiles, mines suicide their
 owners, shields trap weak players, the map is 60 % empty under fog, and there's
 still nothing to win. Tune the four constants, densify the field, ship a
 scoreable mode — and keep the AI arena running as the regression test for fun.

@@ -8,24 +8,24 @@ Harness: `scripts/llm-arena.ts` · replay viewer generator: `scripts/llm-arena-r
 
 ## Lineup
 
-| Tank | Model | Machine | Endpoint |
-|---|---|---|---|
-| GLM-Coder (RED) | GLM-4.7-Flash 8-bit | MBP | :8088 mlx_lm |
-| Heretic-35B (BLUE) | Qwen3.6-35B Heretic 8-bit | MBP | :8080 mlx_lm |
-| Granite-2B (ORANGE) | granite3.3-2b-ctx16k | Mac Mini | :11434 Ollama |
-| GLM-Air (PURPLE) | glm-4.5-air | DGX Spark | :4000 LiteLLM→vLLM |
+| Tank                | Model                     | Machine   | Endpoint           |
+| ------------------- | ------------------------- | --------- | ------------------ |
+| GLM-Coder (RED)     | GLM-4.7-Flash 8-bit       | MBP       | :8088 mlx_lm       |
+| Heretic-35B (BLUE)  | Qwen3.6-35B Heretic 8-bit | MBP       | :8080 mlx_lm       |
+| Granite-2B (ORANGE) | granite3.3-2b-ctx16k      | Mac Mini  | :11434 Ollama      |
+| GLM-Air (PURPLE)    | glm-4.5-air               | DGX Spark | :4000 LiteLLM→vLLM |
 
 (Gemma 12B sat out: on-demand/RAM-gated, and the game has exactly 4 team colors.
 It's the natural 5th pilot for a team-mode rematch.)
 
 ## Result
 
-| Pilot | Kills | Deaths | K/D | Shots (B/M) | Fire orders in range (<600u) | Parse errors | Latency p50 |
-|---|---|---|---|---|---|---|---|
-| **GLM-Air (DGX)** | **14** | **5** | **2.8** | 341/2 | 24 % | 0/95 | 4.4 s |
-| Heretic-35B (MBP) | 14 | 7 | 2.0 | 312/7 | **50 %** | 0/93 | 6.4 s |
-| GLM-Coder (MBP) | 7 | 12 | 0.6 | 50/35 | 27 % | 0/86 | 5.9 s |
-| Granite-2B (Mini) | 1 | 14 | 0.07 | 0/13 | 14 % | 0/82 | 0.9 s |
+| Pilot             | Kills  | Deaths | K/D     | Shots (B/M) | Fire orders in range (<600u) | Parse errors | Latency p50 |
+| ----------------- | ------ | ------ | ------- | ----------- | ---------------------------- | ------------ | ----------- |
+| **GLM-Air (DGX)** | **14** | **5**  | **2.8** | 341/2       | 24 %                         | 0/95         | 4.4 s       |
+| Heretic-35B (MBP) | 14     | 7      | 2.0     | 312/7       | **50 %**                     | 0/93         | 6.4 s       |
+| GLM-Coder (MBP)   | 7      | 12     | 0.6     | 50/35       | 27 %                         | 0/86         | 5.9 s       |
+| Granite-2B (Mini) | 1      | 14     | 0.07    | 0/13        | 14 %                         | 0/82         | 0.9 s       |
 
 Kill matrix: GLM-Air farmed the weakest player (8 of its 14 kills on Granite);
 Heretic spread evenly (5/5/4); GLM-Coder tunnel-visioned Heretic (5 of 7).
@@ -43,7 +43,7 @@ Two deaths were self-inflicted mine blasts. Zero fuel-starvation deaths.
   tiebreak by feeding GLM-Coder's counter-focus.
 - **GLM-Coder — the gadget addict.** 31 of 40 fire orders were missiles, mostly
   launched at ~900u+ where they can't connect (25 fuel each). Burned ~1,300 fuel
-  on 37 radar scans that were *literally useless* (vision was unmasked — radar
+  on 37 radar scans that were _literally useless_ (vision was unmasked — radar
   added no information) plus 29 shield toggles at 30 fuel/s. Most deaths among
   the big models. Classic over-tooling: every lever pulled, few pulled well.
 - **Granite-2B — structurally fine, tactically absent.** Valid JSON every turn at
@@ -54,6 +54,7 @@ Two deaths were self-inflicted mine blasts. Zero fuel-starvation deaths.
 ## Improvement plan
 
 ### A. Better pilots (prompt & policy — cheap, do first)
+
 1. **Per-model system prompts.** One prompt for all four was a handicap for the
    small model and a non-optimization for the big ones. Granite gets a 3-field
    schema (`move_to`, `fire`, `say`) plus one few-shot example and a standing
@@ -71,6 +72,7 @@ Two deaths were self-inflicted mine blasts. Zero fuel-starvation deaths.
    turn so models can calibrate range/lead behavior.
 
 ### B. Better harness & evaluation
+
 5. **Case-insensitive enum parsing** (`"radar"` → `RADAR`) and accept common
    field aliases — free compliance for small models.
 6. **Turn fog-of-war ON** (`snapshotFor(id, true)`). It's the real game (vision
@@ -93,6 +95,7 @@ Two deaths were self-inflicted mine blasts. Zero fuel-starvation deaths.
     0.9 s shows the floor.
 
 ### C. Stack findings (recursive-improvement loop)
+
 12. **`chat_template_kwargs:{enable_thinking:false}` works through the DGX
     LiteLLM → vLLM glm-4.5-air**: clean content-only answers at 1.2–4.4 s, vs the
     ~9 s thinking-on default. Worth setting in glm-air profiles where reasoning

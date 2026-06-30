@@ -1,3 +1,4 @@
+import { EntityMap } from "./entity-map.js";
 import {
   FUEL_CRATE_RESTORE,
   FUEL_DEPOSIT_AMOUNT,
@@ -45,7 +46,14 @@ import { applyMineDamage, placeMine, stepMineDetonations } from "./mines.js";
 import { stepMoveCommand, stepMovement } from "./movement.js";
 import { rankForXp } from "./rank.js";
 import { computeVisionSet, scanRadar } from "./vision.js";
-import { computePowerTier, makeTank, maybeSpawnPickup, pickTeam, respawnTank, tickSpawnProtection } from "./world.js";
+import {
+  computePowerTier,
+  makeTank,
+  maybeSpawnPickup,
+  pickTeam,
+  respawnTank,
+  tickSpawnProtection,
+} from "./world.js";
 
 interface FireCooldowns {
   lastBulletTick: number;
@@ -87,10 +95,10 @@ export interface ArenaOptions {
 export class Arena {
   public tickIndex = 0;
 
-  private readonly tanks = new Map<string, TankState>();
-  private readonly projectiles = new Map<string, ProjectileState>();
-  private readonly mines = new Map<string, MineState>();
-  private readonly pickups = new Map<string, PickupState>();
+  private readonly tanks = new EntityMap<string, TankState>();
+  private readonly projectiles = new EntityMap<string, ProjectileState>();
+  private readonly mines = new EntityMap<string, MineState>();
+  private readonly pickups = new EntityMap<string, PickupState>();
   private readonly radarReveals = new Map<string, Map<string, number>>();
 
   private readonly inputs = new Map<string, PlayerInputState>();
@@ -377,10 +385,10 @@ export class Arena {
 
     if (this.aiEnemies.size > 0) {
       const cachedWorldState = {
-        tanks: Array.from(this.tanks.values()),
-        projectiles: Array.from(this.projectiles.values()),
-        mines: Array.from(this.mines.values()),
-        pickups: Array.from(this.pickups.values()),
+        tanks: this.tanks.valuesArray(),
+        projectiles: this.projectiles.valuesArray(),
+        mines: this.mines.valuesArray(),
+        pickups: this.pickups.valuesArray(),
         radarReveals: this.radarReveals,
         currentTick: t,
       };
