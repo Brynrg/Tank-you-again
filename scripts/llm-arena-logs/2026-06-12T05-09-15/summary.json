@@ -30,9 +30,7 @@
       "shieldToggles": 0,
       "radarScans": 3,
       "fuelCratesGrabbed": 1,
-      "says": [
-        "Spawn protection ends in 2.5s, so I'm grabbing fuel first."
-      ]
+      "says": ["Spawn protection ends in 2.5s, so I'm grabbing fuel first."]
     },
     {
       "key": "heretic",
@@ -61,11 +59,7 @@
       "shieldToggles": 0,
       "radarScans": 0,
       "fuelCratesGrabbed": 0,
-      "says": [
-        "Spawn protect is for cowards.",
-        "Going for the mines!",
-        "Going for the mines!"
-      ]
+      "says": ["Spawn protect is for cowards.", "Going for the mines!", "Going for the mines!"]
     },
     {
       "key": "granite",
@@ -123,10 +117,7 @@
       "shieldToggles": 0,
       "radarScans": 0,
       "fuelCratesGrabbed": 1,
-      "says": [
-        "Fuel up first!",
-        "Gotta catch 'em all!"
-      ]
+      "says": ["Fuel up first!", "Gotta catch 'em all!"]
     }
   ]
 }

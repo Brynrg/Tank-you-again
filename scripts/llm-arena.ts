@@ -249,9 +249,7 @@ function observation(
   }
   const mines = snap.visibleMines.filter((m) => m.ownerId !== tankId);
   if (mines.length) {
-    lines.push(
-      "KNOWN ENEMY MINES: " + mines.map((m) => `(${m.x | 0},${m.y | 0})`).join(" "),
-    );
+    lines.push("KNOWN ENEMY MINES: " + mines.map((m) => `(${m.x | 0},${m.y | 0})`).join(" "));
   }
 
   if (fb.events.length) lines.push("SINCE YOUR LAST TURN: " + fb.events.join("; "));
@@ -341,7 +339,8 @@ function parseAction(raw: string, validTargets: Set<string>): ParseOutcome {
   }
 
   if (obj["deposit_fuel"] === true) action.depositFuel = true;
-  if (typeof obj["say"] === "string" && obj["say"]) action.say = (obj["say"] as string).slice(0, 120);
+  if (typeof obj["say"] === "string" && obj["say"])
+    action.say = (obj["say"] as string).slice(0, 120);
 
   return { ok: true, action, error: issues.length ? issues.join("; ") : undefined };
 }
@@ -381,7 +380,11 @@ async function callPilot(p: PilotCfg, system: string, user: string): Promise<Cal
     clearTimeout(timer);
     const latencyMs = Date.now() - t0;
     if (!res.ok) {
-      return { content: "", latencyMs, error: `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}` };
+      return {
+        content: "",
+        latencyMs,
+        error: `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      };
     }
     const data = (await res.json()) as {
       choices?: { message?: { content?: string | null } }[];
@@ -620,7 +623,8 @@ async function main(): Promise<void> {
         const target = [...tanks.values()].find((t) => t.id === plan.targetId);
         if (!target || target.isDead || target.isSpawnProtected) continue;
         const lf = lastFired.get(key)!;
-        const cdTicks = plan.weapon === ProjectileKind.MISSILE ? MISSILE_COOLDOWN_TICKS : BULLET_COOLDOWN_TICKS;
+        const cdTicks =
+          plan.weapon === ProjectileKind.MISSILE ? MISSILE_COOLDOWN_TICKS : BULLET_COOLDOWN_TICKS;
         const cost = plan.weapon === ProjectileKind.MISSILE ? FUEL_FIRE_MISSILE : FUEL_FIRE_BULLET;
         const last = plan.weapon === ProjectileKind.MISSILE ? lf.MISSILE : lf.BULLET;
         if (arena.tickIndex - last < cdTicks) continue;
@@ -691,7 +695,8 @@ async function main(): Promise<void> {
       const t = tanks.get(p.key)!;
       const st = stats.get(p.key)!;
       const lat = st.latencies.slice().sort((a, b) => a - b);
-      const pct = (q: number): number => lat[Math.min(lat.length - 1, Math.floor(q * lat.length))] ?? 0;
+      const pct = (q: number): number =>
+        lat[Math.min(lat.length - 1, Math.floor(q * lat.length))] ?? 0;
       return {
         key: p.key,
         name: p.name,
@@ -751,7 +756,9 @@ async function main(): Promise<void> {
       } else {
         for (const [key] of tanks) {
           if (tanks.get(key)!.id === ev.subjectId) {
-            feedback.get(key)!.events.push(`you were KILLED by ${name(ev.objectId)} — you respawned elsewhere`);
+            feedback
+              .get(key)!
+              .events.push(`you were KILLED by ${name(ev.objectId)} — you respawned elsewhere`);
           }
         }
       }
