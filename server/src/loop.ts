@@ -4,6 +4,7 @@ import {
   FUEL_SHIELD_PER_SEC,
   FUEL_TELEPORT,
   ItemType,
+  LAST_DAMAGER_WINDOW_TICKS,
   MAP_HEIGHT,
   MAP_WIDTH,
   MINE_PICKUP_AMOUNT,
@@ -14,6 +15,7 @@ import {
   ProjectileKind,
   RESPAWN_DELAY_TICKS,
   ServerMessageType,
+  SHIELD_AUTO_LOWER_TICKS,
   SHIELD_PICKUP_AMOUNT,
   TANK_RADIUS,
   TELEPORT_MAX_RANGE,
@@ -310,6 +312,7 @@ export class RoomLoop {
       // Shield activation consumes one shield unit; per-tick fuel drain is
       // still applied in tick(), preserving fuel-as-health pressure.
       tank.hasShield = true;
+      tank.shieldRaisedAtTick = this.tickIndex;
     } else if (item === ItemType.RADAR) {
       if (tank.ammo.radar <= 0) return;
       if (!debitFuel(tank, FUEL_RADAR_SCAN, "RADAR")) return;
@@ -372,8 +375,15 @@ export class RoomLoop {
       return;
     }
 
+    if (tank.ticksSinceDamaged !== undefined) tank.ticksSinceDamaged += 1;
     if (tank.hasShield) {
-      if (!debitFuel(tank, FUEL_SHIELD_PER_SEC * dt, "SHIELD")) {
+      // Auto-lower once neither raised nor damaged recently — a shield idling
+      // against no fire is pure fuel bleed.
+      const sinceRaised = t - (tank.shieldRaisedAtTick ?? 0);
+      const sinceDamaged = tank.ticksSinceDamaged ?? Number.MAX_SAFE_INTEGER;
+      if (sinceRaised >= SHIELD_AUTO_LOWER_TICKS && sinceDamaged >= SHIELD_AUTO_LOWER_TICKS) {
+        tank.hasShield = false;
+      } else if (!debitFuel(tank, FUEL_SHIELD_PER_SEC * dt, "SHIELD")) {
         tank.hasShield = false;
       }
     }
@@ -388,9 +398,11 @@ export class RoomLoop {
       stepMovement(tank, input, dt);
     }
 
-    // Ran out of fuel while alive (no killer)? Self-elim.
+    // Ran out of fuel while alive — credit the last damager inside the window
+    // instead of leaking the kill.
     if (tank.fuel <= 0) {
-      this.killTank(tank, null);
+      const recent = (tank.ticksSinceDamaged ?? Infinity) <= LAST_DAMAGER_WINDOW_TICKS;
+      this.killTank(tank, recent ? (tank.lastDamagerId ?? null) : null);
       return;
     }
 
@@ -450,7 +462,7 @@ export class RoomLoop {
     }
 
     // 3. Mine detonations.
-    const dets = stepMineDetonations(this.mines.values(), this.tanks.values());
+    const dets = stepMineDetonations(this.mines.values(), this.tanks.values(), t);
     for (const det of dets) {
       this.mines.delete(det.mine.id);
       this.forgetRadarEntity(det.mine.id);
@@ -594,6 +606,9 @@ export class RoomLoop {
     if (killerId) {
       const killer = this.tanks.get(killerId);
       if (killer && killer.id !== victim.id) {
+        // Remember where the hunter stood — respawn placement avoids it.
+        victim.lastKillerX = killer.x;
+        victim.lastKillerY = killer.y;
         this.pendingEvents.push({
           tick: this.tickIndex,
           kind: "kill",

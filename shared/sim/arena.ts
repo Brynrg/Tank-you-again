@@ -5,6 +5,9 @@ import {
   FUEL_SHIELD_PER_SEC,
   FUEL_TELEPORT,
   ItemType,
+  KILL_BOUNTY_FUEL_PER_TIER,
+  KILL_BOUNTY_XP_PER_TIER,
+  LAST_DAMAGER_WINDOW_TICKS,
   MAP_HEIGHT,
   MAP_WIDTH,
   MAX_FUEL,
@@ -19,6 +22,7 @@ import {
   ProjectileKind,
   RADAR_PICKUP_AMOUNT,
   RESPAWN_DELAY_TICKS,
+  SHIELD_AUTO_LOWER_TICKS,
   SHIELD_PICKUP_AMOUNT,
   TANK_RADIUS,
   TELEPORT_MAX_RANGE,
@@ -319,7 +323,7 @@ export class Arena {
     }
 
     // Mines.
-    const dets = stepMineDetonations(this.mines.values(), this.tanks.values());
+    const dets = stepMineDetonations(this.mines.values(), this.tanks.values(), t);
     for (const det of dets) {
       this.mines.delete(det.mine.id);
       this.forgetRadarEntity(det.mine.id);
@@ -356,8 +360,17 @@ export class Arena {
     if (tank.fuel < MAX_FUEL) {
       tank.fuel = Math.min(MAX_FUEL, tank.fuel + PASSIVE_FUEL_REGEN_PER_SEC * dt);
     }
+    if (tank.ticksSinceDamaged !== undefined) tank.ticksSinceDamaged += 1;
     if (tank.hasShield) {
-      if (!debitFuel(tank, FUEL_SHIELD_PER_SEC * dt, "SHIELD")) tank.hasShield = false;
+      // Auto-lower once neither raised nor damaged recently — a shield idling
+      // against no fire is pure fuel bleed (the playtest death-trap).
+      const sinceRaised = t - (tank.shieldRaisedAtTick ?? 0);
+      const sinceDamaged = tank.ticksSinceDamaged ?? Number.MAX_SAFE_INTEGER;
+      if (sinceRaised >= SHIELD_AUTO_LOWER_TICKS && sinceDamaged >= SHIELD_AUTO_LOWER_TICKS) {
+        tank.hasShield = false;
+      } else if (!debitFuel(tank, FUEL_SHIELD_PER_SEC * dt, "SHIELD")) {
+        tank.hasShield = false;
+      }
     }
     if (command?.kind === "MOVE_TO") {
       if (stepMoveCommand(tank, command, input.aim, dt)) this.commands.delete(key);
@@ -368,7 +381,9 @@ export class Arena {
       stepMovement(tank, input, dt);
     }
     if (tank.fuel <= 0) {
-      this.killTank(tank, null);
+      // Credit the last damager inside the window instead of leaking the kill.
+      const recent = (tank.ticksSinceDamaged ?? Infinity) <= LAST_DAMAGER_WINDOW_TICKS;
+      this.killTank(tank, recent ? (tank.lastDamagerId ?? null) : null);
       return;
     }
     if (tickSpawnProtection(tank, t)) {
@@ -460,6 +475,7 @@ export class Arena {
       if (tank.ammo.shields <= 0) return;
       tank.ammo.shields -= 1;
       tank.hasShield = true;
+      tank.shieldRaisedAtTick = this.tickIndex;
     } else if (item === ItemType.RADAR) {
       if (tank.ammo.radar <= 0) return;
       if (!debitFuel(tank, FUEL_RADAR_SCAN, "RADAR")) return;
@@ -553,6 +569,9 @@ export class Arena {
     if (killerId && killerId !== victim.id) {
       const killer = this.tanks.get(killerId);
       if (killer) {
+        // Remember where the hunter stood — respawn placement avoids it.
+        victim.lastKillerX = killer.x;
+        victim.lastKillerY = killer.y;
         killer.kills = (killer.kills ?? 0) + 1;
         killer.killStreak = (killer.killStreak ?? 0) + 1;
 
@@ -578,8 +597,13 @@ export class Arena {
           });
         }
 
-        this.awardXp(killerId, XP_PER_KILL);
-        this.onXpDelta?.(killerId, XP_PER_KILL, "kill");
+        // Bounty scales with the VICTIM's tier: hunting the leader pays more
+        // than farming the rookie (comeback pressure).
+        const victimTier = victim.powerTier ?? 0;
+        if (victimTier > 0) creditFuel(killer, victimTier * KILL_BOUNTY_FUEL_PER_TIER);
+        const xpReward = XP_PER_KILL + victimTier * KILL_BOUNTY_XP_PER_TIER;
+        this.awardXp(killerId, xpReward);
+        this.onXpDelta?.(killerId, xpReward, "kill");
       }
     }
     this.awardXp(victim.id, XP_PER_DEATH);

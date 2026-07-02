@@ -97,7 +97,22 @@ export function makeTank(args: {
  * but leaves `id`, `name`, `team`, `rank` alone.
  */
 export function respawnTank(t: TankState, currentTick: number): void {
-  const spawn = pickSpawnPoint();
+  // Bias the respawn away from the killer: sample a few candidates and take
+  // the farthest, so victims don't pop back up inside the hunter's vision.
+  let spawn = pickSpawnPoint();
+  if (t.lastKillerX !== undefined && t.lastKillerY !== undefined) {
+    let best = (spawn.x - t.lastKillerX) ** 2 + (spawn.y - t.lastKillerY) ** 2;
+    for (let i = 0; i < 4; i++) {
+      const c = pickSpawnPoint();
+      const d = (c.x - t.lastKillerX) ** 2 + (c.y - t.lastKillerY) ** 2;
+      if (d > best) {
+        best = d;
+        spawn = c;
+      }
+    }
+    t.lastKillerX = undefined;
+    t.lastKillerY = undefined;
+  }
   t.x = spawn.x;
   t.y = spawn.y;
   t.angle = 0;
@@ -108,6 +123,9 @@ export function respawnTank(t: TankState, currentTick: number): void {
   t.isDead = false;
   t.respawnAtTick = 0;
   t.killStreak = 0; // streak resets on death
+  t.ticksSinceDamaged = undefined; // fresh life: no recent damager
+  t.lastDamagerId = undefined;
+  t.shieldRaisedAtTick = undefined;
 
   // Higher power tiers respawn with better fuel and loadout.
   const tier = t.powerTier ?? 0;

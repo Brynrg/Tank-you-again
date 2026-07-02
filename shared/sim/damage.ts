@@ -65,11 +65,16 @@ export function calculateArmorPenetration(
 export function applyDamage(
   target: TankState,
   amount: number,
-  _killerId: string | null,
+  killerId: string | null,
 ): "alive" | "killed" {
   if (target.isDead) return "alive";
   if (target.isSpawnProtected) return "alive";
   if (amount <= 0) return "alive";
+
+  // Tag the damager so fuel-drain deaths shortly after credit the shooter,
+  // and so the shield knows it's actually under fire.
+  target.ticksSinceDamaged = 0;
+  if (killerId && killerId !== target.id) target.lastDamagerId = killerId;
 
   let dmg = amount;
   if (target.hasShield) {
