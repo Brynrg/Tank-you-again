@@ -164,6 +164,113 @@ const explosions: Explosion[] = [];
 /** Snapshot ticks whose events we've already turned into effects (dedupe). */
 const processedEventTicks = new Set<number>();
 
+// ── Battlefield persistence: scorch marks under kills ──────────────────────
+interface ScorchMark {
+  x: number;
+  y: number;
+  born: number; // Date.now() ms
+  r: number; // world-unit radius
+  debris: Array<{ ox: number; oy: number; r: number }>;
+}
+const scorchMarks: ScorchMark[] = [];
+const SCORCH_LIFE_MS = 25000;
+
+/** Drop a fading scorch decal + charred debris where a tank died. Called once
+ *  per death event (not per frame), so Math.random here is fine. */
+function spawnScorch(x: number, y: number): void {
+  const debris = Array.from({ length: 5 }, () => ({
+    ox: (Math.random() - 0.5) * 30,
+    oy: (Math.random() - 0.5) * 30,
+    r: 2 + Math.random() * 3,
+  }));
+  scorchMarks.push({ x, y, born: Date.now(), r: 26 + Math.random() * 8, debris });
+  if (scorchMarks.length > 48) scorchMarks.shift();
+}
+
+function drawScorchMarks(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: number): void {
+  const now = Date.now();
+  for (let i = scorchMarks.length - 1; i >= 0; i--) {
+    if (now - scorchMarks[i]!.born > SCORCH_LIFE_MS) scorchMarks.splice(i, 1);
+  }
+  ctx.save();
+  for (const m of scorchMarks) {
+    const fade = 1 - (now - m.born) / SCORCH_LIFE_MS;
+    const p = project(cam, W, H, m.x, m.y);
+    const r = m.r * cam.zoom;
+    if (p.x < -r || p.x > W + r || p.y < -r || p.y > H + r) continue;
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+    g.addColorStop(0, `rgba(10,8,6,${(0.55 * fade).toFixed(3)})`);
+    g.addColorStop(0.7, `rgba(15,12,8,${(0.35 * fade).toFixed(3)})`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(30,26,20,${(0.7 * fade).toFixed(3)})`;
+    for (const d of m.debris) {
+      ctx.beginPath();
+      ctx.arc(p.x + d.ox * cam.zoom, p.y + d.oy * cam.zoom, d.r * cam.zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// ── Tread tracks: fading trails behind moving tanks ─────────────────────────
+interface TreadSample {
+  x: number;
+  y: number;
+  angle: number;
+  born: number; // Date.now() ms
+}
+const treadTracks = new Map<string, TreadSample[]>();
+const TREAD_LIFE_MS = 8000;
+
+function updateTreadTracks(snap: GameStateSnapshot): void {
+  const now = Date.now();
+  for (const t of snap.tanks) {
+    if (t.isDead) continue;
+    let arr = treadTracks.get(t.id);
+    if (!arr) {
+      arr = [];
+      treadTracks.set(t.id, arr);
+    }
+    const last = arr[arr.length - 1];
+    if (!last || (t.x - last.x) ** 2 + (t.y - last.y) ** 2 >= 12 * 12) {
+      arr.push({ x: t.x, y: t.y, angle: t.angle, born: now });
+      if (arr.length > 28) arr.shift();
+    }
+  }
+  for (const [id, arr] of treadTracks) {
+    while (arr.length && now - arr[0]!.born > TREAD_LIFE_MS) arr.shift();
+    if (arr.length === 0 && !snap.tanks.some((t) => t.id === id)) treadTracks.delete(id);
+  }
+}
+
+function drawTreadTracks(ctx: CanvasRenderingContext2D, cam: Camera, W: number, H: number): void {
+  const now = Date.now();
+  const z = cam.zoom;
+  ctx.save();
+  ctx.fillStyle = "#1c2213";
+  for (const arr of treadTracks.values()) {
+    for (const s of arr) {
+      const a = 0.35 * (1 - (now - s.born) / TREAD_LIFE_MS);
+      if (a <= 0) continue;
+      const p = project(cam, W, H, s.x, s.y);
+      if (p.x < -40 || p.x > W + 40 || p.y < -40 || p.y > H + 40) continue;
+      ctx.globalAlpha = a;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(s.angle);
+      // Two tread pads, one per track.
+      ctx.fillRect(-5 * z, -12 * z, 10 * z, 5 * z);
+      ctx.fillRect(-5 * z, 7 * z, 10 * z, 5 * z);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
 /** Spawn a fireball + shockwave + flying sparks at a world position. */
 export function spawnExplosion(x: number, y: number, scale = 1): void {
   const sparks = Array.from({ length: Math.round(10 * scale) }, () => ({
@@ -200,7 +307,10 @@ function processSnapshotEvents(snap: GameStateSnapshot): void {
   for (const ev of snap.events ?? []) {
     if (ev.kind === "death" || ev.kind === "mine_detonate") {
       const subject = snap.tanks.find((t) => t.id === ev.subjectId);
-      if (subject) spawnExplosion(subject.x, subject.y, ev.kind === "death" ? 1.4 : 1);
+      if (subject) {
+        spawnExplosion(subject.x, subject.y, ev.kind === "death" ? 1.4 : 1);
+        if (ev.kind === "death") spawnScorch(subject.x, subject.y);
+      }
     } else if (ev.kind === "kill") {
       const killer = snap.tanks.find((t) => t.id === ev.subjectId);
       const victim = snap.tanks.find((t) => t.id === ev.objectId);
@@ -526,6 +636,12 @@ export function renderFrame(
   ctx.fillStyle = RA.groundDark;
   ctx.fillRect(0, 0, W, H);
   drawGroundTexture(ctx, cam, W, H);
+
+  // Battlefield persistence (under terrain and units): tread trails left by
+  // moving tanks and scorch decals under kills.
+  updateTreadTracks(snap);
+  drawTreadTracks(ctx, cam, W, H);
+  drawScorchMarks(ctx, cam, W, H);
 
   // Draw terrain
   drawTerrain(ctx, cam, W, H);
@@ -1054,6 +1170,33 @@ function drawTank(
   ctx.stroke();
   ctx.restore();
 
+  // Battle damage: smoke plume once fuel (=health) runs low, flame when
+  // critical. Reads at a glance — target selection info, not just decoration.
+  const health = t.fuel / MAX_FUEL;
+  if (!t.isDead && health < 0.35) {
+    const now = Date.now() / 1000;
+    const seed = (t.x * 13.37 + t.y * 7.77) % 10;
+    ctx.save();
+    for (let i = 0; i < 3; i++) {
+      const phase = (now * 0.8 + i / 3 + seed) % 1;
+      const sx = p.x + Math.sin((now + i * 2.1 + seed) * 2.3) * 4 * cam.zoom;
+      const sy = p.y - r * 0.4 - phase * 26 * cam.zoom;
+      ctx.globalAlpha = (1 - phase) * (health < 0.15 ? 0.5 : 0.3);
+      ctx.fillStyle = health < 0.15 ? "#2a2a2a" : "#555";
+      ctx.beginPath();
+      ctx.arc(sx, sy, (3 + phase * 7) * cam.zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (health < 0.15) {
+      ctx.globalAlpha = 0.55 + 0.35 * Math.sin(now * 17 + seed);
+      ctx.fillStyle = "#ff9a3d";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - r * 0.3, 3.2 * cam.zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   // Local-tank highlight
   if (isLocal) {
     ctx.save();
@@ -1254,6 +1397,14 @@ function drawMinimap(
   ctx.restore();
 }
 
+/** First-sight registry for muzzle flashes. Keyed on projectile id; the first
+ *  rendered position of a projectile ≈ its muzzle position (it enters the
+ *  interpolation buffer at its spawn snapshot), and wall-clock timing sidesteps
+ *  the interpolator's tick lag (rendered snaps carry newest.tick but delayed
+ *  projectile sets, so spawnTick-based ages are never 0). */
+const seenProjectiles = new Map<string, { born: number; ox: number; oy: number }>();
+const MUZZLE_FLASH_MS = 130;
+
 function drawProjectile(
   ctx: CanvasRenderingContext2D,
   cam: Camera,
@@ -1263,6 +1414,44 @@ function drawProjectile(
 ): void {
   const sp = project(cam, W, H, p.x, p.y);
   ctx.save();
+
+  // Muzzle flash: a bright star at the firing point for the shot's first ~130ms.
+  const now = Date.now();
+  let seen = seenProjectiles.get(p.id);
+  if (!seen) {
+    seen = { born: now, ox: p.x, oy: p.y };
+    seenProjectiles.set(p.id, seen);
+    if (seenProjectiles.size > 128) {
+      for (const [id, s] of seenProjectiles) {
+        if (now - s.born > 1000) seenProjectiles.delete(id);
+      }
+    }
+  }
+  const flashAge = now - seen.born;
+  if (flashAge < MUZZLE_FLASH_MS) {
+    const mp = project(cam, W, H, seen.ox, seen.oy);
+    const fade = 1 - flashAge / MUZZLE_FLASH_MS;
+    const fr = (p.kind === ProjectileKind.MISSILE ? 16 : 10) * cam.zoom;
+    ctx.save();
+    ctx.translate(mp.x, mp.y);
+    ctx.rotate(Math.atan2(p.vy, p.vx));
+    ctx.globalAlpha = 0.9 * fade;
+    const fg = ctx.createRadialGradient(0, 0, 0, 0, 0, fr);
+    fg.addColorStop(0, "#ffffff");
+    fg.addColorStop(0.4, "#ffd27f");
+    fg.addColorStop(1, "rgba(255,150,40,0)");
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    ctx.arc(0, 0, fr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff1b8";
+    ctx.lineWidth = 2 * cam.zoom;
+    ctx.beginPath();
+    ctx.moveTo(-fr * 0.4, 0);
+    ctx.lineTo(fr * 1.3, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   if (p.kind === ProjectileKind.BULLET) {
     // Enhanced bullet with glow trail

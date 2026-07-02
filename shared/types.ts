@@ -83,6 +83,15 @@ export interface TankState {
   killStreak?: number;
   /** Persistent power tier 0–5 based on total session kills. Carries through respawn. */
   powerTier?: number;
+  /** Ticks since this tank last took damage. Drives shield auto-lower + fuel-death kill credit. */
+  ticksSinceDamaged?: number;
+  /** Last enemy to damage this tank — credited if it dies of fuel drain inside the window. */
+  lastDamagerId?: string;
+  /** Tick the shield was last raised (grace period before auto-lower). */
+  shieldRaisedAtTick?: number;
+  /** Killer's position at this tank's death — respawn placement biases away from it. */
+  lastKillerX?: number;
+  lastKillerY?: number;
 }
 
 export interface ProjectileState {
@@ -343,6 +352,8 @@ export const FUEL_MINE = 40;
 export const FUEL_SHIELD_PER_SEC = 30;
 export const FUEL_TELEPORT = 80;
 export const FUEL_RADAR_SCAN = 35;
+/** A raised shield auto-lowers after this long without taking damage — kills the drain trap. */
+export const SHIELD_AUTO_LOWER_TICKS = 3 * SERVER_TICK_RATE;
 
 export const BULLET_SPEED = 600; // world-units / sec
 export const BULLET_DAMAGE = 60;
@@ -350,7 +361,7 @@ export const BULLET_TTL_TICKS = SERVER_TICK_RATE * 2; // 2 sec
 export const BULLET_RADIUS = 3;
 export const BULLET_COOLDOWN_TICKS = 5; // 0.25 sec between shots
 
-export const MISSILE_SPEED = 380;
+export const MISSILE_SPEED = 480; // fast enough to land at mid-range (was 380: strictly dominated by bullets)
 export const MISSILE_DAMAGE = 240;
 export const MISSILE_TTL_TICKS = SERVER_TICK_RATE * 4;
 export const MISSILE_RADIUS = 6;
@@ -364,6 +375,10 @@ export const RADAR_RADIUS = 520; // active scan radius for pickups and enemy min
 export const VISION_RADIUS = 700; // viewer-tank-to-tank/projectile vision radius
 export const PICKUP_PROXIMITY_RADIUS = 180; // pickups are hidden unless close or radar-revealed
 export const MINE_COOLDOWN_TICKS = 20;
+/** Fresh mines can't trigger for this long — lets the placer clear its own blast radius. */
+export const MINE_ARMING_TICKS = Math.round(1.5 * SERVER_TICK_RATE);
+/** Drop offset behind the tank; must exceed MINE_RADIUS or placers stand in their own blast. */
+export const MINE_DROP_OFFSET = MINE_RADIUS * 1.5;
 
 // Teleport
 export const TELEPORT_MAX_RANGE = 400;
@@ -414,6 +429,11 @@ export const RANK_ORDER: MilitaryRank[] = [
 export const XP_PER_KILL = 25;
 export const XP_PER_ASSIST = 10;
 export const XP_PER_DEATH = -15;
+/** Fuel-drain deaths credit the last damager within this window instead of nobody. */
+export const LAST_DAMAGER_WINDOW_TICKS = 5 * SERVER_TICK_RATE;
+// Kill bounty: hunting powered-up tanks pays more than farming rookies.
+export const KILL_BOUNTY_XP_PER_TIER = 10;
+export const KILL_BOUNTY_FUEL_PER_TIER = 40;
 
 // Anti-cheat rate limits
 export const MAX_INPUT_HZ = 60;

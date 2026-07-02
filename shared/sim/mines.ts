@@ -1,6 +1,14 @@
 import { randomId } from "./id.js";
 
-import { FUEL_MINE, MINE_DAMAGE, MINE_RADIUS, type MineState, type TankState } from "@shared/types";
+import {
+  FUEL_MINE,
+  MINE_ARMING_TICKS,
+  MINE_DAMAGE,
+  MINE_DROP_OFFSET,
+  MINE_RADIUS,
+  type MineState,
+  type TankState,
+} from "@shared/types";
 
 import { applyDamage } from "./damage.js";
 import { debitFuel } from "./economy.js";
@@ -21,10 +29,10 @@ export function placeMine(tank: TankState, currentTick: number): PlaceMineResult
     id: randomId(),
     ownerId: tank.id,
     ownerTeam: tank.team,
-    // Offset the mine slightly behind the tank along its hull direction so it
-    // can't immediately self-trigger as the tank passes over.
-    x: tank.x - Math.cos(tank.angle) * (MINE_RADIUS * 0.6),
-    y: tank.y - Math.sin(tank.angle) * (MINE_RADIUS * 0.6),
+    // Offset the mine behind the tank, OUTSIDE its own blast radius — the old
+    // 0.6×radius drop left the placer standing in the explosion.
+    x: tank.x - Math.cos(tank.angle) * MINE_DROP_OFFSET,
+    y: tank.y - Math.sin(tank.angle) * MINE_DROP_OFFSET,
     spawnTick: currentTick,
   };
   return { ok: true, mine };
@@ -47,6 +55,7 @@ export interface MineDetonation {
 export function stepMineDetonations(
   mines: Iterable<MineState>,
   tanks: Iterable<TankState>,
+  currentTick: number,
 ): MineDetonation[] {
   const r2 = MINE_RADIUS * MINE_RADIUS;
   const dets: MineDetonation[] = [];
@@ -54,6 +63,8 @@ export function stepMineDetonations(
   const tanksArr = [...tanks];
 
   for (const mine of mines) {
+    // Arming delay: fresh mines are inert so the placer can clear the area.
+    if (currentTick - mine.spawnTick < MINE_ARMING_TICKS) continue;
     // Trigger when any enemy is inside the radius.
     let triggered = false;
     for (const t of tanksArr) {
