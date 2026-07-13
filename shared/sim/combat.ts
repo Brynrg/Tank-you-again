@@ -145,7 +145,14 @@ export function stepProjectile(p: ProjectileState, currentTick: number, dt: numb
  * Hit radius = projectile radius + TANK_RADIUS. Spawn-protected and dead
  * tanks are ignored.
  */
-export function findHit(p: ProjectileState, tanks: Iterable<TankState>): TankState | null {
+/**
+ * ⚡ Bolt Performance Optimization:
+ * We replaced `Iterable<TankState>` with `readonly TankState[]`.
+ * By expecting an array, callers (like the game loop) can pass the cached `EntityMap.valuesArray()`
+ * directly. This eliminates creating a temporary array via `[...iterable]` or `Array.from()`
+ * multiple times per tick, saving garbage collection overhead.
+ */
+export function findHit(p: ProjectileState, tanks: readonly TankState[]): TankState | null {
   const r = (p.kind === ProjectileKind.BULLET ? BULLET_RADIUS : MISSILE_RADIUS) + TANK_RADIUS;
   const r2 = r * r;
   for (const t of tanks) {
