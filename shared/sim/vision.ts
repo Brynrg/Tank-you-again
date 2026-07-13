@@ -30,13 +30,19 @@ export interface RadarScanResult {
  *
  * Allies are always visible regardless of distance (team-wide intel).
  */
+/**
+ * ⚡ Bolt Performance Optimization:
+ * Iterables in the `world` object were changed to `readonly T[]`.
+ * By using arrays, the caller avoids allocating `IterableIterator` objects, and this function
+ * can loop over the directly passed cached arrays from `EntityMap` avoiding further allocations.
+ */
 export function computeVisionSet(
   viewer: TankState,
   world: {
-    tanks: Iterable<TankState>;
-    projectiles: Iterable<ProjectileState>;
-    mines: Iterable<MineState>;
-    pickups: Iterable<PickupState>;
+    tanks: readonly TankState[];
+    projectiles: readonly ProjectileState[];
+    mines: readonly MineState[];
+    pickups: readonly PickupState[];
     radarReveals: Map<string, number>;
   },
   currentTick: number,
