@@ -420,7 +420,10 @@ describe("AIEnemies", () => {
     const room = new RoomLoop({ aiTargetCount: 3 });
     room.forceTick();
     const start = new Map(
-      room.getTanksForTesting().valuesArray().map((t) => [t.id, { x: t.x, y: t.y }] as const),
+      room
+        .getTanksForTesting()
+        .valuesArray()
+        .map((t) => [t.id, { x: t.x, y: t.y }] as const),
     );
     for (let i = 0; i < 120; i++) room.forceTick();
     let moved = 0;
