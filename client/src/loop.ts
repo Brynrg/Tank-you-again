@@ -137,9 +137,9 @@ export function run(opts: RunOptions): RunHandle {
     if (renderSnap) {
       renderFrame(ctx, renderSnap, camera, yourTankId, input.getCommandTarget());
     } else {
-      ctx.fillStyle = "#0b0b14";
+      ctx.fillStyle = "#050a08";
       ctx.fillRect(0, 0, opts.canvas.width, opts.canvas.height);
-      ctx.fillStyle = "#facc15";
+      ctx.fillStyle = "#39ff8a";
       ctx.font = "16px system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("Connecting…", opts.canvas.width / 2, opts.canvas.height / 2);

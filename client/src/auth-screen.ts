@@ -9,42 +9,44 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
     overlay.style.cssText = [
       "position:fixed",
       "inset:0",
-      "background:rgba(20,24,14,0.94)",
+      "background:rgba(3,7,6,0.94)",
       "display:flex",
       "align-items:center",
       "justify-content:center",
       "z-index:1000",
-      "color:#e8b923",
+      "color:#9fffce",
       "font-family:'Courier New',monospace",
       // Keep the card clear of notches / home indicator on phones.
       "padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))",
       "box-sizing:border-box",
     ].join(";");
 
+    // Vector Front chrome: a void-dark card with a thin phosphor-glow border —
+    // the same stroke+glow language as the in-game HUD, no solid steel panel.
     const card = document.createElement("form");
     card.style.cssText = [
-      "background:linear-gradient(160deg,#23271b,#15170f)",
+      "background:radial-gradient(120% 140% at 50% 0%,#0a1512,#050a08)",
       "padding:24px 28px",
-      "border-radius:4px",
+      "border-radius:2px",
       // Responsive: fill small screens, cap on large ones.
       "width:min(360px,100%)",
       "box-sizing:border-box",
-      "box-shadow:0 8px 40px rgba(0,0,0,.7), inset 0 1px 0 #5c634755",
-      "border:2px solid #5c6347",
+      "box-shadow:0 0 0 1px rgba(57,255,138,0.35), 0 0 28px rgba(57,255,138,0.12), 0 8px 40px rgba(0,0,0,.7)",
+      "border:1px solid rgba(57,255,138,0.5)",
     ].join(";");
 
     const title = document.createElement("h1");
     title.textContent = "TANK YOU AGAIN";
     title.style.cssText =
-      "margin:0 0 4px;font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-shadow:0 2px 0 #000";
+      "margin:0 0 4px;font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#39ff8a;text-shadow:0 0 12px rgba(57,255,138,0.55)";
 
     const sub = document.createElement("p");
     sub.textContent = "Fuel is health. Scan supplies, mine routes, deactivate rival tanks.";
-    sub.style.cssText = "margin:0 0 16px;font-size:12px;color:#e8b92399";
+    sub.style.cssText = "margin:0 0 16px;font-size:12px;color:#9fffce99";
 
     const label = document.createElement("label");
     label.textContent = "Callsign";
-    label.style.cssText = "font-size:12px;display:block;margin-bottom:6px";
+    label.style.cssText = "font-size:12px;display:block;margin-bottom:6px;color:#9fffcecc";
 
     const input = document.createElement("input");
     input.type = "text";
@@ -61,17 +63,17 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
       "width:100%",
       // ≥44px tall target; 16px font stops iOS Safari from auto-zooming on focus.
       "padding:11px 12px",
-      "background:#0d0f08",
-      "border:1px solid #5c6347",
-      "border-radius:3px",
-      "color:#e8b923",
+      "background:#040807",
+      "border:1px solid rgba(57,255,138,0.4)",
+      "border-radius:2px",
+      "color:#9fffce",
       "font:16px 'Courier New',monospace",
       "box-sizing:border-box",
     ].join(";");
 
     const hint = document.createElement("div");
     hint.textContent = "3-16 chars: letters, digits, _ or -";
-    hint.style.cssText = "font-size:11px;color:#e8b92377;margin-top:6px";
+    hint.style.cssText = "font-size:11px;color:#9fffce77;margin-top:6px";
 
     const btn = document.createElement("button");
     btn.type = "submit";
@@ -81,10 +83,11 @@ export function promptGuestName(parent: HTMLElement): Promise<string> {
       "width:100%",
       // ≥44px tall touch target.
       "padding:14px",
-      "background:linear-gradient(180deg,#5fa83a,#3c6b22)",
-      "color:#0d0f08",
-      "border:1px solid #2c3320",
-      "border-radius:3px",
+      "background:#08140f",
+      "color:#39ff8a",
+      "border:1px solid rgba(57,255,138,0.8)",
+      "border-radius:2px",
+      "box-shadow:0 0 16px rgba(57,255,138,0.25)",
       "font:700 16px 'Courier New',monospace",
       "letter-spacing:2px",
       "text-transform:uppercase",
