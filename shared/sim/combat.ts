@@ -145,7 +145,7 @@ export function stepProjectile(p: ProjectileState, currentTick: number, dt: numb
  * Hit radius = projectile radius + TANK_RADIUS. Spawn-protected and dead
  * tanks are ignored.
  */
-export function findHit(p: ProjectileState, tanks: Iterable<TankState>): TankState | null {
+export function findHit(p: ProjectileState, tanks: readonly TankState[]): TankState | null {
   const r = (p.kind === ProjectileKind.BULLET ? BULLET_RADIUS : MISSILE_RADIUS) + TANK_RADIUS;
   const r2 = r * r;
   for (const t of tanks) {
