@@ -13,6 +13,9 @@ import {
 } from "@shared/types";
 
 import { Arena } from "@shared/sim/arena.js";
+import { SurvivalDirector } from "@shared/sim/survival.js";
+
+import type { GameMode } from "./auth-screen.js";
 
 export type NetStatus = "connected" | "connecting" | "closed";
 
@@ -31,29 +34,45 @@ export class SinglePlayerNetClient {
 
   private readonly arena: Arena;
   private readonly playerId: string;
+  private readonly survival: SurvivalDirector | null;
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(options: {
     onMessage: (msg: ServerMessage) => void;
     onStatus?: (status: NetStatus) => void;
+    mode?: GameMode;
   }) {
     this.onMessage = options.onMessage;
     this.onStatus = options.onStatus;
+    const mode: GameMode = options.mode ?? "skirmish";
 
-    // One human (BLUE, centre spawn) against a spread of bots that own the
-    // other three teams, so it stays "you vs everyone".
-    this.arena = new Arena({
-      aiTargetCount: 9,
-      botTeams: [TeamColor.RED, TeamColor.ORANGE, TeamColor.PURPLE],
-      trackXp: true,
-    });
+    if (mode === "survival") {
+      // One life vs waves of RED tanks. A single bot team means the wave hunts
+      // you, not each other; the director owns spawning and wreck removal, so
+      // no population top-up and no auto-respawn.
+      this.arena = new Arena({
+        aiTargetCount: 0,
+        autoRespawn: false,
+        botTeams: [TeamColor.RED],
+        trackXp: true,
+      });
+    } else {
+      // Skirmish: one human (BLUE, centre spawn) against a spread of bots that
+      // own the other three teams, so it stays "you vs everyone".
+      this.arena = new Arena({
+        aiTargetCount: 9,
+        botTeams: [TeamColor.RED, TeamColor.ORANGE, TeamColor.PURPLE],
+        trackXp: true,
+      });
+    }
     const player = this.arena.addPlayer({
       name: "You",
       team: TeamColor.BLUE,
       spawn: { x: MAP_WIDTH / 2, y: MAP_HEIGHT / 2 },
     });
     this.playerId = player.id;
-    this.arena.seedPickups(18);
+    this.survival = mode === "survival" ? new SurvivalDirector(this.arena, this.playerId) : null;
+    this.arena.seedPickups(mode === "survival" ? 10 : 18);
 
     // The local engine is authoritative and always available.
     this.onStatus?.(this.status);
@@ -69,6 +88,7 @@ export class SinglePlayerNetClient {
 
     this.timer = setInterval(() => {
       this.arena.step();
+      this.survival?.tick();
       this.emitSnapshot();
     }, TICK_MS);
   }
@@ -137,6 +157,7 @@ export class SinglePlayerNetClient {
     const snapshot: GameStateSnapshot = this.arena.snapshotFor(this.playerId, false);
     snapshot.timestamp = Date.now();
     snapshot.events = events;
+    if (this.survival) snapshot.survival = this.survival.hudState();
     this.onMessage({ type: ServerMessageType.SNAPSHOT, snapshot });
   }
 }
