@@ -508,27 +508,27 @@ export class RoomLoop {
     );
 
     const tanks: TankState[] = [];
-    const tankVals = this.tanks.valuesArray();
-    for (let i = 0; i < tankVals.length; i++) {
-      const t = tankVals[i]!;
+    const _tankVals = this.tanks.valuesArray();
+    for (let i = 0; i < _tankVals.length; i++) {
+      const t = _tankVals[i]!;
       if (vis.visibleTankIds.has(t.id)) tanks.push(t);
     }
     const projectiles: ProjectileState[] = [];
-    const projVals = this.projectiles.valuesArray();
-    for (let i = 0; i < projVals.length; i++) {
-      const p = projVals[i]!;
+    const _projVals = this.projectiles.valuesArray();
+    for (let i = 0; i < _projVals.length; i++) {
+      const p = _projVals[i]!;
       if (vis.visibleProjectileIds.has(p.id)) projectiles.push(p);
     }
     const visibleMines: MineState[] = [];
-    const mineVals = this.mines.valuesArray();
-    for (let i = 0; i < mineVals.length; i++) {
-      const m = mineVals[i]!;
+    const _mineVals = this.mines.valuesArray();
+    for (let i = 0; i < _mineVals.length; i++) {
+      const m = _mineVals[i]!;
       if (vis.visibleMineIds.has(m.id)) visibleMines.push(m);
     }
     const pickups: PickupState[] = [];
-    const pickupVals = this.pickups.valuesArray();
-    for (let i = 0; i < pickupVals.length; i++) {
-      const pk = pickupVals[i]!;
+    const _pickupVals = this.pickups.valuesArray();
+    for (let i = 0; i < _pickupVals.length; i++) {
+      const pk = _pickupVals[i]!;
       if (vis.visiblePickupIds.has(pk.id)) pickups.push(pk);
     }
 
@@ -547,9 +547,9 @@ export class RoomLoop {
     const r2 = (PICKUP_RADIUS + TANK_RADIUS) * (PICKUP_RADIUS + TANK_RADIUS);
 
     const activeTanks: TankState[] = [];
-    const tankVals = this.tanks.valuesArray();
-    for (let i = 0; i < tankVals.length; i++) {
-      const t = tankVals[i]!;
+    const tankValsArr = this.tanks.valuesArray();
+    for (let i = 0; i < tankValsArr.length; i++) {
+      const t = tankValsArr[i]!;
       if (!t.isDead) activeTanks.push(t);
     }
 

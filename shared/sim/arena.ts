@@ -506,10 +506,10 @@ export class Arena {
 
   private collectPickups(): void {
     const r2 = (PICKUP_RADIUS + TANK_RADIUS) * (PICKUP_RADIUS + TANK_RADIUS);
+    const activeTankVals = this.tanks.valuesArray();
     for (const [id, pk] of this.pickups) {
-      const tankVals = this.tanks.valuesArray();
-      for (let i = 0; i < tankVals.length; i++) {
-        const t = tankVals[i]!;
+      for (let i = 0; i < activeTankVals.length; i++) {
+        const t = activeTankVals[i]!;
         if (t.isDead) continue;
         const dx = pk.x - t.x;
         const dy = pk.y - t.y;
@@ -664,28 +664,28 @@ export class Arena {
       : null;
 
     const tanks: TankState[] = [];
-    const tankVals = this.tanks.valuesArray();
-    for (let i = 0; i < tankVals.length; i++) {
-      const tnk = tankVals[i]!;
+    const _tankVals = this.tanks.valuesArray();
+    for (let i = 0; i < _tankVals.length; i++) {
+      const tnk = _tankVals[i]!;
       if (!maskVision || !vis || vis.visibleTankIds.has(tnk.id)) tanks.push(tnk);
     }
     const projectiles: ProjectileState[] = [];
-    const projVals = this.projectiles.valuesArray();
-    for (let i = 0; i < projVals.length; i++) {
-      const p = projVals[i]!;
+    const _projVals = this.projectiles.valuesArray();
+    for (let i = 0; i < _projVals.length; i++) {
+      const p = _projVals[i]!;
       if (!maskVision || !vis || vis.visibleProjectileIds.has(p.id)) projectiles.push(p);
     }
     const pickups: PickupState[] = [];
-    const pickupVals = this.pickups.valuesArray();
-    for (let i = 0; i < pickupVals.length; i++) {
-      const pk = pickupVals[i]!;
+    const _pickupVals = this.pickups.valuesArray();
+    for (let i = 0; i < _pickupVals.length; i++) {
+      const pk = _pickupVals[i]!;
       if (!maskVision || !vis || vis.visiblePickupIds.has(pk.id)) pickups.push(pk);
     }
     // Enemy mines are always masked (own/ally/radar only), even in single-player.
     const visibleMines: MineState[] = [];
-    const mineVals = this.mines.valuesArray();
-    for (let i = 0; i < mineVals.length; i++) {
-      const m = mineVals[i]!;
+    const _mineVals = this.mines.valuesArray();
+    for (let i = 0; i < _mineVals.length; i++) {
+      const m = _mineVals[i]!;
       if (!vis || vis.visibleMineIds.has(m.id)) visibleMines.push(m);
     }
 
