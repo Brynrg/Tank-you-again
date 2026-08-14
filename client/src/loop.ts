@@ -14,6 +14,7 @@ import {
 } from "./single-player-net.js";
 import { NetClient, type NetStatus } from "./net.js";
 import {
+  cameraShakeOffset,
   drawCursorReticle,
   followTank,
   makeCamera,
@@ -133,9 +134,18 @@ export function run(opts: RunOptions): RunHandle {
     // targeting + HUD still use the raw latest snapshot above for accuracy.
     const renderSnap = interp.sample(now, yourTankId) ?? lastSnapshot;
 
-    // Render
+    // Render — with the game-feel screen shake applied as a transient camera
+    // offset, restored right after so followTank's lerp target stays clean.
     if (renderSnap) {
-      renderFrame(ctx, renderSnap, camera, yourTankId, input.getCommandTarget());
+      const { ox, oy } = cameraShakeOffset(dt);
+      camera.x += ox;
+      camera.y += oy;
+      try {
+        renderFrame(ctx, renderSnap, camera, yourTankId, input.getCommandTarget());
+      } finally {
+        camera.x -= ox;
+        camera.y -= oy;
+      }
     } else {
       ctx.fillStyle = "#050a08";
       ctx.fillRect(0, 0, opts.canvas.width, opts.canvas.height);

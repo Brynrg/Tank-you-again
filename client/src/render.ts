@@ -1,3 +1,4 @@
+import * as sfx from "./sfx.js";
 import {
   FUEL_FIRE_MISSILE,
   FUEL_MINE,
@@ -178,6 +179,26 @@ const terrain: TerrainCell[] = [];
 // Active hit effects
 const hitEffects: HitEffect[] = [];
 
+// ── Screen shake (game-feel): decaying "trauma", quadratic response ────────
+// Hits ADD trauma; shake = trauma² so small events barely move the camera and
+// big ones punch. Offset is sampled from smooth sines (per-frame random jitter
+// buzzes). Applied around renderFrame by the caller via cameraShakeOffset().
+let shakeTrauma = 0;
+let shakeClock = 0;
+
+export function addTrauma(amount: number): void {
+  shakeTrauma = Math.min(1, shakeTrauma + amount);
+}
+
+/** Decay trauma and return this frame's camera offset in world units. */
+export function cameraShakeOffset(dt: number): { ox: number; oy: number } {
+  if (shakeTrauma <= 0) return { ox: 0, oy: 0 };
+  shakeTrauma = Math.max(0, shakeTrauma - 1.4 * dt);
+  shakeClock += dt * 30;
+  const s = shakeTrauma * shakeTrauma;
+  return { ox: 14 * s * Math.sin(shakeClock * 1.7), oy: 10 * s * Math.sin(shakeClock * 2.3) };
+}
+
 // ── Explosion particle system (death / mine / missile blasts) ──────────────
 interface Explosion {
   x: number;
@@ -345,7 +366,7 @@ function updateExplosions(dt: number): void {
  * from renderFrame; deduped so the same 20 Hz snapshot rendered across many
  * rAF frames only fires effects a single time.
  */
-function processSnapshotEvents(snap: GameStateSnapshot): void {
+function processSnapshotEvents(snap: GameStateSnapshot, cam: Camera, yourTankId: string): void {
   if (processedEventTicks.has(snap.tick)) return;
   processedEventTicks.add(snap.tick);
   if (processedEventTicks.size > 256) {
@@ -361,6 +382,13 @@ function processSnapshotEvents(snap: GameStateSnapshot): void {
       if (subject) {
         spawnExplosion(subject.x, subject.y, ev.kind === "death" ? 1.4 : 1);
         if (ev.kind === "death") spawnScorch(subject.x, subject.y);
+        // Game-feel: shake + boom scale with proximity to the camera, so a
+        // far-off death is a murmur and a point-blank one punches.
+        const near = 1 - Math.min(1, Math.hypot(subject.x - cam.x, subject.y - cam.y) / 900);
+        addTrauma((ev.kind === "death" ? 0.45 : 0.3) * (0.25 + 0.75 * near));
+        if (ev.kind === "death") sfx.boom(near);
+        else sfx.mineBoom(near);
+        if (ev.kind === "death" && ev.subjectId === yourTankId) sfx.yourDeath();
       }
     } else if (ev.kind === "kill") {
       const killer = snap.tanks.find((t) => t.id === ev.subjectId);
@@ -380,9 +408,11 @@ function processSnapshotEvents(snap: GameStateSnapshot): void {
                   : "";
       if (killer && victim) addKillFeed(`${killer.name} ▸ ${victim.name}${streakSuffix}`);
       else if (victim) addKillFeed(`${victim.name} destroyed`);
+      if (ev.subjectId === yourTankId) sfx.killConfirm();
     } else if (ev.kind === "rank_up") {
       const who = snap.tanks.find((t) => t.id === ev.subjectId);
       if (who) addKillFeed(`${who.name} promoted to ${who.rank}`);
+      if (ev.subjectId === yourTankId) sfx.rankUp();
     } else if (ev.kind === "tier_up") {
       const who = snap.tanks.find((t) => t.id === ev.subjectId);
       const tier = Number(ev.payload);
@@ -788,7 +818,7 @@ export function renderFrame(
   // Turn this tick's death/mine events into explosions + kill-feed lines, then
   // advance time-based HUD systems (effects expire, scoreboard reflects live
   // team counts).
-  processSnapshotEvents(snap);
+  processSnapshotEvents(snap, cam, yourTankId);
   updateExplosions(1 / 60);
   updateHitEffects();
   updateKillFeed();
