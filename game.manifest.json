@@ -6,7 +6,7 @@
   "category": "multiplayer-action",
   "framework": "vite",
   "supportsMobile": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "emoji": "\ud83d\udd79\ufe0f",
   "multiplayer": "realtime-server",
   "multiplayerProvider": "Fly.io WebSocket (free tier \u2014 shared-cpu-1x, auto-stop on idle)",
