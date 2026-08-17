@@ -321,8 +321,8 @@ export class RoomLoop {
       const result = scanRadar(
         tank,
         {
-          mines: this.mines.values(),
-          pickups: this.pickups.values(),
+          mines: this.mines.valuesArray(),
+          pickups: this.pickups.valuesArray(),
         },
         reveals,
         this.tickIndex,
@@ -453,7 +453,7 @@ export class RoomLoop {
         this.projectiles.delete(id);
         continue;
       }
-      const hit = findHit(p, this.tanks.values());
+      const hit = findHit(p, this.tanks.valuesArray());
       if (hit) {
         const result = applyDamage(hit, p.damage, p.ownerId);
         this.projectiles.delete(id);
@@ -462,7 +462,7 @@ export class RoomLoop {
     }
 
     // 3. Mine detonations.
-    const dets = stepMineDetonations(this.mines.values(), this.tanks.values(), t);
+    const dets = stepMineDetonations(this.mines.valuesArray(), this.tanks.valuesArray(), t);
     for (const det of dets) {
       this.mines.delete(det.mine.id);
       this.forgetRadarEntity(det.mine.id);
@@ -498,29 +498,37 @@ export class RoomLoop {
     const vis = computeVisionSet(
       viewer,
       {
-        tanks: this.tanks.values(),
-        projectiles: this.projectiles.values(),
-        mines: this.mines.values(),
-        pickups: this.pickups.values(),
+        tanks: this.tanks.valuesArray(),
+        projectiles: this.projectiles.valuesArray(),
+        mines: this.mines.valuesArray(),
+        pickups: this.pickups.valuesArray(),
         radarReveals: this.radarReveals.get(viewer.id) ?? new Map<string, number>(),
       },
       this.tickIndex,
     );
 
     const tanks: TankState[] = [];
-    for (const t of this.tanks.values()) {
+    const allTanks = this.tanks.valuesArray();
+    for (let i = 0; i < allTanks.length; i++) {
+      const t = allTanks[i]!;
       if (vis.visibleTankIds.has(t.id)) tanks.push(t);
     }
     const projectiles: ProjectileState[] = [];
-    for (const p of this.projectiles.values()) {
+    const allProjectiles = this.projectiles.valuesArray();
+    for (let i = 0; i < allProjectiles.length; i++) {
+      const p = allProjectiles[i]!;
       if (vis.visibleProjectileIds.has(p.id)) projectiles.push(p);
     }
     const visibleMines: MineState[] = [];
-    for (const m of this.mines.values()) {
+    const allMines = this.mines.valuesArray();
+    for (let i = 0; i < allMines.length; i++) {
+      const m = allMines[i]!;
       if (vis.visibleMineIds.has(m.id)) visibleMines.push(m);
     }
     const pickups: PickupState[] = [];
-    for (const pk of this.pickups.values()) {
+    const allPickups = this.pickups.valuesArray();
+    for (let i = 0; i < allPickups.length; i++) {
+      const pk = allPickups[i]!;
       if (vis.visiblePickupIds.has(pk.id)) pickups.push(pk);
     }
 

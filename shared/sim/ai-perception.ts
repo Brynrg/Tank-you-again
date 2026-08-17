@@ -69,7 +69,16 @@ export class PerceptionSystem {
     // Use existing vision system from sim/vision.ts. The shared computeVisionSet
     // needs the current tick (for radar-reveal expiry); pull it from the world
     // snapshot, defaulting to 0 when the AI is sensing a tickless view.
-    return computeVisionSet(ai, world, world?.currentTick ?? 0);
+    const worldObj = {
+      tanks: Array.isArray(world.tanks) ? world.tanks : Array.from(world.tanks || []),
+      projectiles: Array.isArray(world.projectiles)
+        ? world.projectiles
+        : Array.from(world.projectiles || []),
+      mines: Array.isArray(world.mines) ? world.mines : Array.from(world.mines || []),
+      pickups: Array.isArray(world.pickups) ? world.pickups : Array.from(world.pickups || []),
+      radarReveals: world.radarReveals || new Map(),
+    };
+    return computeVisionSet(ai, worldObj as any, world?.currentTick ?? 0);
   }
 
   private calculateThreatLevel(ai: TankState, projectiles: any[], enemies: TankState[]): number {

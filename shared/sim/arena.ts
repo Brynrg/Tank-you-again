@@ -314,7 +314,7 @@ export class Arena {
         this.projectiles.delete(id);
         continue;
       }
-      const hit = findHit(p, this.tanks.values());
+      const hit = findHit(p, this.tanks.valuesArray());
       if (hit) {
         const result = applyDamage(hit, p.damage, p.ownerId);
         this.projectiles.delete(id);
@@ -323,7 +323,7 @@ export class Arena {
     }
 
     // Mines.
-    const dets = stepMineDetonations(this.mines.values(), this.tanks.values(), t);
+    const dets = stepMineDetonations(this.mines.valuesArray(), this.tanks.valuesArray(), t);
     for (const det of dets) {
       this.mines.delete(det.mine.id);
       this.forgetRadarEntity(det.mine.id);
@@ -482,7 +482,7 @@ export class Arena {
       tank.ammo.radar -= 1;
       const result = scanRadar(
         tank,
-        { mines: this.mines.values(), pickups: this.pickups.values() },
+        { mines: this.mines.valuesArray(), pickups: this.pickups.valuesArray() },
         this.getRadarReveals(tank.id),
         this.tickIndex,
       );
@@ -651,10 +651,10 @@ export class Arena {
       ? computeVisionSet(
           viewer,
           {
-            tanks: this.tanks.values(),
-            projectiles: this.projectiles.values(),
-            mines: this.mines.values(),
-            pickups: this.pickups.values(),
+            tanks: this.tanks.valuesArray(),
+            projectiles: this.projectiles.valuesArray(),
+            mines: this.mines.valuesArray(),
+            pickups: this.pickups.valuesArray(),
             radarReveals: this.radarReveals.get(viewerId) ?? new Map<string, number>(),
           },
           this.tickIndex,
@@ -662,20 +662,28 @@ export class Arena {
       : null;
 
     const tanks: TankState[] = [];
-    for (const tnk of this.tanks.values()) {
+    const allTanks = this.tanks.valuesArray();
+    for (let i = 0; i < allTanks.length; i++) {
+      const tnk = allTanks[i]!;
       if (!maskVision || !vis || vis.visibleTankIds.has(tnk.id)) tanks.push(tnk);
     }
     const projectiles: ProjectileState[] = [];
-    for (const p of this.projectiles.values()) {
+    const allProjectiles = this.projectiles.valuesArray();
+    for (let i = 0; i < allProjectiles.length; i++) {
+      const p = allProjectiles[i]!;
       if (!maskVision || !vis || vis.visibleProjectileIds.has(p.id)) projectiles.push(p);
     }
     const pickups: PickupState[] = [];
-    for (const pk of this.pickups.values()) {
+    const allPickups = this.pickups.valuesArray();
+    for (let i = 0; i < allPickups.length; i++) {
+      const pk = allPickups[i]!;
       if (!maskVision || !vis || vis.visiblePickupIds.has(pk.id)) pickups.push(pk);
     }
     // Enemy mines are always masked (own/ally/radar only), even in single-player.
     const visibleMines: MineState[] = [];
-    for (const m of this.mines.values()) {
+    const allMines = this.mines.valuesArray();
+    for (let i = 0; i < allMines.length; i++) {
+      const m = allMines[i]!;
       if (!vis || vis.visibleMineIds.has(m.id)) visibleMines.push(m);
     }
 
