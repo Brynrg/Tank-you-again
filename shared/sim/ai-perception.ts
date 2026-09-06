@@ -19,28 +19,36 @@ export class PerceptionSystem {
 
     // Extract relevant data
     const visibleTanks: TankState[] = [];
-    for (const t of world.tanks || []) {
+    const tanks = world.tanks || [];
+    for (let i = 0; i < tanks.length; i++) {
+      const t = tanks[i]!;
       if (visionSet.visibleTankIds?.has(t.id) && t.id !== ai.id) {
         visibleTanks.push(t as TankState);
       }
     }
 
     const visibleProjectiles: any[] = [];
-    for (const p of world.projectiles || []) {
+    const projectiles = world.projectiles || [];
+    for (let i = 0; i < projectiles.length; i++) {
+      const p = projectiles[i]!;
       if (visionSet.visibleProjectileIds?.has(p.id)) {
         visibleProjectiles.push(p);
       }
     }
 
     const visibleMines: any[] = [];
-    for (const m of world.mines || []) {
+    const mines = world.mines || [];
+    for (let i = 0; i < mines.length; i++) {
+      const m = mines[i]!;
       if (visionSet.visibleMineIds?.has(m.id)) {
         visibleMines.push(m);
       }
     }
 
     const visiblePickups: any[] = [];
-    for (const p of world.pickups || []) {
+    const pickups = world.pickups || [];
+    for (let i = 0; i < pickups.length; i++) {
+      const p = pickups[i]!;
       if (visionSet.visiblePickupIds?.has(p.id)) {
         visiblePickups.push(p);
       }
