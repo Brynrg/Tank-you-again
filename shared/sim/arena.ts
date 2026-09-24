@@ -87,6 +87,10 @@ export interface ArenaOptions {
   /** Track XP→rank locally (single-player). When false, the embedder owns
    *  progression via the onXpDelta hook (the server persists it). */
   trackXp?: boolean;
+  /** When false, dead tanks never auto-respawn — the embedder owns the death
+   *  policy (survival removes wrecks; the player's death ends the run).
+   *  Default true (multiplayer/skirmish behavior, unchanged). */
+  autoRespawn?: boolean;
 }
 
 /**
@@ -126,6 +130,7 @@ export class Arena {
   private readonly botLadder: AIChallengeLevel[];
   private readonly botTeams: TeamColor[] | null;
   private readonly trackXp: boolean;
+  private readonly autoRespawn: boolean;
 
   /** Optional hook for embedders that own progression (the server). */
   public onXpDelta:
@@ -137,6 +142,7 @@ export class Arena {
     this.botLadder = opts.botLadder ?? DEFAULT_BOT_LADDER;
     this.botTeams = opts.botTeams ?? null;
     this.trackXp = opts.trackXp ?? false;
+    this.autoRespawn = opts.autoRespawn ?? true;
   }
 
   // ── Membership ────────────────────────────────────────────────────────────
@@ -173,7 +179,7 @@ export class Arena {
     return tank;
   }
 
-  private addAIEnemy(difficulty: AIChallengeLevel): AIEnemy {
+  private addAIEnemy(difficulty: AIChallengeLevel, spawn?: { x: number; y: number }): AIEnemy {
     const aiId = `ai-${this.aiCount++}`;
     const team = this.pickBotTeam();
     const ai = new AIEnemy(aiId, team, difficulty);
@@ -181,8 +187,43 @@ export class Arena {
     this.cooldowns.set(aiId, freshCooldowns());
     this.xp.set(aiId, 0);
     this.teamCensus.set(team, (this.teamCensus.get(team) ?? 0) + 1);
-    this.tanks.set(aiId, ai.getTank());
+    const tank = ai.getTank();
+    if (spawn) {
+      tank.x = clamp(spawn.x, TANK_RADIUS, MAP_WIDTH - TANK_RADIUS);
+      tank.y = clamp(spawn.y, TANK_RADIUS, MAP_HEIGHT - TANK_RADIUS);
+    }
+    this.tanks.set(aiId, tank);
     return ai;
+  }
+
+  /** Spawn one AI tank on demand (survival waves). Returns its tank id. */
+  spawnAIEnemy(difficulty: AIChallengeLevel, spawn?: { x: number; y: number }): string {
+    const ai = this.addAIEnemy(difficulty, spawn);
+    this.pendingEvents.push({ tick: this.tickIndex, kind: "respawn", subjectId: ai.getTank().id });
+    return ai.getTank().id;
+  }
+
+  /** Read access to one tank's live state (embedder-side mode logic). */
+  getTank(id: string): TankState | undefined {
+    return this.tanks.get(id);
+  }
+
+  /** Remove a tank and every trace of it (survival wreck cleanup). */
+  removeTank(id: string): void {
+    const tank = this.tanks.get(id);
+    if (!tank) return;
+    this.teamCensus.set(tank.team, Math.max(0, (this.teamCensus.get(tank.team) ?? 1) - 1));
+    this.tanks.delete(id);
+    this.aiEnemies.delete(id);
+    this.aiAim.delete(id);
+    this.humans.delete(id);
+    this.inputs.delete(id);
+    this.commands.delete(id);
+    this.cooldowns.delete(id);
+    this.lastInputTick.delete(id);
+    this.xp.delete(id);
+    this.radarReveals.delete(id);
+    this.forgetRadarEntity(id);
   }
 
   private pickBotTeam(): TeamColor {
@@ -353,7 +394,7 @@ export class Arena {
     dt: number,
   ): void {
     if (tank.isDead) {
-      if (t >= tank.respawnAtTick) respawnTank(tank, t);
+      if (this.autoRespawn && t >= tank.respawnAtTick) respawnTank(tank, t);
       return;
     }
     // Passive fuel regeneration — slows death spiral, rewards survival.
