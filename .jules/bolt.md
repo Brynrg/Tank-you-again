@@ -1,4 +1,4 @@
-## 2024-07-01 - Optimizing Map to Array conversions in game loop
+## 2024-08-05 - Avoid .values() on EntityMap hot loops
 
-**Learning:** `Array.from(map.values())` is called frequently in hot paths (like the game loop tick) resulting in excessive temporary allocations.
-**Action:** Use a custom `EntityMap` implementation that caches the resulting array when the map contents change.
+**Learning:** `EntityMap` provides a `valuesArray()` method which caches the underlying Map's `.values()` as an array, avoiding an O(N) allocation of the map iterator each tick. `server/src/loop.ts` and `shared/sim/arena.ts` hot loops should use this when scanning for hit tests or visions.
+**Action:** Always prefer `valuesArray()` when iterating over `EntityMap` values in frequent operations.
