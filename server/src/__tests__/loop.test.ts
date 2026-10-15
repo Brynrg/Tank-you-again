@@ -194,7 +194,7 @@ describe("RoomLoop", () => {
     };
     room.handleFire("c1", fire);
     expect(room.getProjectilesForTesting().size).toBe(1);
-    const proj = [...room.getProjectilesForTesting().values()][0]!;
+    const proj = room.getProjectilesForTesting().valuesArray()[0]!;
     expect(proj.ownerId).toBe("t1");
     expect(proj.kind).toBe(ProjectileKind.BULLET);
   });
@@ -420,11 +420,14 @@ describe("AIEnemies", () => {
     const room = new RoomLoop({ aiTargetCount: 3 });
     room.forceTick();
     const start = new Map(
-      [...room.getTanksForTesting().values()].map((t) => [t.id, { x: t.x, y: t.y }] as const),
+      room
+        .getTanksForTesting()
+        .valuesArray()
+        .map((t) => [t.id, { x: t.x, y: t.y }] as const),
     );
     for (let i = 0; i < 120; i++) room.forceTick();
     let moved = 0;
-    for (const t of room.getTanksForTesting().values()) {
+    for (const t of room.getTanksForTesting().valuesArray()) {
       const s = start.get(t.id);
       if (s && Math.hypot(t.x - s.x, t.y - s.y) > 1) moved++;
     }
