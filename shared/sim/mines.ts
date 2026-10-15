@@ -52,22 +52,26 @@ export interface MineDetonation {
  * Allies (same team as `mine.ownerTeam`) do NOT trigger the mine but DO take
  * splash damage when an enemy triggers it (per TODO.md).
  */
+/**
+ * ⚡ Bolt Performance Optimization:
+ * Changed `Iterable` inputs to `readonly T[]` and removed the internal `[...tanks]` spread allocation.
+ * The game loop now passes cached `valuesArray()` from `EntityMap`s, avoiding allocations
+ * on every single game tick.
+ */
 export function stepMineDetonations(
-  mines: Iterable<MineState>,
-  tanks: Iterable<TankState>,
+  mines: readonly MineState[],
+  tanks: readonly TankState[],
   currentTick: number,
 ): MineDetonation[] {
   const r2 = MINE_RADIUS * MINE_RADIUS;
   const dets: MineDetonation[] = [];
-
-  const tanksArr = [...tanks];
 
   for (const mine of mines) {
     // Arming delay: fresh mines are inert so the placer can clear the area.
     if (currentTick - mine.spawnTick < MINE_ARMING_TICKS) continue;
     // Trigger when any enemy is inside the radius.
     let triggered = false;
-    for (const t of tanksArr) {
+    for (const t of tanks) {
       if (t.isDead) continue;
       if (t.team === mine.ownerTeam) continue;
       if (t.isSpawnProtected) continue;
@@ -82,7 +86,7 @@ export function stepMineDetonations(
 
     // Collect victims: every tank (enemy or ally) inside the radius.
     const victims: TankState[] = [];
-    for (const t of tanksArr) {
+    for (const t of tanks) {
       if (t.isDead) continue;
       if (t.isSpawnProtected) continue;
       const dx = t.x - mine.x;
