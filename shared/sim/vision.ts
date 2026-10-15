@@ -33,10 +33,10 @@ export interface RadarScanResult {
 export function computeVisionSet(
   viewer: TankState,
   world: {
-    tanks: Iterable<TankState>;
-    projectiles: Iterable<ProjectileState>;
-    mines: Iterable<MineState>;
-    pickups: Iterable<PickupState>;
+    tanks: readonly TankState[];
+    projectiles: readonly ProjectileState[];
+    mines: readonly MineState[];
+    pickups: readonly PickupState[];
     radarReveals: Map<string, number>;
   },
   currentTick: number,
@@ -115,8 +115,8 @@ export function isRadarRevealed(
 export function scanRadar(
   viewer: TankState,
   world: {
-    mines: Iterable<MineState>;
-    pickups: Iterable<PickupState>;
+    mines: readonly MineState[];
+    pickups: readonly PickupState[];
   },
   radarReveals: Map<string, number>,
   currentTick: number,
