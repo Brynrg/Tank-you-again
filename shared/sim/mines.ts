@@ -53,14 +53,14 @@ export interface MineDetonation {
  * splash damage when an enemy triggers it (per TODO.md).
  */
 export function stepMineDetonations(
-  mines: Iterable<MineState>,
-  tanks: Iterable<TankState>,
+  mines: readonly MineState[],
+  tanks: readonly TankState[],
   currentTick: number,
 ): MineDetonation[] {
   const r2 = MINE_RADIUS * MINE_RADIUS;
   const dets: MineDetonation[] = [];
 
-  const tanksArr = [...tanks];
+  const tanksArr = tanks;
 
   for (const mine of mines) {
     // Arming delay: fresh mines are inert so the placer can clear the area.
