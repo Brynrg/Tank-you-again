@@ -33,10 +33,10 @@ export interface RadarScanResult {
 export function computeVisionSet(
   viewer: TankState,
   world: {
-    tanks: Iterable<TankState>;
-    projectiles: Iterable<ProjectileState>;
-    mines: Iterable<MineState>;
-    pickups: Iterable<PickupState>;
+    tanks: readonly TankState[];
+    projectiles: readonly ProjectileState[];
+    mines: readonly MineState[];
+    pickups: readonly PickupState[];
     radarReveals: Map<string, number>;
   },
   currentTick: number,
@@ -45,7 +45,8 @@ export function computeVisionSet(
   const pickupProximity2 = PICKUP_PROXIMITY_RADIUS * PICKUP_PROXIMITY_RADIUS;
 
   const visibleTankIds = new Set<string>();
-  for (const t of world.tanks) {
+  for (let i = 0; i < world.tanks.length; i++) {
+    const t = world.tanks[i]!;
     if (t.id === viewer.id) {
       visibleTankIds.add(t.id);
       continue;
@@ -60,14 +61,16 @@ export function computeVisionSet(
   }
 
   const visibleProjectileIds = new Set<string>();
-  for (const p of world.projectiles) {
+  for (let i = 0; i < world.projectiles.length; i++) {
+    const p = world.projectiles[i]!;
     const dx = p.x - viewer.x;
     const dy = p.y - viewer.y;
     if (dx * dx + dy * dy <= v2) visibleProjectileIds.add(p.id);
   }
 
   const visiblePickupIds = new Set<string>();
-  for (const pk of world.pickups) {
+  for (let i = 0; i < world.pickups.length; i++) {
+    const pk = world.pickups[i]!;
     const dx = pk.x - viewer.x;
     const dy = pk.y - viewer.y;
     if (
@@ -79,7 +82,8 @@ export function computeVisionSet(
   }
 
   const visibleMineIds = new Set<string>();
-  for (const m of world.mines) {
+  for (let i = 0; i < world.mines.length; i++) {
+    const m = world.mines[i]!;
     if (isMineVisible(m, viewer, world.radarReveals, currentTick)) {
       visibleMineIds.add(m.id);
     }
@@ -115,8 +119,8 @@ export function isRadarRevealed(
 export function scanRadar(
   viewer: TankState,
   world: {
-    mines: Iterable<MineState>;
-    pickups: Iterable<PickupState>;
+    mines: readonly MineState[];
+    pickups: readonly PickupState[];
   },
   radarReveals: Map<string, number>,
   currentTick: number,
@@ -125,7 +129,8 @@ export function scanRadar(
   let minesRevealed = 0;
   let pickupsRevealed = 0;
 
-  for (const mine of world.mines) {
+  for (let i = 0; i < world.mines.length; i++) {
+    const mine = world.mines[i]!;
     if (mine.ownerTeam === viewer.team) continue;
     const dx = mine.x - viewer.x;
     const dy = mine.y - viewer.y;
@@ -135,7 +140,8 @@ export function scanRadar(
     }
   }
 
-  for (const pickup of world.pickups) {
+  for (let i = 0; i < world.pickups.length; i++) {
+    const pickup = world.pickups[i]!;
     const dx = pickup.x - viewer.x;
     const dy = pickup.y - viewer.y;
     if (dx * dx + dy * dy <= r2) {
