@@ -27,21 +27,21 @@ import {
 } from "@shared/types";
 
 // ─────────────────────────────────────────────────────────────────────────
-// "Vector Front" visual identity — Battlezone-lineage glow-vector radar look.
+// "Cartoon Front" visual identity — circa-2005 browser arcade tank look.
 //
-// One neutral phosphor hue inks every piece of battlefield/grid/HUD geometry;
-// value hierarchy (dim ↔ bright) comes from alpha, never from new hues. Four
-// fixed, maximally-separated team hues own a team's core glow / hull tint /
-// tread trail / projectiles and nothing else. One alarm hue is reserved
-// exclusively for danger (armed mines, low fuel, hit feedback). One neutral
-// cyan-white owns pickups. See AGENTS.md / the design-review brief for the
-// full spec this file implements.
+// A light grass-green field with thick ink outlines around every entity,
+// flat saturated team colors, and cream HUD panels. No dark-room vignette,
+// no glow stacks. Ink (olive #2e4132) inks every outline, tick, bracket and
+// label so shapes pop off the light field. Four bright team hues (sky blue /
+// tomato red / orange / violet) own a team's hull fill / barrel / trail /
+// projectiles. One alarm hue is reserved exclusively for danger (armed mines,
+// low fuel, hit feedback). Gold owns pickups. Trebuchet-era sans for text.
 //
-// Perf discipline (see the PERFORMANCE note in the brief): live shadowBlur is
-// never used here. Static geometry (forest canopies) is pre-baked once to an
-// offscreen canvas and drawImage'd every frame. Dynamic glow (hulls, turret
-// cores, projectiles, rings) fakes falloff with 2-3 stacked stroke passes of
-// decreasing alpha / increasing width under a crisp core stroke.
+// Perf discipline (unchanged): live shadowBlur is never used. Static
+// geometry (forest canopies) is pre-baked once to an offscreen canvas and
+// drawImage'd every frame. Every stroke goes through glowStrokePath, which
+// now draws a dark ink outline pass under a flat colour core — two passes,
+// not three.
 // ─────────────────────────────────────────────────────────────────────────
 
 // Terrain types — purely decorative client-side dressing (the server has no
@@ -71,20 +71,20 @@ interface TerrainCell {
 }
 
 // ── Palette ─────────────────────────────────────────────────────────────
-const BG_CENTER = "#071012";
-const BG_EDGE = "#050a08";
-/** Base phosphor, as an "r,g,b" triple for rgba() template use — #39ff8a. */
-const PHOSPHOR = "57,255,138";
-/** Reserved exclusively for danger states — #ff3b1f. Never used elsewhere. */
-const ALARM = "255,59,31";
-/** Neutral cyan-white, distinct from all team hues and the alarm hue. */
-const PICKUP_HUE = "214,255,246";
+const BG_CENTER = "#cfe8ae";
+const BG_EDGE = "#a4cf8b";
+/** Ink outlines/text, as an "r,g,b" triple for rgba() template use — olive ink #2e4132. */
+const PHOSPHOR = "46,65,50";
+/** Reserved exclusively for danger states — #ef5a35. Never used elsewhere. */
+const ALARM = "239,90,53";
+/** Bright gold for pickups, distinct from all team hues and the alarm hue. */
+const PICKUP_HUE = "248,166,32";
 
 const TEAM_RGB: Record<TeamColor, string> = {
-  [TeamColor.BLUE]: "36,229,255", // cyan #24e5ff
-  [TeamColor.RED]: "255,46,196", // magenta #ff2ec4
-  [TeamColor.ORANGE]: "255,176,32", // amber #ffb020
-  [TeamColor.PURPLE]: "155,92,255", // violet #9b5cff
+  [TeamColor.BLUE]: "58,142,226", // sky blue
+  [TeamColor.RED]: "226,66,52", // tomato red
+  [TeamColor.ORANGE]: "245,150,28", // orange
+  [TeamColor.PURPLE]: "146,78,205", // violet
 };
 
 function rgba(triple: string, a: number): string {
@@ -104,19 +104,20 @@ function lerpChannel(a: number, b: number, t: number): number {
   return Math.round(a + (b - a) * t);
 }
 
-/** Fuel/HP → color, hue-interpolated base phosphor green → alarm red-orange
- *  as it depletes (the Diorama Command graft). Reused for armor integrity too
+/** Fuel/HP → color, hue-interpolated leaf green → tomato-orange as it
+ *  depletes (the Diorama Command graft). Reused for armor integrity too
  *  — one brightness/hue-meaning law, not a second visual language. */
 function healthColor(pct: number): string {
   const t = 1 - Math.max(0, Math.min(1, pct));
-  const r = lerpChannel(57, 255, t);
-  const g = lerpChannel(255, 59, t);
-  const b = lerpChannel(138, 31, t);
+  const r = lerpChannel(96, 236, t);
+  const g = lerpChannel(176, 104, t);
+  const b = lerpChannel(72, 44, t);
   return `${r},${g},${b}`;
 }
 
-/** Cheap glow: crisp core stroke plus 2 wider/dimmer passes, instead of live
- *  shadowBlur. Safe at combat density — see the perf note above. */
+/** Cheap cartoon stroke: dark ink outline under a crisp flat colour core —
+ *  two passes instead of glow stacks. Bold rims read on the light field.
+ *  Safe at combat density — see the perf note above. */
 function glowStrokePath(
   ctx: CanvasRenderingContext2D,
   path: Path2D,
@@ -126,11 +127,8 @@ function glowStrokePath(
 ): void {
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.lineWidth = coreWidth * 3.4;
-  ctx.strokeStyle = rgba(triple, coreAlpha * 0.08);
-  ctx.stroke(path);
-  ctx.lineWidth = coreWidth * 1.9;
-  ctx.strokeStyle = rgba(triple, coreAlpha * 0.22);
+  ctx.lineWidth = Math.max(0.75, coreWidth) + 2;
+  ctx.strokeStyle = `rgba(36,50,42,${Math.min(1, coreAlpha * 0.85).toFixed(3)})`;
   ctx.stroke(path);
   ctx.lineWidth = Math.max(0.75, coreWidth);
   ctx.strokeStyle = rgba(triple, coreAlpha);
@@ -247,14 +245,14 @@ function drawScorchMarks(ctx: CanvasRenderingContext2D, cam: Camera, W: number, 
     const r = m.r * cam.zoom;
     if (p.x < -r || p.x > W + r || p.y < -r || p.y > H + r) continue;
     const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-    g.addColorStop(0, `rgba(4,10,7,${(0.6 * fade).toFixed(3)})`);
-    g.addColorStop(0.7, `rgba(5,12,9,${(0.35 * fade).toFixed(3)})`);
-    g.addColorStop(1, "rgba(0,0,0,0)");
+    g.addColorStop(0, `rgba(88,126,66,${(0.45 * fade).toFixed(3)})`);
+    g.addColorStop(0.55, `rgba(98,136,74,${(0.3 * fade).toFixed(3)})`);
+    g.addColorStop(1, "rgba(88,126,66,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = `rgba(3,8,6,${(0.7 * fade).toFixed(3)})`;
+    ctx.fillStyle = `rgba(70,102,54,${(0.6 * fade).toFixed(3)})`;
     for (const d of m.debris) {
       ctx.beginPath();
       ctx.arc(p.x + d.ox * cam.zoom, p.y + d.oy * cam.zoom, d.r * cam.zoom, 0, Math.PI * 2);
@@ -642,16 +640,16 @@ function bakeForestBitmap(): HTMLCanvasElement {
     const py = cy + Math.sin(ang) * dist;
     const r = FOREST_BAKE_PX * 0.2 + Math.random() * FOREST_BAKE_PX * 0.12;
     const grad = bx.createRadialGradient(px, py, 0, px, py, r);
-    grad.addColorStop(0, phos(0.5));
-    grad.addColorStop(0.55, phos(0.2));
-    grad.addColorStop(1, phos(0));
+    grad.addColorStop(0, "rgba(154,216,112,0.9)");
+    grad.addColorStop(0.55, "rgba(122,190,92,0.55)");
+    grad.addColorStop(1, "rgba(122,190,92,0)");
     bx.fillStyle = grad;
     bx.beginPath();
     bx.arc(px, py, r, 0, Math.PI * 2);
     bx.fill();
   }
-  bx.strokeStyle = phos(0.65);
-  bx.lineWidth = 1.4;
+  bx.strokeStyle = phos(0.85);
+  bx.lineWidth = 2;
   for (let i = 0; i < blobCount; i++) {
     const ang = (i / blobCount) * Math.PI * 2 + Math.random() * 0.6;
     const dist = FOREST_BAKE_PX * (0.08 + Math.random() * 0.1);
@@ -1126,12 +1124,12 @@ function drawWall(
 ): void {
   const s = size;
   ctx.globalAlpha = fogA;
-  ctx.fillStyle = "rgb(22,42,34)";
+  ctx.fillStyle = "rgb(214,190,138)";
   ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
   ctx.globalAlpha = 1;
   const rim = new Path2D();
   rim.rect(p.x - s / 2, p.y - s / 2, s, s);
-  glowStrokePath(ctx, rim, PHOSPHOR, 1.3, 0.75 * fogA);
+  glowStrokePath(ctx, rim, PHOSPHOR, 2, 0.9 * fogA);
 }
 
 function drawWater(
@@ -1142,7 +1140,7 @@ function drawWater(
 ): void {
   const r = size / 2;
   ctx.globalAlpha = fogA;
-  ctx.fillStyle = phos(0.08);
+  ctx.fillStyle = "rgba(124,194,238,0.9)";
   ctx.beginPath();
   ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
   ctx.fill();
@@ -1165,7 +1163,7 @@ function drawOre(
 ): void {
   const pulse = 0.75 + 0.25 * Math.sin(tSec * 1.3 + p.x * 0.01);
   ctx.globalAlpha = fogA * pulse;
-  ctx.fillStyle = phos(0.6);
+  ctx.fillStyle = rgba(PICKUP_HUE, 0.95);
   for (const bit of bits) {
     const bx = p.x + bit.ox * size;
     const by = p.y + bit.oy * size;
@@ -1200,7 +1198,9 @@ function drawRock(
     else path.lineTo(x, y);
   }
   path.closePath();
-  glowStrokePath(ctx, path, PHOSPHOR, 1.3, 0.6 * fogA);
+  ctx.fillStyle = `rgba(190,192,180,${(0.9 * fogA).toFixed(3)})`;
+  ctx.fill(path);
+  glowStrokePath(ctx, path, PHOSPHOR, 1.4, 0.85 * fogA);
 }
 
 // ── Tank weight-class hull silhouettes ─────────────────────────────────────
@@ -1351,20 +1351,20 @@ function drawTank(
     glowStrokePath(ctx, hex, hue, 1.4, 0.6);
   }
 
-  // Hull: weight-class open polygon (5/7/7-pt), filled low-alpha team tint +
-  // bright glow-stroked outline.
+  // Hull: weight-class open polygon (5/7/7-pt), flat saturated team-colour
+  // fill with a bold ink outline — the cartoon rim makes every hull pop.
   {
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(t.angle);
     const cls = weightClassForTier(tier);
     const hull = buildHullPath(cls, r);
-    ctx.fillStyle = t.isDead ? "rgba(90,100,96,0.06)" : rgba(hue, 0.07);
+    ctx.fillStyle = t.isDead ? "rgba(150,158,150,0.5)" : rgba(hue, 0.92);
     ctx.fill(hull);
-    glowStrokePath(ctx, hull, t.isDead ? "110,120,116" : hue, 1.4, t.isDead ? 0.3 : 0.9);
-    // Tread rails: two short crisp lines on the hull sides.
-    ctx.strokeStyle = t.isDead ? "rgba(110,120,116,0.4)" : rgba(hue, 0.35);
-    ctx.lineWidth = 1;
+    glowStrokePath(ctx, hull, t.isDead ? "130,138,132" : hue, 1.6, t.isDead ? 0.4 : 0.95);
+    // Tread rails: two ink lines on the hull sides.
+    ctx.strokeStyle = t.isDead ? "rgba(130,138,132,0.6)" : phos(0.6);
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-r * 0.95, -r * 0.72);
     ctx.lineTo(-r * 0.95, r * 0.72);
@@ -1426,8 +1426,8 @@ function drawTank(
     glowStrokePath(ctx, ring, PHOSPHOR, 1.4, pulse);
   }
 
-  // Name label: neutral phosphor monospace, legible regardless of team hue.
-  ctx.font = `${Math.max(10, 11 * cam.zoom)}px "Courier New", monospace`;
+  // Name label: bold ink Trebuchet label, legible over any team hue.
+  ctx.font = `${Math.max(10, 11 * cam.zoom)}px "Trebuchet MS", Tahoma, Verdana, sans-serif`;
   ctx.textAlign = "center";
   ctx.fillStyle = phos(0.92);
   ctx.fillText(t.name, p.x, p.y - r - 22);
@@ -1662,7 +1662,7 @@ function drawHudFrame(
   w: number,
   h: number,
 ): void {
-  ctx.fillStyle = "rgba(2,7,6,0.55)";
+  ctx.fillStyle = "rgba(252,246,224,0.92)";
   ctx.fillRect(x, y, w, h);
   const c = Math.min(14, w * 0.12, h * 0.12);
   const path = new Path2D();
@@ -1786,7 +1786,7 @@ export function renderHud(
   const compact = W / dpr < 560 || isTouchDevice();
 
   ctx.save();
-  ctx.font = '12px "Courier New", monospace';
+  ctx.font = '12px "Trebuchet MS", Tahoma, Verdana, sans-serif';
   ctx.textAlign = "left";
 
   if (!compact) {
@@ -1830,7 +1830,7 @@ export function renderHud(
     const border = new Path2D();
     border.rect(bx, cursorY, barW, barH);
     glowStrokePath(ctx, border, PHOSPHOR, 1, 0.35);
-    ctx.font = '12px "Courier New", monospace';
+    ctx.font = '12px "Trebuchet MS", Tahoma, Verdana, sans-serif';
     ctx.textAlign = "left";
     ctx.fillStyle = pct <= 0.2 ? alarmC(0.95) : phos(0.85);
     const fuelLabel =
@@ -1844,7 +1844,7 @@ export function renderHud(
     // lit cumulatively per military rank tier.
     const rankIdx = RANK_ORDER.indexOf(t.rank);
     ctx.fillStyle = phos(0.85);
-    ctx.font = '11px "Courier New", monospace';
+    ctx.font = '11px "Trebuchet MS", Tahoma, Verdana, sans-serif';
     ctx.fillText(`RANK  ${t.rank}`, bx, cursorY);
     cursorY += 12;
     const rankNotchW = Math.min(16, (barW - 8) / RANK_ORDER.length - 3);
@@ -1874,7 +1874,7 @@ export function renderHud(
     cursorY += 22;
 
     // Ammo readout — alarm when a resource is depleted.
-    ctx.font = '12px "Courier New", monospace';
+    ctx.font = '12px "Trebuchet MS", Tahoma, Verdana, sans-serif';
     const ammoParts: Array<[string, number]> = [
       ["MIS", t.ammo.missiles],
       ["MINE", t.ammo.mines],
@@ -1895,7 +1895,7 @@ export function renderHud(
       const pulse = 0.55 + 0.45 * Math.abs(Math.sin(Date.now() / 300));
       ctx.save();
       ctx.textAlign = "center";
-      ctx.font = `bold ${Math.round(W / 42)}px "Courier New", monospace`;
+      ctx.font = `bold ${Math.round(W / 42)}px "Trebuchet MS", Tahoma, Verdana, sans-serif`;
       ctx.fillStyle = alarmC(pulse);
       ctx.fillText("⚠ LOW FUEL — drive over a supply crate", W / 2, H * 0.16);
       ctx.restore();
@@ -1906,7 +1906,7 @@ export function renderHud(
       ctx.save();
       ctx.textAlign = "right";
       ctx.fillStyle = phos(0.6);
-      ctx.font = '12px "Courier New", monospace';
+      ctx.font = '12px "Trebuchet MS", Tahoma, Verdana, sans-serif';
       ctx.fillText(W < 800 ? `${visible} tanks` : `visible tanks: ${visible}`, W - 8, H - 8);
       ctx.restore();
     }
@@ -1973,7 +1973,7 @@ function drawCoachmark(ctx: CanvasRenderingContext2D, W: number, H: number, elap
 
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.font = `${fs}px "Courier New", monospace`;
+  ctx.font = `${fs}px "Trebuchet MS", Tahoma, Verdana, sans-serif`;
   ctx.textAlign = "left";
   let wmax = 0;
   for (const line of lines) wmax = Math.max(wmax, ctx.measureText(line).width);
@@ -2017,7 +2017,7 @@ function drawKillFeed(ctx: CanvasRenderingContext2D, W: number, H: number): void
   const startY = 80;
   const lineHeight = 20;
 
-  ctx.font = '14px "Courier New", monospace';
+  ctx.font = '14px "Trebuchet MS", Tahoma, Verdana, sans-serif';
   ctx.textAlign = "center";
 
   for (let i = 0; i < killFeed.length; i++) {
@@ -2055,7 +2055,7 @@ function drawScoreboard(ctx: CanvasRenderingContext2D, W: number, H: number): vo
   const h = 78;
   ctx.save();
   drawHudFrame(ctx, x, y, w, h);
-  ctx.font = '12px "Courier New", monospace';
+  ctx.font = '12px "Trebuchet MS", Tahoma, Verdana, sans-serif';
   ctx.textAlign = "left";
   let yOffset = 16;
   for (const team of [TeamColor.RED, TeamColor.BLUE, TeamColor.ORANGE, TeamColor.PURPLE]) {
@@ -2083,11 +2083,11 @@ function drawDeathOverlay(ctx: CanvasRenderingContext2D, W: number, H: number): 
   ctx.globalAlpha = 1;
   ctx.textAlign = "center";
   ctx.fillStyle = alarmC(0.95);
-  ctx.font = 'bold 42px "Courier New", monospace';
+  ctx.font = 'bold 42px "Trebuchet MS", Tahoma, Verdana, sans-serif';
   ctx.fillText("DEACTIVATED", W / 2, H / 2 - 10);
   if (deathOverlay.respawnTimer > 0) {
     ctx.fillStyle = phos(0.85);
-    ctx.font = '18px "Courier New", monospace';
+    ctx.font = '18px "Trebuchet MS", Tahoma, Verdana, sans-serif';
     ctx.fillText(
       `Respawning in ${Math.ceil(deathOverlay.respawnTimer / SERVER_TICK_RATE)}…`,
       W / 2,
@@ -2294,7 +2294,7 @@ export function drawTouchControls(
   for (const b of buttons) {
     ctx.beginPath();
     ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(2,7,6,0.55)";
+    ctx.fillStyle = "rgba(252,246,224,0.92)";
     ctx.fill();
     const ring = new Path2D();
     ring.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
@@ -2305,10 +2305,10 @@ export function drawTouchControls(
       glowStrokePath(ctx, pending, PHOSPHOR, 1.8, 0.8);
     }
     ctx.fillStyle = b.enabled ? phos(0.9) : phos(0.35);
-    ctx.font = `bold ${11 * dpr}px "Courier New", monospace`;
+    ctx.font = `bold ${11 * dpr}px "Trebuchet MS", Tahoma, Verdana, sans-serif`;
     ctx.fillText(b.label, b.cx, b.cy + (b.count !== null ? -4 * dpr : 0));
     if (b.count !== null) {
-      ctx.font = `${10 * dpr}px "Courier New", monospace`;
+      ctx.font = `${10 * dpr}px "Trebuchet MS", Tahoma, Verdana, sans-serif`;
       ctx.fillStyle = b.count > 0 ? "rgba(255,255,255,0.8)" : alarmC(0.9);
       ctx.fillText(`x${b.count}`, b.cx, b.cy + 9 * dpr);
     }
@@ -2316,7 +2316,7 @@ export function drawTouchControls(
 
   if (opts.pendingTeleport) {
     ctx.fillStyle = phos(0.95);
-    ctx.font = `bold ${13 * dpr}px "Courier New", monospace`;
+    ctx.font = `bold ${13 * dpr}px "Trebuchet MS", Tahoma, Verdana, sans-serif`;
     ctx.textAlign = "center";
     ctx.fillText("TAP A DESTINATION TO TELEPORT", W / 2, 22 * dpr);
   }
@@ -2337,13 +2337,13 @@ export function drawTouchToggle(ctx: CanvasRenderingContext2D, on: boolean): voi
   ctx.save();
   ctx.beginPath();
   ctx.arc(t.cx, t.cy, t.r, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(2,7,6,0.5)";
+  ctx.fillStyle = "rgba(252,246,224,0.85)";
   ctx.fill();
   const ring = new Path2D();
   ring.arc(t.cx, t.cy, t.r, 0, Math.PI * 2);
   glowStrokePath(ctx, ring, PHOSPHOR, 1.2, on ? 0.6 : 0.3);
   ctx.fillStyle = on ? phos(0.9) : phos(0.4);
-  ctx.font = `bold ${14 * dpr}px "Courier New", monospace`;
+  ctx.font = `bold ${14 * dpr}px "Trebuchet MS", Tahoma, Verdana, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(on ? "[#]" : "[ ]", t.cx, t.cy);
