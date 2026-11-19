@@ -27,9 +27,9 @@ if (window.visualViewport) {
 const app = canvas.parentElement ?? document.body;
 
 async function start(): Promise<void> {
-  const guestName = await promptGuestName(app);
+  const { name, mode } = await promptGuestName(app);
   const wsUrl = resolveWsUrl();
-  run({ canvas, wsUrl, guestName, singlePlayer: true }); // Enable single-player mode
+  run({ canvas, wsUrl, guestName: name, singlePlayer: true, mode }); // Enable single-player mode
 }
 
 void start();
